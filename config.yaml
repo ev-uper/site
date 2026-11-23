@@ -503,7 +503,7 @@ public_site:
   news_url: null
 site_check:
   # Alamat situs terbit. Nilai sah: URL http/https. Asal: situs prodi.
-  url: https://GANTI-ORG.github.io/cv-site
+  url: https://ev-uper.github.io/site
   # Browser yang dijalankan Selenium. Nilai sah: edge, chrome. Asal: usulan Claude 2026-11-05.
   browser: edge
   # Tanpa jendela; hanya berlaku bila tanpa login (--no-login). Nilai sah: true, false.

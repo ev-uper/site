@@ -17,8 +17,8 @@
    kunci.
    ===================================================================== */
 
-window.SB_URL = 'https://XXXXXXXX.supabase.co';
-window.SB_KEY = 'GANTI_DENGAN_PUBLISHABLE_KEY';
+window.SB_URL = 'https://tapuhnplulahoxunxnjn.supabase.co';
+window.SB_KEY = 'sb_publishable_dxZnouBnugQb8CVqJZsZiA_2fWiSrbQ';
 
 /* =====================================================================
    2. ALAMAT PROFIL LUAR
@@ -55,7 +55,7 @@ window.PROFIL_ORCID  = 'https://orcid.org/';
                   ALLOWED_EXT di Script Properties.
                   Usulan Claude 2026-10-09, menunggu keputusan pemilik.
    --------------------------------------------------------------------- */
-window.UPLOAD_URL    = '';
+window.UPLOAD_URL    = 'https://script.google.com/macros/s/AKfycbzsLVOsk1tmT6-z8m9Fu653GF4OPPc-wvVk_FBSGXVMc9hduinyw9_IKba6KnpbRew/exec';
 window.UPLOAD_MAX_MB = 20;
 window.UPLOAD_EXT    = 'pdf,jpg,jpeg,png,docx,xlsx';
 
@@ -70,4 +70,4 @@ window.UPLOAD_EXT    = 'pdf,jpg,jpeg,png,docx,xlsx';
    Modul yang mati hilang dari menu, Monitoring, dan Panduan; datanya
    (bila ada) tidak dihapus dan tampil lagi bila modulnya dinyalakan.
    ===================================================================== */
-window.FITUR_MATI = [];
+window.FITUR_MATI = ['rapat', 'hibah', 'kalender', 'pengingat', 'kepakaran', 'sdgs', 'kemahasiswaan', 'jadwal', 'kabar', 'profil_prodi', 'publik'];
