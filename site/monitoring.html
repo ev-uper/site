@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Pemantauan kinerja — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 90px}
+  a{color:var(--biru-2)}
+
+  .hero{position:relative;background:var(--biru);color:#fff;overflow:hidden;
+        border-bottom:4px solid var(--merah)}
+  .hero::before{content:'';position:absolute;inset:0;opacity:.13;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='70' viewBox='0 0 140 70'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M0 69.5H140M0 .5H140'/%3E%3Cpath d='M0 70L35 0L70 70L105 0L140 70'/%3E%3Cpath d='M35 0V70M105 0V70'/%3E%3C/g%3E%3C/svg%3E");
+    background-size:140px 70px}
+  .hero-in{position:relative;max-width:1120px;margin:0 auto;padding:28px 20px 26px}
+  .balik{display:inline-flex;gap:7px;align-items:center;text-decoration:none;
+         font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--biru-m2);margin-bottom:18px}
+  .balik:hover{color:#fff}
+  h1{font-family:var(--serif);font-size:clamp(24px,4vw,32px);font-weight:600;
+     letter-spacing:-.018em;margin:0;color:#fff}
+  .prodi{color:var(--biru-m4);font-size:14.5px;margin-top:6px}
+
+  .periode{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+  .periode button{font-family:var(--mono);font-size:11px;letter-spacing:.07em;
+    text-transform:uppercase;cursor:pointer;background:none;color:var(--biru-m4);
+    border:1px solid rgba(255,255,255,.3);padding:7px 14px;border-radius:2px}
+  .periode button:hover{color:#fff;border-color:rgba(255,255,255,.6)}
+  .periode button[aria-pressed="true"]{background:#fff;color:var(--biru);
+    border-color:#fff;font-weight:500}
+
+  h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:38px 0 2px;color:var(--biru)}
+  .ket{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+  .kartu{background:var(--panel);border:1px solid var(--line);border-radius:2px;
+         padding:20px 22px;border-top:3px solid var(--biru)}
+  .ringkas{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+           gap:0;background:var(--panel);border:1px solid var(--line);
+           border-top:3px solid var(--biru);margin-top:14px}
+  .ringkas div{padding:18px 20px;border-right:1px solid var(--line-soft)}
+  .ringkas div:last-child{border-right:0}
+  .ringkas b{display:block;font-family:var(--mono);font-size:27px;font-weight:400;line-height:1}
+  .ringkas span{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+                text-transform:uppercase;color:var(--muted);display:block;margin-top:8px}
+  .ringkas em{font-style:normal;font-size:12px;color:var(--muted);display:block;margin-top:5px}
+
+  /* ---------- matriks ---------- */
+  .gulir{overflow-x:auto}
+  table.mx{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+  table.mx th{font-family:var(--mono);font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--muted);text-align:right;font-weight:400;
+    padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+    cursor:pointer;user-select:none}
+  table.mx th:first-child{text-align:left}
+  table.mx th:hover{color:var(--biru)}
+  table.mx th[data-aktif]{color:var(--biru);font-weight:500}
+  table.mx td{padding:0;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  table.mx td.nm{padding:9px 10px;font-weight:500}
+  table.mx td.nm a{text-decoration:none;color:var(--ink)}
+  table.mx td.nm a:hover{color:var(--biru-2);text-decoration:underline}
+  .sel{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:9px 10px}
+  .sel .bt{flex:1;max-width:74px;height:14px;background:var(--line-soft);border-radius:1px}
+  .sel .bt i{display:block;height:100%;background:var(--biru-3);border-radius:1px}
+  .sel .an{font-family:var(--mono);font-size:13px;width:20px;text-align:right}
+  .sel.nol .an{color:#B6BEC5}
+  tr.sepi td{background:#FDF7F3}
+  .kaki{font-size:12.5px;color:var(--muted);margin-top:12px}
+  .kaki b{color:var(--merah);font-weight:500}
+
+  /* ---------- cakupan ---------- */
+  .cakup{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+  .cakup .j{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+            text-transform:uppercase;color:var(--muted)}
+  .cakup .a{font-family:var(--mono);font-size:26px;line-height:1.1;margin-top:6px}
+  .cakup .tr{background:var(--line-soft);height:9px;border-radius:1px;margin-top:9px}
+  .cakup .tr i{display:block;height:100%;background:var(--biru);border-radius:1px}
+  .cakup .s{font-size:12.5px;color:var(--muted);margin-top:7px}
+
+  /* ---------- rincian ---------- */
+  .rinci{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:14px}
+  .rinci h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+            text-transform:uppercase;color:var(--muted);font-weight:400;margin:0 0 14px}
+  .mendatar{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+  .mendatar .nm{flex:0 0 44%;font-size:12.5px;color:var(--ink);line-height:1.3}
+  .mendatar .tr{flex:1;background:var(--line-soft);height:15px;border-radius:1px}
+  .mendatar .tr i{display:block;height:100%;border-radius:1px;background:var(--biru-2)}
+  .mendatar .an{font-family:var(--mono);font-size:12px;width:20px;text-align:right}
+  .kosong{color:var(--muted);font-size:13.5px;padding:14px 0}
+
+  /* ---------- syarat perlu ---------- */
+  .peringatan{background:#FFF6DE;border:1px solid #E8CF8A;border-left:4px solid var(--emas);
+    padding:12px 16px;font-size:13.5px;margin:0 0 14px;border-radius:2px}
+  .peringatan b{color:#7A5A00}
+  table.sp{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+  table.sp th{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);font-weight:400;text-align:left;padding:10px 10px;border-bottom:1px solid var(--line)}
+  table.sp td{padding:10px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  table.sp td.an{font-family:var(--mono);white-space:nowrap}
+  table.sp .btr{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  table.sp .ctt{font-size:12px;color:var(--muted);margin-top:3px}
+  .st{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+      text-transform:uppercase;padding:3px 8px;border-radius:2px;white-space:nowrap}
+  .st.ok{background:#E3F4EA;color:var(--hijau)}
+  .st.gagal{background:var(--merah-m3);color:var(--merah)}
+  .st.tak{background:var(--line-soft);color:var(--muted)}
+  .st.manual{background:var(--biru-m10);color:var(--biru-2)}
+  table.sp td .an-amb{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:5px}
+  .sasaran{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+           gap:16px;margin:0 0 20px;padding-bottom:18px;border-bottom:1px solid var(--line-soft)}
+  .sasaran .j{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+              text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .sasaran .s{font-size:12px;color:var(--muted);margin-top:7px}
+  .sasaran .sas.utama{background:var(--biru-m12);border-left:3px solid var(--biru);
+                      padding:12px 14px;margin:-12px 0 -12px -14px;border-radius:2px}
+  .sasaran .tag{font-family:var(--sans);font-size:9.5px;letter-spacing:.06em;
+    background:var(--biru);color:#fff;padding:2px 6px;border-radius:2px;margin-left:6px}
+  table.sp th.utama{color:var(--biru);font-weight:500}
+  table.sp td.utama{background:var(--biru-m12)}
+
+
+  /* ---------- akordeon bagian ---------- */
+  details.seksi{margin-top:26px}
+  details.seksi > summary{list-style:none;cursor:pointer;user-select:none;
+    display:flex;align-items:baseline;gap:12px;
+    border-bottom:2px solid var(--biru);padding:10px 2px}
+  details.seksi > summary::-webkit-details-marker{display:none}
+  details.seksi > summary h2{margin:0;border:0;padding:0}
+  details.seksi > summary .panah{font-family:var(--mono);font-size:12px;
+    color:var(--biru-3);transition:transform .15s;transform:rotate(-90deg)}
+  details.seksi[open] > summary .panah{transform:rotate(0)}
+  details.seksi > summary .ket-s{font-size:12px;color:var(--muted);
+    margin-left:auto;font-family:var(--mono);letter-spacing:.05em}
+  details.seksi > summary:hover h2{color:var(--biru-2)}
+  details.seksi > .isi-s{padding-top:2px}
+  .kontrol-seksi{display:flex;gap:14px;justify-content:flex-end;margin-top:20px}
+  .kontrol-seksi a{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--muted);text-decoration:none;cursor:pointer}
+  .kontrol-seksi a:hover{color:var(--biru)}
+
+  footer{margin-top:52px;padding-top:20px;border-top:3px solid var(--biru);
+         font-size:12.5px;color:var(--muted)}
+  @media(max-width:560px){.ringkas div{border-right:0;border-bottom:1px solid var(--line-soft)}}
+
+  /* ---------- polesan ---------- */
+  .kartu{transition:box-shadow .18s, transform .18s}
+  .kartu:hover{box-shadow:0 3px 14px rgba(var(--biru-rgb),.08);transform:translateY(-1px)}
+  table.rin tbody tr:nth-child(even) td,
+  table.sp  tbody tr:nth-child(even) td,
+  table.mx  tbody tr:nth-child(even) td{background:rgba(var(--biru-rgb),.022)}
+  table.rin tbody tr:hover td, table.sp tbody tr:hover td{background:rgba(var(--biru-rgb),.055)}
+  :focus-visible{outline:2px solid var(--biru-2);outline-offset:1px}
+  @media(prefers-reduced-motion:reduce){.kartu{transition:none}.kartu:hover{transform:none}}
+
+  /* ---------- unduh PNG per seksi, tautan AMI (pemilik 2026-11-11) ---------- */
+  .png-baris{display:flex;justify-content:flex-end;margin:0 0 6px}
+  .png-baris button, .ami-f button, .ami-aksi button{font:12px/1.4 var(--mono);letter-spacing:.04em;
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:3px 10px;cursor:pointer}
+  .png-baris button:hover, .ami-f button:hover, .ami-aksi button:hover{border-color:var(--biru);color:var(--biru)}
+  .ami-f{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 12px}
+  .ami-f input, .ami-f select{font:inherit;padding:4px 8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+  .ami-f input{flex:1 1 220px}
+  .ami-aksi{white-space:nowrap}
+  .ami-aksi a{font-size:12px;margin:0 4px}
+  #ami-admin{margin-top:28px}
+  .ami-pita{display:inline-block;margin-top:8px;padding:6px 12px;border:1px solid rgba(255,255,255,.45);
+    font-size:13px;line-height:1.5}
+  @media print{.png-baris, #ami-admin, .kontrol-seksi{display:none}}
+</style>
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+</head>
+<body>
+
+<div class="hero" role="region" aria-label="Pembuka halaman">
+  <div class="hero-in">
+    <div class="hero-inst" data-identitas></div>
+    <h1>Pemantauan kinerja</h1>
+    <div class="prodi" id="hProdi"></div>
+    <div class="periode" id="periode"></div>
+  </div>
+</div>
+
+<main class="wrap" id="isi"></main>
+<div class="wrap" id="ami-admin" hidden></div>
+
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rapi = s => s ? String(s).replace(/_/g,' ') : '';
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+
+
+// ---------------------------------------------------------------------
+//  Akordeon bagian: keadaan buka/tutup diingat selama halaman hidup,
+//  sehingga berpindah periode/TS tidak menutup bagian yang sedang dibaca.
+// ---------------------------------------------------------------------
+// Penyimpanan sesi yang aman: pada mode privat atau pengaturan cookie
+// ketat, menyentuh sessionStorage saja sudah melempar SecurityError —
+// dan karena blok ini berada di puncak skrip, satu lemparan mematikan
+// seluruh halaman. Dibungkus agar gagal berarti "tanpa ingatan", bukan
+// layar kosong.
+const simpanAman = {
+  get(k){ try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v){ try { sessionStorage.setItem(k, v); } catch {} },
+};
+const SEKSI_BUKA = new Set(JSON.parse(simpanAman.get('seksiBuka') || '["_awal"]'));
+function seksiLipat(id, judul, ket, isi, bawaan){
+  // Seksi modul yang dimatikan di config.js (FITUR_MATI, site/fitur.js) tidak ditampilkan.
+  if ({ rapat: 1, hibah: 1 }[id] && (window.FITUR_MATI || []).includes(id)) return '';
+  const buka = SEKSI_BUKA.has('_awal') ? !!bawaan : SEKSI_BUKA.has(id);
+  return `<details class="seksi" data-seksi="${id}" ${buka ? 'open' : ''}>
+    <summary><span class="panah">&#9660;</span><h2>${judul}</h2>
+      ${ket ? `<span class="ket-s">${ket}</span>` : ''}</summary>
+    <div class="isi-s"><div class="png-baris"><button type="button" data-png="${id}"
+      title="Unduh seksi ini sebagai gambar PNG">Unduh PNG</button></div>${isi}</div>
+  </details>`;
+}
+
+// ---------------------------------------------------------------------
+//  Unduh PNG per seksi (pemilik 2026-11-11): seksi digambar seperti di layar
+//  dengan html2canvas (dimuat saat pertama dipakai), skala 2 agar tajam di
+//  Word/PowerPoint. Tabel lebar ikut dibentangkan selama penggambaran.
+// ---------------------------------------------------------------------
+const HTML2CANVAS = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm';
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-png]');
+  if (!b) return;
+  const sek = b.closest('details.seksi');
+  if (!sek) return;
+  const teks = b.textContent;
+  b.disabled = true; b.textContent = 'Menyiapkan…';
+  const gulir = [...sek.querySelectorAll('.gulir')];
+  try {
+    const { default: html2canvas } = await import(HTML2CANVAS);
+    gulir.forEach(g => g.style.overflow = 'visible');
+    const lebar = Math.max(sek.scrollWidth, ...gulir.map(g => g.scrollWidth));
+    const latar = getComputedStyle(document.body).backgroundColor || '#ffffff';
+    const c = await html2canvas(sek, { scale: 2, backgroundColor: latar, width: lebar, windowWidth: Math.max(lebar, innerWidth),
+      ignoreElements: el => el.classList?.contains('png-baris') });
+    const judul = sek.querySelector('summary h2')?.textContent || sek.dataset.seksi;
+    const periodeTeks = (document.querySelector('#periode [aria-pressed="true"][data-p]')?.textContent
+      || (window.AMI ? 'AMI' : '')).trim();
+    const nama = ['monitoring', judul, periodeTeks].filter(Boolean).join(' ')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/png'));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nama + '.png'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  } catch (err) {
+    alert('Gagal membuat gambar: ' + (err.message || err));
+  } finally {
+    gulir.forEach(g => g.style.overflow = '');
+    b.disabled = false; b.textContent = teks;
+  }
+});
+// Menu ke seksi saat sudah di Monitoring (hanya jangkar berubah, halaman tidak dimuat ulang).
+window.addEventListener('hashchange', () => {
+  const d = [...document.querySelectorAll('details.seksi')].find(x => x.dataset.seksi === decodeURIComponent(location.hash.slice(1)));
+  if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); }
+});
+function pasangSeksi(){
+  SEKSI_BUKA.delete('_awal');
+  document.querySelectorAll('details.seksi').forEach(d => {
+    if (d.open) SEKSI_BUKA.add(d.dataset.seksi);
+    d.addEventListener('toggle', () => {
+      d.open ? SEKSI_BUKA.add(d.dataset.seksi) : SEKSI_BUKA.delete(d.dataset.seksi);
+      simpanAman.set('seksiBuka', JSON.stringify([...SEKSI_BUKA]));
+    });
+  });
+  // Tautan berjangkar (mis. menu Monitoring › Capaian CPL = monitoring.html#cpl): buka seksinya lalu gulir ke sana.
+  const tuju = decodeURIComponent(location.hash.slice(1));
+  const sk = tuju && [...document.querySelectorAll('details.seksi')].find(d => d.dataset.seksi === tuju);
+  if (sk) { sk.open = true; setTimeout(() => sk.scrollIntoView({ block: 'start' }), 0); }
+  const k = document.getElementById('seksi-semua');
+  if (k) k.innerHTML = `<a id="bukaSemua">Buka semua</a><a id="tutupSemua">Tutup semua</a>`;
+  const semua = v => document.querySelectorAll('details.seksi').forEach(d => d.open = v);
+  document.getElementById('bukaSemua')?.addEventListener('click', () => semua(true));
+  document.getElementById('tutupSemua')?.addEventListener('click', () => semua(false));
+}
+
+
+// Angka pita/ringkasan naik perlahan saat pertama tampil (hormati
+// preferensi reduced-motion; teks non-angka dibiarkan apa adanya).
+function angkaNaik(sel){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll(sel).forEach(el => {
+    if (el.dataset.naik) return; el.dataset.naik = '1';
+    const asli = el.textContent.trim();
+    const t = parseFloat(asli.replace(',', '.'));
+    if (!isFinite(t) || /[^0-9.,]/.test(asli)) return;
+    const des = (asli.split(/[.,]/)[1] || '').length;
+    const m0 = performance.now();
+    const tik = n => {
+      const q = Math.min(1, (n - m0) / 600), e = 1 - Math.pow(1 - q, 3);
+      el.textContent = (t * e).toFixed(des).replace('.', asli.includes(',') ? ',' : '.');
+      if (q < 1) requestAnimationFrame(tik); else el.textContent = asli;
+    };
+    requestAnimationFrame(tik);
+  });
+}
+
+let D=null, periode='ts3', urutKol='publikasi', urutTurun=true;
+// MODE periode: 'kal' = tahun kalender (perilaku lama), 'ts' = tahun
+// akademik (1 Sep - 31 Agu). Entri karya membawa tahun_ts dari bangun.py;
+// Seluruh sumber kini membawa tahun_ts (karya dari form web, prestasi
+// dan karya mandiri mahasiswa dari kolom bulan di Excel). Baris yang
+// kolom bulannya dikosongkan jatuh ke tahun kalendernya.
+let MODE = (function(){ try { return sessionStorage.getItem('modeThn') || 'kal'; }
+                        catch { return 'kal'; } })();
+const thn = x => MODE === 'ts' ? +(x.tahun_ts ?? x.tahun) : +x.tahun;
+const labelThn = t => MODE === 'ts' ? `${t - 1}/${t}` : String(t);
+
+// ambang.js sengaja TIDAK dimuat lewat tag <script src> biasa: tanpa
+// penanda versi, peramban menyajikan salinan lamanya dan suntingan yang
+// sudah di-push tidak kelihatan. Dimuat di sini dengan penanda waktu,
+// sama seperti data.json.
+function muatAmbang(){
+  return new Promise(res=>{
+    const el = document.createElement('script');
+    el.src = 'ambang.js?v=' + Date.now();
+    el.onload = res;
+    el.onerror = res;   // biarkan lanjut; penjaga di bagian syarat perlu
+    document.head.appendChild(el);   // yang akan menjelaskan berkasnya hilang
+  });
+}
+
+// Dipanggil skrip modul di akhir halaman setelah gerbang login (menu.js) lolos.
+window.mulaiHalaman = () => muatAmbang()
+  .then(()=>fetch('data.json', {cache: 'no-cache'}))
+  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d=>{ D=d; awal(); pasangSeksi(); angkaNaik('.ringkas b'); })
+  .catch(()=>{
+    document.getElementById('isi').innerHTML =
+      `<p class="kosong">Data belum tersedia. Hubungi admin prodi.</p>`;
+  });
+
+// Periode berjalan menurut tanggal hari ini: tahun kalender, atau TS
+// (1 Sep - 31 Agu, ditulis tahun ujung). Selalu ada di pemilih supaya
+// tahun berjalan terpantau meski datanya belum masuk (pemilik 2026-10-15).
+function periodeBerjalan(){
+  const d = new Date();
+  return MODE === 'ts' ? (d.getMonth() >= 8 ? d.getFullYear() + 1 : d.getFullYear())
+                       : d.getFullYear();
+}
+
+function tahunTersedia(){
+  const kini = periodeBerjalan();
+  return [...new Set([
+    kini,
+    ...D.publikasi.map(thn),
+    ...D.kegiatan.map(thn),
+    ...(D.prestasi_agregat||[]).map(thn),
+  ])].filter(t => Number.isFinite(t) && t <= kini).sort((a,b)=>b-a);
+}
+
+function rentang(){
+  const th = tahunTersedia();
+  if(periode==='semua' || !th.length) return null;      // null = tanpa saring
+  // 3 periode BERURUTAN yang berakhir di periode berjalan (seperti jendela
+  // LKPS TS-2..TS), bukan tiga tahun yang kebetulan ada datanya.
+  // Tautan AMI: jendela 3 periode dikunci pada tahun akhir saat tautan dibuat.
+  const akhir = (window.AMI && +window.AMI.akhir) || th[0];
+  if(periode==='ts3') return [akhir, akhir - 1, akhir - 2];
+  return [+periode];
+}
+
+function awal(){
+  // Prodi dan institusi tampil di baris atas kepala (kepala.css).
+  document.getElementById('hProdi').textContent = '';
+
+  // Tautan AMI (instal-lengkap.sql): periode dikunci, tanpa pemilih.
+  if(window.AMI){
+    const A = window.AMI;
+    MODE = A.mode === 'kal' ? 'kal' : 'ts';
+    periode = A.periode || 'ts3';
+    const M = window.TAUTAN_AMI;
+    document.getElementById('periode').innerHTML = `<div class="ami-pita">Tautan bukti AMI: <b>${esc(A.judul)}</b>
+      · periode ${esc(M ? M.labelPeriode(A) : periode)} · berlaku sampai ${esc(M ? M.tglID(A.sampai) : A.sampai)}</div>`;
+    render(); pasangSeksi();
+    return;
+  }
+
+  const th = tahunTersedia();
+  const opsi = [['ts3', MODE === 'ts' ? '3 TS terakhir' : '3 tahun terakhir'],
+                ...th.map(t=>[String(t), labelThn(t) +
+                  (t === periodeBerjalan() ? ' · berjalan' : '')]),
+                ['semua', MODE === 'ts' ? 'Semua TS' : 'Semua tahun']];
+  document.getElementById('periode').innerHTML =
+    `<button data-m="kal" aria-pressed="${MODE==='kal'}"
+       title="Tahun kalender Januari-Desember">Tahun</button>
+     <button data-m="ts" aria-pressed="${MODE==='ts'}"
+       title="Tahun akademik 1 September - 31 Agustus">TS</button>
+     <span style="width:10px"></span>` +
+    opsi.map(([k,l])=>
+    `<button data-p="${k}" aria-pressed="${k===periode}">${esc(l)}</button>`).join('');
+  document.querySelectorAll('#periode button[data-m]').forEach(b=>{
+    b.onclick = ()=>{
+      MODE = b.dataset.m;
+      try { sessionStorage.setItem('modeThn', MODE); } catch {}
+      if(!isNaN(+periode)) periode = 'ts3';   // tahun terpilih bisa tak ada di mode lain
+      awal();
+    };
+  });
+  document.querySelectorAll('#periode button[data-p]').forEach(b=>{
+    b.onclick = ()=>{
+      periode = b.dataset.p;
+      document.querySelectorAll('#periode button[data-p]')
+        .forEach(x=>x.setAttribute('aria-pressed', x.dataset.p===periode));
+      render(); pasangSeksi();
+    };
+  });
+  render(); pasangSeksi();
+}
+
+// =====================================================================
+//  Hitung ulang seluruh angka mengikuti periode terpilih
+// =====================================================================
+function hitung(){
+  const r = rentang();
+  const cocok = t => !r || r.includes(+t);
+
+  const pub = D.publikasi.filter(p=>cocok(thn(p)));
+  const keg = D.kegiatan.filter(k=>cocok(thn(k)));
+  const pres = (D.prestasi_agregat||[]).filter(p=>cocok(thn(p)));
+  const presDsn = (D.prestasi_pembimbing||[]).filter(p=>cocok(thn(p)));
+
+  const baris = D.dosen.map(d=>{
+    const mine = a => (a||[]).some(x=>x.slug===d.slug);
+    const pubD = pub.filter(p=>mine(p.penulis));
+    const utama = pubD.filter(p=>{
+      const a = p.penulis.find(x=>x.slug===d.slug);
+      return a && (a.peran==='penulis_pertama' || a.korespondensi);
+    }).length;
+    return {
+      nama:d.nama, slug:d.slug,
+      publikasi:pubD.length, utama,
+      penelitian:keg.filter(k=>k.kategori==='penelitian' && mine(k.penulis)).length,
+      pkm:keg.filter(k=>k.kategori==='pkm' && mine(k.penulis)).length,
+      prestasi:presDsn.filter(p=>p.slug===d.slug).reduce((a,b)=>a+b.jumlah,0),
+      mhs: [...pubD, ...keg.filter(k=>mine(k.penulis))]
+             .reduce((a,k)=>a+(k.mahasiswa||0), 0),
+    };
+  });
+  baris.forEach(b=> b.total = b.publikasi + b.penelitian + b.pkm);
+
+  return {pub, keg, pres, baris,
+          totalPres: pres.reduce((a,b)=>a+b.jumlah,0),
+          label: r ? (r.length>1
+                       ? `${labelThn(Math.min(...r))}–${labelThn(Math.max(...r))}`
+                       : labelThn(r[0]))
+                   : 'seluruh periode'};
+}
+
+// =====================================================================
+function render(){
+  const H = hitung();
+  const nD = D.dosen.length || 1;
+  const pen = H.keg.filter(k=>k.kategori==='penelitian').length;
+  const pkm = H.keg.filter(k=>k.kategori==='pkm').length;
+
+  document.getElementById('isi').innerHTML = `
+    <div class="ringkas">
+      <div><b>${H.pub.length}</b><span>Publikasi</span>
+           <em>${(H.pub.length/nD).toFixed(1)} per dosen</em></div>
+      <div><b>${pen}</b><span>Penelitian</span>
+           <em>${(pen/nD).toFixed(1)} per dosen</em></div>
+      <div><b>${pkm}</b><span>Pengabdian</span>
+           <em>${(pkm/nD).toFixed(1)} per dosen</em></div>
+      <div><b>${H.totalPres}</b><span>Prestasi mahasiswa</span>
+           <em>periode ${esc(H.label)}</em></div>
+      <div><b>${nD}</b><span>Dosen</span>
+           <em>dasar perhitungan rata-rata</em></div>
+    </div>
+
+
+    <div class="kontrol-seksi" id="seksi-semua"></div>
+${seksiLipat('cakupan', 'Cakupan', '', `
+    <p class="ket">Berapa banyak dosen yang punya minimal satu kegiatan pada periode ini.
+    Pertanyaan ini bisa dijawab dengan andal meski jumlah datanya masih sedikit —
+    berbeda dengan tren, yang butuh akumulasi beberapa tahun.</p>
+    <div class="kartu"><div class="cakup">${
+      [['publikasi','Publikasi'],['penelitian','Penelitian'],
+       ['pkm','Pengabdian'],['utama','Penulis utama']].map(([k,l])=>{
+        const n = H.baris.filter(b=>b[k]>0).length;
+        return `<div>
+          <div class="j">${l}</div>
+          <div class="a">${pct(n,nD)}<span style="font-size:15px">%</span></div>
+          <div class="tr"><i style="width:${pct(n,nD)}%"></i></div>
+          <div class="s">${n} dari ${nD} dosen</div>
+        </div>`;
+      }).join('')}</div></div>
+`, true)}${seksiLipat('iku', 'Capaian IKU/IKT', 'target dari Data prodi', `
+    <p class="ket">Indikator kinerja utama dan tambahan prodi, di luar akreditasi. Target diisi
+    admin di Data prodi › Target IKU/IKT; pemilih TS di bawah terpisah dari pemilih periode di atas.</p>
+    <div class="kartu" id="iku-isi"></div>
+`, true)}${seksiLipat('temuan', 'Temuan AMI dan tindak lanjut', 'siklus PPEPP', `
+    <p class="ket">Temuan audit mutu internal beserta rencana, penanggung jawab, tenggat, status, dan bukti tindak lanjutnya.
+    Diisi admin di Data prodi › SPMI › Temuan AMI. Urutan: yang lewat tenggat dulu, lalu tenggat terdekat.</p>
+    <div class="kartu" id="temuan-isi"><p class="kosong">Memuat…</p></div>
+`, true)}${seksiLipat('cpl', 'Capaian CPL', 'OBE · per kelas, semester, kumulatif', `
+    <p class="ket">Ketercapaian capaian pembelajaran lulusan dari berkas nilai per kelas (Template_Input_Data_CPL), dihitung run_cpl.py
+    di komputer admin. Bukti butir 13 unsur 9, butir 14 unsur 5 (tinjauan rutin pencapaian CPL), butir 15 unsur 5, dan butir 16 unsur 1.</p>
+    <div class="kartu" id="cpl-isi"><p class="kosong">Memuat…</p></div><div id="cpl-admin"></div>
+`, true)}${seksiLipat('rapat', 'Tindak lanjut rapat', 'keputusan rapat · PJ · tenggat', `
+    <p class="ket">Keputusan rapat yang dicatat di Rapat dan notulen, dengan penanggung jawab dan tenggat (siklus PPEPP).
+    Urutan: yang lewat tenggat dulu, lalu tenggat terdekat. PJ memperbarui statusnya sendiri.</p>
+    <div class="kartu" id="rapat-isi"><p class="kosong">Memuat…</p></div>
+`, true)}${seksiLipat('hibah', 'Pengajuan hibah', 'penelitian dan PkM · tingkat keberhasilan', `
+    <p class="ket">Proposal hibah yang dicatat dosen di Operasional › Pengajuan hibah, per tahun usulan dan per skema. Hanya angka;
+    judul dan tim terlihat oleh tim pengusul, admin, dan pimpinan. Tingkat keberhasilan = didanai dibagi yang sudah diputuskan.</p>
+    <div class="kartu" id="hibah-isi"><p class="kosong">Memuat…</p></div>
+`, true)}${seksiLipat('matriks', 'Matriks kinerja dosen', '', `
+    <p class="ket">Klik judul kolom untuk mengurutkan. Klik nama dosen untuk melihat rinciannya.</p>
+    <div class="kartu"><div class="gulir">${tabelMatriks(H)}</div>
+      <p class="kaki">Baris berlatar merah muda menandai dosen tanpa satu pun kegiatan
+      pada periode ini — <b>bukan penilaian kinerja</b>, melainkan penanda bahwa datanya
+      mungkin belum diinput.</p></div>
+`, true)}${seksiLipat('syarat', 'Syarat perlu peringkat', '', `
+    <p class="ket">Pemeriksaan capaian terhadap ambang LAM Teknik jenjang Sarjana
+    di <code>ambang.js</code>. Bagian ini <b>tidak mengikuti pemilih periode</b> di
+    atas: tiap butir memakai jendela tahun yang ditetapkan instrumen. Ini alat bantu
+    internal, bukan penilaian resmi.</p>
+    ${bagianSyaratPerlu()}
+`, false)}${seksiLipat('lkps', 'Indikator LKPS', '', `
+    <p class="ket">Indikator dosen tetap (DTPS) dan lulusan mengikuti butir
+    LKPS. Profil DTPS dan tracer lulusan tidak terpengaruh pemilih periode;
+    luaran, rekognisi, dan integrasi mengikutinya.</p>
+    ${bagianLKPS(H)}
+`, false)}${seksiLipat('mahasiswa', 'Mahasiswa', '', `
+    <p class="ket">Angka keterlibatan mahasiswa dalam karya dosen dan prestasi
+    lomba. Halaman ini hanya menampilkan jumlah — nama dan NIM tidak
+    dipublikasikan.</p>
+    ${bagianMahasiswa(H)}
+
+    `, false)}${seksiLipat('rincian', 'Rincian', '', `
+    <p class="ket">Sebaran menurut kategori, mengikuti periode yang dipilih di atas.</p>
+    <div class="rinci">
+      ${kartuRinci('Publikasi menurut indeksasi',
+          kelompokkan(H.pub, p=>rapi(p.indeksasi) || rapi(p.tingkat)))}
+      ${kartuRinci('Publikasi menurut tingkat',
+          kelompokkan(H.pub, p=>rapi(p.tingkat)))}
+      ${kartuRinci('Penelitian menurut skema',
+          kelompokkan(H.keg.filter(k=>k.kategori==='penelitian'), k=>k.skema||'tidak tercatat'))}
+      ${kartuRinci('Pengabdian menurut skema',
+          kelompokkan(H.keg.filter(k=>k.kategori==='pkm'), k=>k.skema||'tidak tercatat'))}
+      ${kartuRinci('Kegiatan menurut sumber dana',
+          kelompokkan(H.keg, k=>k.kelompok||'tidak tercatat'))}
+      ${kartuRinci('Keterlibatan mahasiswa menurut kategori',
+          [...H.pub, ...H.keg].reduce((m,x)=>{
+            if(!x.mahasiswa) return m;
+            const k = x.kategori==='pkm' ? 'pengabdian' : x.kategori || 'publikasi';
+            m[k] = (m[k]||0) + x.mahasiswa; return m; }, {}))}
+      ${kartuRinci('Prestasi akademik mhs menurut tingkat (6.c.1)',
+          H.pres.filter(r=>(r.bidang||'').toLowerCase().startsWith('akademik'))
+            .reduce((m,r)=>{ const k=rapi(r.tingkat);
+              m[k]=(m[k]||0)+r.jumlah; return m; }, {}))}
+      ${kartuRinci('Prestasi non-akademik mhs menurut tingkat (6.c.2)',
+          H.pres.filter(r=>!(r.bidang||'').toLowerCase().startsWith('akademik'))
+            .reduce((m,r)=>{ const k=rapi(r.tingkat);
+              m[k]=(m[k]||0)+r.jumlah; return m; }, {}))}
+    </div>`, false)}
+
+    <footer>
+      Diperbarui ${esc(D.diperbarui)}. Seluruh angka hanya menghitung entri yang telah
+      diverifikasi program studi. Nominal pendanaan dan identitas mahasiswa tidak
+      ditampilkan di halaman ini.
+    </footer>`;
+
+  document.querySelectorAll('table.mx th[data-k]').forEach(th=>{
+    th.onclick = ()=>{
+      const k = th.dataset.k;
+      if(urutKol===k) urutTurun = !urutTurun; else { urutKol=k; urutTurun=true; }
+      render(); pasangSeksi();
+    };
+  });
+  gambarIKU();
+  gambarTemuan();
+  gambarCPL();
+  gambarHibah();
+  gambarRapat();
+  window.segarkanAMI?.();
+}
+
+// Temuan AMI (instal-lengkap.sql): baris dan bukti dimuat skrip modul
+// (window.setelTemuan); tabel dari temuan-ami.js.
+const TEMUAN = { baris: null, bukti: [], galat: '' };
+function gambarTemuan(){
+  const box = document.getElementById('temuan-isi'), M = window.TEMUAN_AMI;
+  if (!box) return;
+  box.innerHTML = TEMUAN.galat ? `<p class="kosong">Temuan AMI gagal dimuat: ${esc(TEMUAN.galat)}</p>`
+    : !M || TEMUAN.baris === null ? '<p class="kosong">Memuat…</p>'
+    : M.htmlTemuan(TEMUAN.baris, M.buktiPerBaris(TEMUAN.bukti), { kelasTabel: 'sp' });
+}
+// Capaian CPL (instal-lengkap.sql): ringkasan terakhir dari tabel atau tautan AMI.
+// Korelasi CPL antar kurikulum (instal-lengkap.sql) untuk tren lintas kurikulum.
+const CPL = { r: undefined, galat: '', korelasi: [], cplRef: [] };
+function gambarCPL(){
+  const box = document.getElementById('cpl-isi'), M = window.CAPAIAN_CPL;
+  if (!box) return;
+  const r = CPL.r;
+  box.innerHTML = CPL.galat ? `<p class="kosong">Capaian CPL gagal dimuat: ${esc(CPL.galat)}</p>`
+    : !M || r === undefined ? '<p class="kosong">Memuat…</p>'
+    : !r ? '<p class="kosong">Belum ada ringkasan CPL. Admin mengunggah ringkasan_cpl.json dari run_cpl.py.</p>'
+    : M.htmlCPL(r.data, { korelasi: CPL.korelasi, cplRef: CPL.cplRef,
+        meta: `Ringkasan dibuat ${esc(String(r.dibuat || '').slice(0, 10))}${r.catatan ? ` (${esc(r.catatan)})` : ''}. ` });
+  window.adminCPL?.(document.getElementById('cpl-admin'));
+}
+window.setelCPL = (r, galat, korelasi, cplRef) => { CPL.r = r; CPL.galat = galat || ''; if (korelasi) CPL.korelasi = korelasi;
+  if (cplRef) CPL.cplRef = cplRef; gambarCPL(); };
+// Pengajuan hibah (instal-lengkap.sql): angka dari hibah_rekap(); null = lewat tautan AMI.
+const HIBAH = { rows: undefined, galat: '' };
+function gambarHibah(){
+  const box = document.getElementById('hibah-isi'), M = window.HIBAH;
+  if (!box) return;
+  box.innerHTML = HIBAH.galat ? `<p class="kosong">Rekap hibah gagal dimuat: ${esc(HIBAH.galat)}</p>`
+    : HIBAH.rows === null ? '<p class="kosong">Rekap hibah tidak ditampilkan lewat tautan AMI.</p>'
+    : !M || HIBAH.rows === undefined ? '<p class="kosong">Memuat…</p>'
+    : M.htmlRekap(HIBAH.rows);
+}
+window.setelHibah = (rows, galat) => { HIBAH.rows = rows; HIBAH.galat = galat || ''; gambarHibah(); };
+// Tindak lanjut rapat (instal-lengkap.sql): rapat_tindak + rapat; null = lewat tautan AMI.
+const RAPAT = { rows: undefined, galat: '' };
+function gambarRapat(){
+  const box = document.getElementById('rapat-isi'), M = window.RAPAT_M;
+  if (!box) return;
+  if (RAPAT.galat) { box.innerHTML = `<p class="kosong">Tindak lanjut rapat gagal dimuat: ${esc(RAPAT.galat)}</p>`; return; }
+  if (RAPAT.rows === null) { box.innerHTML = '<p class="kosong">Tindak lanjut rapat tidak ditampilkan lewat tautan AMI.</p>'; return; }
+  if (!M || RAPAT.rows === undefined) { box.innerHTML = '<p class="kosong">Memuat…</p>'; return; }
+  if (!RAPAT.rows.length) { box.innerHTML = '<p class="kosong">Belum ada keputusan rapat yang dicatat.</p>'; return; }
+  const r = M.ringkasTindak(RAPAT.rows);
+  box.innerHTML = `<p class="ket"><b>${r.terbuka}</b> terbuka · <b>${r.proses}</b> dalam proses · <b>${r.selesai}</b> selesai
+      · <b style="color:var(--merah)">${r.lewat}</b> lewat tenggat · ${r.batal} batal.</p>
+    ${r.buka.length ? `<div class="gulir"><table class="sp"><thead><tr><th>Keputusan</th><th>Rapat</th><th>PJ</th><th>Tenggat</th><th>Status</th></tr></thead><tbody>
+      ${r.buka.slice(0, 40).map(t => `<tr><td>${esc(t.keputusan)}</td><td>${esc(t.rapat?.judul || '')}<br><span class="ctt">${esc(M.tglID(String(t.rapat?.tanggal || '').slice(0, 10)))}</span></td>
+        <td>${esc(t.pj_nama || '—')}</td><td>${t.tenggat ? esc(M.tglID(String(t.tenggat).slice(0, 10))) : '—'}${t.hari != null && t.hari < 0
+          ? `<br><span style="color:var(--merah);font-weight:600">lewat ${-t.hari} hari</span>` : ''}</td>
+        <td>${esc(M.STATUS_TINDAK[t.status] || t.status)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="ket">Semua tindak lanjut sudah selesai atau dibatalkan.</p>'}
+    <p class="ket"><a href="rapat.html">Rapat dan notulen ›</a></p>`;
+}
+window.setelRapat = (rows, galat) => { RAPAT.rows = rows; RAPAT.galat = galat || ''; gambarRapat(); };
+window.setelTemuan = (baris, bukti, galat) => {
+  TEMUAN.baris = baris; TEMUAN.bukti = bukti || []; TEMUAN.galat = galat || ''; gambarTemuan();
+};
+
+// Periode yang sedang tampil, untuk tautan AMI baru (ami-tautan.js).
+window.keadaanMonitoring = () => {
+  const tsIku = IKU.baris && window.CAPAIAN_IKU ? window.CAPAIAN_IKU.tsTersedia(IKU.baris) : [];
+  return { mode: MODE, periode, akhir: periode === 'ts3' ? (D ? tahunTersedia()[0] : null) : null,
+           ts_iku: tsIku.includes(+IKU.ts) ? +IKU.ts : window.CAPAIAN_IKU?.tsAwal(tsIku) ?? null };
+};
+
+// ---------------------------------------------------------------------
+//  Capaian IKU/IKT (pemilik 2026-11-11). Baris lkps_target_kinerja dimuat
+//  skrip modul di akhir halaman (window.setelIKU); aturan dan tabel dari
+//  capaian-iku.js, sama dengan Data prodi. Dosen bukan admin perlu
+//  instal-lengkap.sql untuk membaca tabelnya.
+// ---------------------------------------------------------------------
+const IKU = { baris: null, galat: '', ts: null, tambahan: null };
+function isiIKU(){
+  const M = window.CAPAIAN_IKU;
+  if (IKU.galat) return `<p class="kosong">IKU/IKT gagal dimuat: ${esc(IKU.galat)}</p>`;
+  if (!M || IKU.baris === null) return '<p class="kosong">Memuat…</p>';
+  const tsAda = M.tsTersedia(IKU.baris);
+  if (!tsAda.length) return `<p class="kosong">Belum ada target IKU/IKT yang bisa ditampilkan.
+    Admin mengisinya di Data prodi › Target IKU/IKT.</p>`;
+  const kunci = window.AMI ? +window.AMI.ts_iku : 0;   // tautan AMI: TS dikunci
+  const pilih = kunci || (tsAda.includes(+IKU.ts) ? +IKU.ts : M.tsAwal(tsAda));
+  return `<p class="ket">TS ${kunci ? `<b>${pilih - 1}/${pilih}</b>` : `<select id="iku_ts">${tsAda.map(t =>
+      `<option value="${t}"${t === pilih ? ' selected' : ''}>${t - 1}/${t}</option>`).join('')}</select>`}</p>
+    ${M.htmlCapaianIKU(IKU.baris, M.denganTambahan(D, IKU.tambahan), pilih, { kelasTabel: 'sp' })}
+    <p class="kaki">${M.KET_CAPAIAN}</p>`;
+}
+function gambarIKU(){
+  const box = document.getElementById('iku-isi');
+  if (!box) return;
+  box.innerHTML = isiIKU();
+  const s = document.getElementById('iku_ts');
+  if (s) s.onchange = e => { IKU.ts = +e.target.value; gambarIKU(); window.segarkanAMI?.(); };
+}
+window.setelIKU = (baris, galat) => { IKU.baris = baris; IKU.galat = galat || ''; gambarIKU(); };
+// Kurikulum dan rekap EDOM untuk capaian otomatis (2026-11-13; hanya pengguna login, bukan tautan AMI).
+window.setelIKUTambahan = t => { IKU.tambahan = t; if (IKU.baris) gambarIKU(); };
+
+// =====================================================================
+//  Syarat perlu peringkat — capaian dihitung dari data.json, ambang
+//  dibaca dari ambang.js. Butir dipetakan lewat id, sehingga menambah
+//  butir baru di ambang.js cukup bila id-nya sudah dikenal di sini.
+//
+//  Beberapa butir punya JENDELA TAHUN sendiri (mis. tiga tahun
+//  terakhir), yang berbeda dari pemilih periode di atas halaman.
+//  Jendela dari instrumen selalu menang; pemilih periode tidak
+//  memengaruhi bagian ini.
+// =====================================================================
+// "Tiga tahun terakhir" berarti RENTANG BERURUTAN TS-2..TS, bukan tiga
+// tahun yang kebetulan ada datanya. Tahun acuan (TS) diambil dari tahun
+// termuda yang ada di data, bukan tahun berjalan, supaya angka tidak
+// berubah sendiri saat pergantian tahun sebelum data diperbarui.
+function jendelaTahun(daftar, n){
+  const th = daftar.map(Number).filter(x=>x > 0);
+  if(!th.length) return {set:new Set(), label:''};
+  const ts = Math.max(...th);
+  const set = new Set();
+  for(let t = ts - n + 1; t <= ts; t++) set.add(t);
+  return {set, label: `${ts - n + 1}\u2013${ts}`};
+}
+
+function capaianSyarat(b){
+  const T = D.dtps || {};
+  const n = T.jumlah || 0;
+  const jab = T.jabatan || {};
+  const jd = b.jendela || {};
+
+  switch(b.id){
+    case 'dtps_doktor':
+      return n ? {nilai: pct(T.doktor||0, n), rinci: `${T.doktor||0} dari ${n} DTPS`} : null;
+
+    case 'dtps_lektor_keatas': {
+      const k = (jab.lektor||0) + (jab.lektor_kepala||0) + (jab.guru_besar||0);
+      return n ? {nilai: pct(k, n), rinci: `${k} dari ${n} DTPS`} : null; }
+
+    case 'karya_utama_internasional': {
+      if(!n) return null;
+      const rinciKarya = T.karya_utama_rinci;
+      if(!Array.isArray(rinciKarya))
+        return {nilai: pct(T.karya_utama_internasional||0, n), rusak: true,
+                rinci: `${T.karya_utama_internasional||0} dari ${n} DTPS, SELURUH tahun`};
+      const J = jendelaTahun(rinciKarya.map(x=>x.tahun), jd.tahun_terakhir||3);
+      if(!J.set.size) return null;
+      const org = new Set(rinciKarya.filter(x=>J.set.has(x.tahun)).map(x=>x.slug));
+      return {nilai: pct(org.size, n),
+              rinci: `${org.size} dari ${n} DTPS · tahun ${J.label}`}; }
+
+    case 'waktu_tunggu':
+    case 'sesuai_bidang': {
+      const tr = D.tracer || [];
+      if(!tr.length) return null;
+      const J = jendelaTahun(tr.map(t=>t.tahun_lulus), jd.tahun_terakhir||2);
+      const pilih = tr.filter(t=>J.set.has(t.tahun_lulus));
+      const terlacak = pilih.reduce((a,t)=>a+(t.terlacak||0), 0);
+      if(!terlacak) return null;
+      const lbl = J.label;
+      if(b.id === 'waktu_tunggu'){
+        const w = pilih.reduce((a,t)=>a+(t.waktu_tunggu_bulan||0)*(t.terlacak||0), 0)/terlacak;
+        return {nilai: Math.round(w*10)/10,
+                rinci: `${terlacak} lulusan terlacak · tahun lulus ${lbl}`}; }
+      const ss = pilih.reduce((a,t)=>a+(t.sesuai_bidang||0), 0);
+      return {nilai: pct(ss, terlacak),
+              rinci: `${ss} dari ${terlacak} terlacak · tahun lulus ${lbl}`}; }
+
+    default: return undefined;   // id tidak dikenal
+  }
+}
+
+function bagianSyaratPerlu(){
+  const A = window.AMBANG;
+  if(!A || !Array.isArray(A.butir))
+    return `<div class="kartu"><p class="kosong">Berkas <code>ambang.js</code> tidak
+      ditemukan. Salin dari paket lalu unggah ke folder yang sama dengan
+      halaman ini.</p></div>`;
+
+  // Format lama: `ambang` berupa angka tunggal, bukan {u3, u5}. Kalau
+  // dibiarkan lewat, seluruh kolom terisi "tanpa ambang" dan halaman
+  // tampak rusak tanpa sebab yang jelas.
+  if((A.format || 1) < 2)
+    return `<div class="peringatan">
+      <b>Berkas <code>ambang.js</code> masih versi lama.</b> Halaman ini sudah
+      memakai ambang LAM Teknik dengan dua sasaran (Unggul 3 tahun dan 5 tahun),
+      sedangkan <code>ambang.js</code> yang terpasang masih format lama berisi
+      ambang tunggal hasil tebakan. <b>Timpa <code>ambang.js</code> dengan versi
+      dari paket terbaru</b>, lalu muat ulang halaman dengan
+      <code>Ctrl</code>+<code>Shift</code>+<code>R</code> agar peramban tidak
+      memakai salinan lamanya. Berbeda dengan <code>config.js</code>, berkas ini
+      memang perlu ditimpa saat strukturnya berubah.</div>`;
+
+  const S = A.sasaran || [{id:'u3',label:'Unggul'}];
+  const ins = A.instrumen || {};
+  const fmt = (v, sat) => sat === '%'    ? `${v}%`
+                        : sat === 'skor' ? Number(v).toFixed(2)
+                        : `${v} ${sat}`;
+
+  let adaRusak = false;
+  const hit = Object.fromEntries(S.map(x=>[x.id, {ok:0, gagal:0, tak:0}]));
+
+  const baris = [...A.butir].sort((a,b)=>(a.no||99)-(b.no||99)).map(b=>{
+    let cap, rinci;
+    if(b.manual){
+      cap = (b.capaian === undefined) ? null : b.capaian;
+      // Syarat rerata (1, 2, 9) dihitung dari skor butir manual yang ada di
+      // balik login; halaman publik ini tidak membacanya.
+      rinci = (cap == null && b.satuan === 'skor')
+        ? 'rerata skor dihitung di halaman skor (khusus dosen terdaftar)'
+        : 'diisi manual di ambang.js';
+    } else {
+      const r = capaianSyarat(b);
+      if(r === undefined){ cap = null; rinci = 'id butir tidak dikenal monitoring.html'; }
+      else if(r === null){ cap = null; rinci = 'data belum tersedia di data.json'; }
+      else {
+        cap = r.nilai; rinci = r.rinci;
+        if(r.rusak){ adaRusak = true;
+          rinci += ' — perlu bangun ulang data agar terbatas jendela instrumen'; }
+      }
+    }
+
+    const sel = S.map(sa=>{
+      const amb = (b.ambang||{})[sa.id];
+      const kls = sa.utama ? ' class="utama"' : '';
+      // Ambang tidak ditulis = syarat tidak berlaku untuk sasaran ini (tanda x
+      // di Tabel 4.3.1), bukan data yang hilang; tidak ikut dihitung.
+      if(amb === undefined) return `<td${kls}><span class="st tak">tidak disyaratkan</span></td>`;
+      if(cap === null || cap === undefined){
+        hit[sa.id].tak++;
+        return `<td${kls}><div class="an-amb">${b.arah==='max'?'≤':'≥'} ${fmt(amb, b.satuan)}</div>
+                <span class="st tak">tak terhitung</span></td>`; }
+      const lolos = b.arah === 'max' ? cap <= amb : cap >= amb;
+      lolos ? hit[sa.id].ok++ : hit[sa.id].gagal++;
+      return `<td${kls}><div class="an-amb">${b.arah==='max'?'≤':'≥'} ${fmt(amb, b.satuan)}</div>
+              <span class="st ${lolos?'ok':'gagal'}">${lolos?'memenuhi':'belum'}</span></td>`;
+    }).join('');
+
+    return `<tr>
+      <td><div><span class="btr">${b.no ? b.no+'.' : ''}</span> ${esc(b.label)}${
+          b.manual ? ' <span class="st manual">manual</span>' : ''}</div>
+        ${b.catatan ? `<div class="ctt">${esc(b.catatan)}</div>` : ''}
+        ${b.sumber  ? `<div class="ctt">Sumber: ${esc(b.sumber)}</div>` : ''}</td>
+      <td class="an">${cap == null ? '—' : fmt(cap, b.satuan)}
+        <div class="ctt">${esc(rinci)}</div></td>
+      ${sel}</tr>`;
+  }).join('');
+
+  const ringkas = S.map(sa=>{
+    const h = hit[sa.id];
+    const st = h.gagal ? 'gagal' : (h.tak ? 'tak' : 'ok');
+    const lbl = h.gagal ? 'ada butir belum terpenuhi'
+              : h.tak   ? 'belum dapat disimpulkan' : 'seluruh butir terpenuhi';
+    return `<div class="sas${sa.utama?' utama':''}">
+      <div class="j">${esc(sa.label)}${sa.utama?' <span class="tag">sasaran prodi</span>':''}</div>
+      <span class="st ${st}">${lbl}</span>
+      <div class="s">memenuhi ${h.ok} · belum ${h.gagal} · tak terhitung ${h.tak}</div>
+    </div>`;
+  }).join('');
+
+  const peringatan = [];
+  if(ins.butir_lengkap === false)
+    peringatan.push(`<b>Daftar butir belum lengkap.</b> Butir 9, 10, dan 11 pada
+      instrumen belum dimasukkan ke <code>ambang.js</code>. Kesimpulan
+      &ldquo;seluruh butir terpenuhi&rdquo; di bawah karena itu belum sahih.`);
+  if(adaRusak)
+    peringatan.push(`<b>Angka karya utama internasional dihitung tanpa batas tahun.</b>
+      Data dibangun dengan versi lama; minta admin membangun ulang data.`);
+
+  return `
+    ${peringatan.map(x=>`<div class="peringatan">${x}</div>`).join('')}
+    <div class="kartu">
+      <div class="sasaran">${ringkas}</div>
+      <div class="gulir"><table class="sp"><thead><tr>
+        <th style="width:46%">Butir</th><th>Capaian</th>
+        ${S.map(sa=>`<th${sa.utama?' class="utama"':''}>${esc(sa.label)}${
+            sa.tanda?` <span class="btr">${esc(sa.tanda)}</span>`:''}</th>`).join('')}
+      </tr></thead><tbody>${baris}</tbody></table></div>
+      <p class="kaki">Seluruh butir harus terpenuhi; satu butir yang belum
+      memenuhi menggugurkan sasaran peringkat tersebut. Butir yang tidak berlaku
+      untuk jenjang Sarjana tidak ditampilkan — lihat catatan di
+      <code>ambang.js</code>. Butir bertanda <b>manual</b> tidak dihitung dari
+      data dan harus diisi sendiri.</p>
+    </div>`;
+}
+
+function bagianLKPS(H){
+  const T = D.dtps || {jumlah:0, doktor:0, jabatan:{}, karya_utama_internasional:0};
+  const n = T.jumlah || 1;
+  const r = rentang();
+  const cocok = t => !r || r.includes(+t);
+  const punyaJab = Object.entries(T.jabatan||{})
+    .filter(([k])=>k!=='tanpa_jabatan').reduce((a,[,v])=>a+v,0);
+
+  const luar = (D.luaran_dosen||[]).filter(x=>cocok(thn(x)));
+  const rek  = (D.rekognisi||[]).filter(x=>cocok(thn(x)));
+  const intg = (D.integrasi||[]).filter(x=>cocok(thn(x)));
+  const mk   = D.mahasiswa_karya||{publikasi:[],luaran:[]};
+  const mkp  = mk.publikasi.filter(x=>cocok(thn(x)));
+  const mkl  = mk.luaran.filter(x=>cocok(thn(x)));
+
+  const tracer = (D.tracer||[]);
+  const barisTracer = tracer.length ? `
+    <div class="kartu" style="margin-top:16px"><div class="gulir">
+      <h3 style="font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+        text-transform:uppercase;color:var(--muted);font-weight:400;
+        margin:0 0 12px">Tracer lulusan — waktu tunggu &amp; kesesuaian bidang</h3>
+      <table class="mx"><thead><tr>
+        <th style="text-align:left">Tahun lulus</th><th>Lulusan</th>
+        <th>Terlacak</th><th>Waktu tunggu (bulan)</th>
+        <th>Sesuai bidang</th></tr></thead>
+      <tbody>${tracer.map(t=>`<tr>
+        <td class="nm" style="padding:9px 10px">${t.tahun_lulus}</td>
+        <td><div class="sel"><div class="an" style="width:auto">${t.lulusan}</div></div></td>
+        <td><div class="sel"><div class="an" style="width:auto">${t.terlacak}</div></div></td>
+        <td><div class="sel"><div class="an" style="width:auto">${t.waktu_tunggu_bulan}</div></div></td>
+        <td><div class="sel"><div class="an" style="width:auto">${
+          t.terlacak?pct(t.sesuai_bidang,t.terlacak)+'%':'—'}</div></div></td>
+      </tr>`).join('')}</tbody></table></div></div>` : '';
+
+  const kel = (arr,f)=>arr.reduce((m,x)=>{const k=f(x)||'tidak tercatat';
+    m[k]=(m[k]||0)+1;return m;},{});
+
+  return `
+    <div class="ringkas">
+      <div><b>${T.jumlah}</b><span>DTPS</span></div>
+      <div><b>${pct(T.doktor,n)}<span style="font-size:15px">%</span></b>
+        <span>Doktor</span><em>${T.doktor} dari ${T.jumlah}</em></div>
+      <div><b>${pct(punyaJab,n)}<span style="font-size:15px">%</span></b>
+        <span>Punya jabatan akademik</span><em>${punyaJab} dari ${T.jumlah}</em></div>
+      <div><b>${pct(T.karya_utama_internasional,n)}<span style="font-size:15px">%</span></b>
+        <span>Karya utama internasional</span>
+        <em>penulis pertama/korespondensi bereputasi, atau paten</em></div>
+    </div>
+    ${barisTracer}
+    <div class="rinci">
+      ${kartuRinci('Jabatan akademik DTPS',
+        Object.fromEntries(Object.entries(T.jabatan||{})
+          .map(([k,v])=>[rapi(k),v])))}
+      ${kartuRinci('Luaran DTPS (LKPS 4.f)', kel(luar,x=>x.nama_bagian))}
+      ${kartuRinci('Rekognisi DTPS (LKPS 4.j)', kel(rek,x=>rapi(x.bentuk)))}
+      ${kartuRinci('Integrasi penelitian/PkM dalam pembelajaran',
+        kel(intg,x=>rapi(x.bentuk)))}
+      ${kartuRinci('Publikasi mandiri mahasiswa (6.e.1)',
+        kel(mkp,x=>String(x.tahun)))}
+      ${kartuRinci('Luaran mahasiswa (6.e.3)', kel(mkl,x=>x.nama_bagian))}
+    </div>`;
+}
+
+function bagianMahasiswa(H){
+  const r = rentang();
+  const cocok = t => !r || r.includes(+t);
+  const agg = (D.mahasiswa_agregat||[]).filter(x=>cocok(thn(x)));
+
+  const sum = (f,kat) => agg.filter(x=>!kat || x.kategori===kat)
+                            .reduce((a,b)=>a+b[f],0);
+  // Mahasiswa unik hanya bisa dijumlahkan per tahun+kategori, jadi angka
+  // gabungan di bawah adalah batas ATAS — satu mahasiswa yang terlibat di
+  // dua kategori terhitung dua kali. Disebutkan agar tidak salah baca.
+  const unik = sum('mahasiswa_unik');
+  const total = sum('keterlibatan');
+
+  // Cakupan: berapa persen karya yang melibatkan mahasiswa
+  const cak = [
+    ['Publikasi',  H.pub],
+    ['Penelitian', H.keg.filter(k=>k.kategori==='penelitian')],
+    ['Pengabdian', H.keg.filter(k=>k.kategori==='pkm')],
+  ].map(([l,arr])=>{
+    const n = arr.filter(x=>(x.mahasiswa||0)>0).length;
+    return {l, n, t:arr.length, p:pct(n,arr.length)};
+  });
+
+  // Prestasi dipisah akademik / non-akademik karena butir 43 menilai
+  // keduanya terpisah lalu menimbangnya ((I x 3) + II) / 4 — melihatnya
+  // tergabung menyembunyikan sisi mana yang lemah.
+  const pres = (D.prestasi_agregat||[]).filter(x=>cocok(thn(x)));
+  const isAka = p => String(p.bidang||'').startsWith('akademik');
+  const jml = arr => arr.reduce((a,b)=>a+b.jumlah,0);
+  const pAka = jml(pres.filter(isAka));
+  const pNon = jml(pres.filter(p=>!isAka(p)));
+  const tk = p => { const t=String(p.tingkat||'').toLowerCase();
+    return t.includes('internasional') ? 'internasional'
+         : t.includes('nasional') ? 'nasional' : 'wilayah'; };
+  const pAkaInt = jml(pres.filter(p=>isAka(p) && tk(p)==='internasional'));
+  const pNonInt = jml(pres.filter(p=>!isAka(p) && tk(p)==='internasional'));
+  const silang = ['internasional','nasional','wilayah'].map(t=>({
+    t, aka: jml(pres.filter(p=>isAka(p) && tk(p)===t)),
+       non: jml(pres.filter(p=>!isAka(p) && tk(p)===t)) }));
+
+  return `
+    <div class="ringkas">
+      <div><b>${total}</b><span>Keterlibatan</span>
+           <em>dalam karya dosen</em></div>
+      <div><b>${unik}</b><span>Mahasiswa terlibat</span>
+           <em>batas atas, lihat catatan</em></div>
+      <div><b>${sum('keterlibatan','penelitian')}</b><span>Di penelitian</span></div>
+      <div><b>${sum('keterlibatan','publikasi')}</b><span>Di publikasi</span></div>
+      <div><b>${pAka}</b><span>Prestasi akademik</span>
+           <em>${pAkaInt} internasional</em></div>
+      <div><b>${pNon}</b><span>Prestasi non-akademik</span>
+           <em>${pNonInt} internasional</em></div>
+    </div>
+
+    <div class="kartu" style="margin-top:16px">
+      <h3 style="font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+                 text-transform:uppercase;color:var(--muted);font-weight:400;
+                 margin:0 0 16px">Karya yang melibatkan mahasiswa</h3>
+      <div class="cakup">${cak.map(c=>`
+        <div>
+          <div class="j">${c.l}</div>
+          <div class="a">${c.p}<span style="font-size:15px">%</span></div>
+          <div class="tr"><i style="width:${c.p}%"></i></div>
+          <div class="s">${c.n} dari ${c.t} karya</div>
+        </div>`).join('')}</div>
+      <p class="kaki" style="margin-top:16px">Angka <b>mahasiswa terlibat</b> dijumlahkan
+      per tahun dan kategori, sehingga seorang mahasiswa yang terlibat di dua
+      kategori terhitung dua kali. Untuk hitungan unik yang tepat, lihat
+      laporan internal.</p>
+    </div>
+
+    <div class="kartu" style="margin-top:16px">
+      <h3 style="font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+                 text-transform:uppercase;color:var(--muted);font-weight:400;
+                 margin:0 0 12px">Prestasi menurut bidang dan tingkat</h3>
+      ${pAka + pNon === 0
+        ? `<p class="kosong">Belum ada prestasi tercatat pada periode ini.
+           Diisi admin di <a href="data-prodi.html?tab=prestasi">Data prodi › Prestasi mahasiswa</a>.</p>`
+        : `<div class="gulir"><table class="rin"><thead><tr>
+        <th style="text-align:left">Tingkat</th><th>Akademik</th>
+        <th>Non-akademik</th><th>Jumlah</th></tr></thead><tbody>
+        ${silang.map(r=>`<tr><td>${rapi(r.t)}</td><td>${r.aka}</td>
+          <td>${r.non}</td><td>${r.aka + r.non}</td></tr>`).join('')}
+        <tr><td><b>Jumlah</b></td><td><b>${pAka}</b></td>
+            <td><b>${pNon}</b></td><td><b>${pAka + pNon}</b></td></tr>
+      </tbody></table></div>
+      <p class="kaki" style="margin-top:14px">Butir 43 menimbang prestasi
+      akademik tiga kali lebih berat daripada non-akademik
+      (Skor = ((I&times;3) + II) / 4), sehingga kekurangan di kolom akademik
+      berdampak lebih besar. Skor per bidang ada di halaman
+      <a href="skor.html">kalkulator skor</a>.</p>`}
+    </div>`;
+}
+
+function tabelMatriks(H){
+  const kol = [['publikasi','Publikasi'],['utama','Penulis utama'],
+               ['penelitian','Penelitian'],['pkm','Pengabdian'],
+               ['mhs','Keterlibatan mhs'],
+               ['prestasi','Prestasi bimbingan'],['total','Total karya']];
+  const maks = {};
+  kol.forEach(([k])=> maks[k] = Math.max(1, ...H.baris.map(b=>b[k])));
+
+  const baris = [...H.baris].sort((a,b)=>{
+    if(urutKol==='nama') return urutTurun ? a.nama.localeCompare(b.nama)
+                                          : b.nama.localeCompare(a.nama);
+    const d = b[urutKol]-a[urutKol];
+    return (urutTurun ? d : -d) || a.nama.localeCompare(b.nama);
+  });
+
+  const panah = k => urutKol===k ? (urutTurun ? ' ↓' : ' ↑') : '';
+
+  return `<table class="mx"><thead><tr>
+    <th data-k="nama" ${urutKol==='nama'?'data-aktif':''}>Dosen${panah('nama')}</th>
+    ${kol.map(([k,l])=>`<th data-k="${k}" ${urutKol===k?'data-aktif':''}>${l}${panah(k)}</th>`).join('')}
+  </tr></thead><tbody>${baris.map(b=>`
+    <tr class="${b.total===0 && b.prestasi===0 ? 'sepi':''}">
+      <td class="nm"><a href="dosen.html?d=${encodeURIComponent(b.slug)}">${esc(b.nama)}</a></td>
+      ${kol.map(([k])=>`<td><div class="sel ${b[k]?'':'nol'}">
+        <div class="bt"><i style="width:${b[k]/maks[k]*100}%"></i></div>
+        <div class="an">${b[k]}</div></div></td>`).join('')}
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function kelompokkan(arr, kunci){
+  return arr.reduce((m,x)=>{ const k = kunci(x) || 'tidak tercatat';
+    m[k] = (m[k]||0)+1; return m; }, {});
+}
+
+function kartuRinci(judul, peta){
+  const urut = Object.entries(peta).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(!urut.length)
+    return `<div class="kartu"><h3>${esc(judul)}</h3>
+            <p class="kosong">Belum ada data pada periode ini.</p></div>`;
+  const maks = Math.max(...urut.map(x=>x[1]));
+  return `<div class="kartu"><h3>${esc(judul)}</h3>${urut.map(([n,v])=>`
+    <div class="mendatar"><div class="nm">${esc(n)}</div>
+      <div class="tr"><i style="width:${v/maks*100}%"></i></div>
+      <div class="an">${v}</div></div>`).join('')}</div>`;
+}
+</script>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// Ruang kerja, khusus email terdaftar (pemilik 2026-11-04); tanpa masuk akun hanya
+// lewat tautan AMI yang masih berlaku (pemilik 2026-11-11, instal-lengkap.sql).
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { gerbang } from './menu.js?v=2026-11-22-866c27';
+import * as CAPAIAN_IKU from './capaian-iku.js?v=2026-11-22-866c27';
+import * as TEMUAN_AMI from './temuan-ami.js?v=2026-11-22-866c27';
+import * as TAUTAN_AMI from './ami-tautan.js?v=2026-11-22-866c27';
+import * as CAPAIAN_CPL from './capaian-cpl.js?v=2026-11-22-866c27';
+import * as RAPAT_M from './rapat.js?v=2026-11-22-866c27';
+import * as HIBAH from './hibah.js?v=2026-11-22-866c27';
+const sb = createClient(window.SB_URL, window.SB_KEY);
+window.HIBAH = HIBAH;
+window.RAPAT_M = RAPAT_M;
+window.CAPAIAN_CPL = CAPAIAN_CPL;
+document.head.insertAdjacentHTML('beforeend', `<style>${CAPAIAN_CPL.CSS_CPL}</style>`);
+window.CAPAIAN_IKU = CAPAIAN_IKU;
+window.TAUTAN_AMI = TAUTAN_AMI;
+window.TEMUAN_AMI = TEMUAN_AMI;
+const tabelBelumAda = e => e && /does not exist|schema cache/i.test(e.message);
+const tokenAMI = new URLSearchParams(location.search).get('ami');
+if (tokenAMI) {
+  const { data, error } = await sb.rpc('ami_buka', { p_token: tokenAMI });
+  if (error || !data) {
+    document.getElementById('isi').innerHTML = `<p class="kosong">Tautan AMI ini tidak berlaku:
+      sudah lewat tanggal berlakunya, dicabut, atau tidak lengkap. Hubungi program studi untuk tautan baru.</p>`;
+  } else {
+    window.AMI = data;
+    window.mulaiHalaman();
+    // Portofolio MK untuk auditor (instal-lengkap.sql, pemilik 2026-11-17): tampilan hanya baca dengan token yang sama.
+    document.querySelector('main')?.insertAdjacentHTML('beforebegin', `<div style="max-width:1240px;margin:14px auto 0;padding:0 20px">
+      <div style="border:1px solid var(--line);background:var(--panel);padding:10px 14px">Portofolio mata kuliah (RPS, CPMK, soal, rubrik, contoh jawaban,
+      presensi, BAP, nilai, evaluasi): <a href="portofolio.html?ami=${encodeURIComponent(tokenAMI)}">buka portofolio</a></div></div>`);
+    window.setelIKU(data.iku || [], '');
+    window.setelTemuan(data.temuan || [], data.bukti_temuan || [], '');
+    window.setelCPL(data.cpl || null, '', data.korelasi || []);
+    window.setelHibah(null, '');
+    window.setelRapat(null, '');
+  }
+} else {
+  const saya = await gerbang(sb);
+  window.mulaiHalaman();
+  // Tindak lanjut rapat (instal-lengkap.sql): terbaca pengguna terdaftar (rapat terbatas tersaring RLS).
+  sb.from('rapat_tindak').select('id,keputusan,pj_nama,tenggat,status,rapat(judul,tanggal)').then(({ data, error }) => {
+    const belumAda = error && /does not exist|schema cache/i.test(error.message);
+    window.setelRapat(belumAda ? [] : (data || []), error && !belumAda ? error.message : '');
+  }, e => window.setelRapat([], e.message || String(e)));
+  // Pengajuan hibah (instal-lengkap.sql): hanya angka, untuk semua pengguna terdaftar.
+  sb.rpc('hibah_rekap').then(({ data, error }) => {
+    const belumAda = error && /does not exist|schema cache|Could not find the function/i.test(error.message);
+    window.setelHibah(belumAda ? [] : (data || []), error && !belumAda ? error.message : '');
+  }, e => window.setelHibah([], e.message || String(e)));
+  // Target IKU/IKT (instal-lengkap.sql: dosen terdaftar boleh membaca).
+  sb.from('lkps_target_kinerja').select('*').then(({ data, error }) => {
+    const belumAda = error && /does not exist|schema cache/i.test(error.message);
+    window.setelIKU(belumAda ? [] : (data || []), error && !belumAda ? error.message : '');
+  }, e => window.setelIKU([], e.message || String(e)));
+  CAPAIAN_IKU.muatTambahan(sb).then(window.setelIKUTambahan, () => {});
+  // Temuan AMI dan buktinya (instal-lengkap.sql: dosen terdaftar boleh membaca).
+  Promise.all([sb.from('ami_temuan').select('*'),
+               sb.from('lkps_bukti').select('baris_id,judul,url').eq('tabel', 'ami_temuan')])
+    .then(([t, b]) => window.setelTemuan(tabelBelumAda(t.error) ? [] : (t.data || []), b.data || [],
+      t.error && !tabelBelumAda(t.error) ? t.error.message : ''),
+      e => window.setelTemuan([], [], e.message || String(e)));
+  // Capaian CPL (instal-lengkap.sql): ringkasan terakhir; admin juga melihat riwayat.
+  let RIWAYAT_CPL = [], KODE_CPL = new Set();
+  const muatCPL = async () => {
+    const r = await sb.from('cpl_ringkasan').select('*').order('diunggah', { ascending: false }).order('id', { ascending: false });
+    if (r.error) { window.setelCPL(null, tabelBelumAda(r.error) ? '' : r.error.message); return; }
+    RIWAYAT_CPL = r.data || [];
+    if (saya?.peran === 'admin') {
+      const t = await sb.from('ami_temuan').select('kode').then(x => x, () => ({ data: [] }));
+      KODE_CPL = new Set((t.data || []).map(x => x.kode).filter(Boolean));
+    }
+    // Tabel korelasi belum ada (sebelum patch 71) = tanpa tren lintas kurikulum.
+    const kor = await sb.from('ref_cpl_korelasi').select('kurikulum_asal,cpl_asal,kurikulum_tujuan,cpl_tujuan,tingkat,status')
+      .then(x => x, () => ({ data: [] }));
+    // Rumusan CPL dari Data prodi (71-patch) untuk ringkasan estimasi yang tidak membawa teks CPL.
+    const ref = await sb.from('ref_cpl').select('kurikulum,kode,rumusan').then(x => x, () => ({ data: [] }));
+    window.setelCPL(RIWAYAT_CPL[0] || null, '', kor.error ? [] : (kor.data || []), ref.error ? [] : (ref.data || []));
+  };
+  if (saya?.peran === 'admin') {
+    // Panel admin: unggah ringkasan_cpl.json, riwayat, dan tindak lanjut PPEPP untuk CPL belum tercapai.
+    window.adminCPL = wadah => {
+      if (!wadah) return;
+      const ak = RIWAYAT_CPL[0], tl = ak ? CAPAIAN_CPL.tindakLanjutCPL(ak.data) : [];
+      wadah.innerHTML = `<div class="kartu ami" style="margin-top:12px"><h3>Admin: ringkasan CPL</h3>
+        <p class="ket">Jalankan <code>python run_cpl.py</code> di komputer admin, lalu unggah <b>ringkasan_cpl.json</b> dari folder keluarannya
+          (bukan laporan_cpl.xlsx: laporan itu memuat NIM). Unggahan baru menjadi tampilan; yang lama tersimpan sebagai riwayat.</p>
+        <div class="ami-f"><input type="file" id="cpl_berkas" accept=".json,application/json">
+          <input type="text" id="cpl_catatan" maxlength="200" placeholder="Catatan (mis. akhir Ganjil 2026/2027)">
+          <button type="button" id="cpl_unggah">Unggah</button><span class="msg" id="cpl_msg"></span></div>
+        ${tl.length ? `<p class="ket"><b>Tindak lanjut PPEPP</b> untuk CPL belum tercapai (masuk Data prodi › Temuan AMI, butir 14):</p>
+          <ul>${tl.map((x, i) => `<li>${esc(x.label)} ${KODE_CPL.has(x.kode) ? '<span class="ket">— sudah ada di Temuan AMI</span>'
+            : `<button type="button" data-cpl-tl="${i}">Jadikan tindak lanjut</button>`}</li>`).join('')}</ul>` : ''}
+        ${RIWAYAT_CPL.length ? `<details><summary class="ket">Riwayat unggahan (${RIWAYAT_CPL.length})</summary><ul>${RIWAYAT_CPL.map((r, i) =>
+          `<li>${esc(String(r.diunggah).slice(0, 16).replace('T', ' '))} · dibuat ${esc(String(r.dibuat || '').slice(0, 10))}${r.catatan ? ` · ${esc(r.catatan)}` : ''}
+            ${i === 0 ? '<b>(tampil)</b>' : ''} <button type="button" data-cpl-hapus="${r.id}">Hapus</button></li>`).join('')}</ul></details>` : ''}</div>`;
+      const msg = t => { const m = document.getElementById('cpl_msg'); if (m) m.textContent = t; };
+      document.getElementById('cpl_unggah').onclick = async () => {
+        const f = document.getElementById('cpl_berkas').files[0];
+        if (!f) return msg('Pilih berkas ringkasan_cpl.json.');
+        let teks, data;
+        try { teks = await f.text(); data = JSON.parse(teks); } catch { return msg('Berkas bukan JSON yang sah.'); }
+        const g = CAPAIAN_CPL.cekRingkasan(data, teks);
+        if (g) return msg(g);
+        msg('Mengunggah…');
+        const { error } = await sb.from('cpl_ringkasan').insert({ data, dibuat: data.dibuat || null,
+          catatan: document.getElementById('cpl_catatan').value.trim() || null, oleh: saya.email });
+        if (error) return msg('Gagal: ' + error.message);
+        await muatCPL();
+      };
+      wadah.querySelectorAll('[data-cpl-tl]').forEach(b => b.onclick = async () => {
+        const x = tl[+b.dataset.cplTl];
+        b.disabled = true;
+        const ts = new Date().getMonth() >= 8 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+        const { error } = await sb.from('ami_temuan').insert({ ...CAPAIAN_CPL.temuanDariCPL(x, ak.data, ts), oleh: saya.email });
+        if (error) { b.disabled = false; alert('Gagal: ' + error.message); return; }
+        KODE_CPL.add(x.kode);
+        b.outerHTML = '<span class="ket">— dibuat; lengkapi PJ dan tenggat di <a href="data-prodi.html?tab=temuan">Data prodi › Temuan AMI</a></span>';
+      });
+      wadah.querySelectorAll('[data-cpl-hapus]').forEach(b => b.onclick = async () => {
+        if (!confirm('Hapus ringkasan ini dari riwayat?')) return;
+        const { error } = await sb.from('cpl_ringkasan').delete().eq('id', +b.dataset.cplHapus);
+        if (error) alert('Gagal: ' + error.message); else await muatCPL();
+      });
+    };
+  }
+  muatCPL().catch(e => window.setelCPL(null, e.message || String(e)));
+  if (saya?.peran === 'admin') {
+    const wadah = document.getElementById('ami-admin');
+    wadah.hidden = false;
+    window.segarkanAMI = TAUTAN_AMI.pasangAMIAdmin(sb, saya, wadah, window.keadaanMonitoring).segarkan;
+  }
+}
+</script>
+</body>
+</html>

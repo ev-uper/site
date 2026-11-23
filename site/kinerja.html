@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Kinerja Program Studi</title>
+<meta name="description" content="Publikasi, penelitian, pengabdian kepada masyarakat, dan prestasi mahasiswa program studi.">
+<meta property="og:title" content="Kinerja program studi">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  /* Kinerja program studi (pemilik 2026-11-16): kerangka publik yang sama dengan halaman lain, angka per
+     kelompok, dan grafik SVG tanpa pustaka luar. Warna grafik divalidasi (skill dataviz): dua kategori
+     biru-3 + oranye; data berurutan satu rona biru, gelap = tingkat tertinggi. */
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.6}
+  .s1{--w:var(--biru-3)} .s2{--w:#eb6834}
+  .o1{--w:var(--biru-gelap)} .o2{--w:var(--biru-3)} .o3{--w:#4F86C6} .o4{--w:#8FB2DD}
+  .kepala{background:var(--biru);color:#fff}
+  .kepala-in{max-width:1120px;margin:0 auto;padding:38px 20px 30px;display:flex;flex-wrap:wrap;gap:16px 30px;align-items:flex-end;justify-content:space-between}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--biru-m2)}
+  h1{font-family:var(--serif);font-size:clamp(30px,4.6vw,48px);margin:8px 0 6px;line-height:1.08}
+  .kepala p{margin:0;color:var(--biru-m4);max-width:620px}
+  .periode{display:inline-flex;border:1px solid rgba(255,255,255,.45)}
+  .periode button{font:inherit;font-size:14px;background:transparent;color:#fff;border:0;padding:7px 14px;cursor:pointer}
+  .periode button[aria-pressed="true"]{background:#fff;color:var(--biru);font-weight:600}
+  .ringkas{max-width:1120px;margin:0 auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .ringkas a{background:var(--biru-gelap);color:#fff;text-decoration:none;padding:14px 18px;border-left:1px solid rgba(255,255,255,.15)}
+  .ringkas a:hover{background:var(--biru)}
+  .ringkas b{display:block;font-family:var(--serif);font-size:30px;line-height:1.1}
+  .ringkas span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--biru-m4)}
+  .ringkas small{display:block;font-size:12.5px;color:var(--biru-m2);margin-top:2px}
+  .isi{max-width:1120px;margin:0 auto;padding:8px 20px 50px}
+  .bag{margin-top:34px}
+  .bag-kepala{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px;margin-bottom:12px}
+  h2{font-family:var(--serif);font-size:28px;color:var(--biru);margin:0;padding-bottom:4px;border-bottom:3px solid var(--aksen)}
+  .lagi{font-weight:600;color:var(--biru-2);text-decoration:none}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px}
+  .kartu{background:#fff;border:1px solid var(--line);padding:16px 18px}
+  .kartu h3{margin:0;font-size:16px}
+  .kartu .ket{margin:2px 0 10px;color:var(--muted);font-size:13.5px}
+  .kosong{color:var(--muted);font-size:14px;margin:6px 0}
+  .angka-k{display:flex;flex-wrap:wrap;gap:18px 30px;margin:4px 0 6px}
+  .angka-k div b{display:block;font-family:var(--serif);font-size:32px;color:var(--ink);line-height:1.05}
+  .angka-k div span{font-size:13px;color:var(--muted)}
+  .legenda{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin:0 0 4px}
+  .legenda i{display:inline-block;width:10px;height:10px;background:var(--w);margin-right:5px;border-radius:2px;vertical-align:-1px}
+  svg.grafik{width:100%;height:auto;display:block;overflow:visible}
+  svg.grafik text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+  svg.grafik text.total{fill:var(--ink);font-weight:500}
+  svg.grafik .bantu{stroke:var(--line);stroke-width:1}
+  svg.grafik .dasar{stroke:var(--muted);stroke-width:1}
+  svg.grafik rect.m{fill:var(--w)}
+  svg.grafik .kena{fill:transparent;cursor:default}
+  svg.grafik g.th:hover rect.m{opacity:.85}
+  .mendatar{display:grid;grid-template-columns:minmax(120px,40%) 1fr 34px;gap:10px;align-items:center;font-size:14px;margin:7px 0}
+  .mendatar .tr{height:12px;background:var(--line-soft);border-radius:0 3px 3px 0}
+  .mendatar .is{height:100%;background:var(--w);border-radius:0 3px 3px 0}
+  .mendatar .an{font-family:var(--mono);text-align:right}
+  details.tabel{margin-top:8px;font-size:13px}
+  details.tabel summary{cursor:pointer;color:var(--muted)}
+  details.tabel table{border-collapse:collapse;margin-top:6px;width:100%}
+  details.tabel th, details.tabel td{border-bottom:1px solid var(--line-soft);padding:3px 6px;text-align:right}
+  details.tabel th:first-child, details.tabel td:first-child{text-align:left}
+  .daftar-r{list-style:none;margin:0;padding:0}
+  .daftar-r li{padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+  .daftar-r li:last-child{border-bottom:0}
+  .daftar-r small{display:block;color:var(--muted);font-size:12.5px}
+  .proporsi{display:flex;height:14px;margin:8px 0 6px;gap:2px}
+  .proporsi div{background:var(--w)}
+  .proporsi div:first-child{border-radius:3px 0 0 3px} .proporsi div:last-child{border-radius:0 3px 3px 0}
+  #tip{position:fixed;pointer-events:none;background:var(--ink);color:#fff;font-size:12.5px;line-height:1.45;padding:7px 10px;
+    border-radius:4px;max-width:240px;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+  #tip b{display:block;font-family:var(--mono);font-weight:500;margin-bottom:2px}
+  #tip i{display:inline-block;width:8px;height:8px;background:var(--w);margin-right:6px;border-radius:2px}
+  .catatan{margin-top:30px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main id="utama">
+  <div class="kepala" role="region" aria-label="Pembuka halaman"><div class="kepala-in">
+    <div><div class="eyebrow" id="hProdi">Program studi</div>
+      <h1>Kinerja program studi</h1>
+      <p>Dosen, publikasi, penelitian dan pengabdian, prestasi mahasiswa, serta kerja sama, dari data terverifikasi.</p></div>
+    <div class="periode" role="group" aria-label="Periode">
+      <button type="button" data-p="semua" aria-pressed="true">Semua tahun</button>
+      <button type="button" data-p="3ts" aria-pressed="false">3 TS terakhir</button>
+    </div>
+  </div></div>
+  <nav class="ringkas" id="ringkas" aria-label="Angka utama"><p class="kosong">Memuat…</p></nav>
+  <div class="isi" id="isi"></div>
+</main>
+<div id="tip" hidden></div>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+import { pasangKerangka, isiKerangka } from './kerangka.js?v=2026-11-22-866c27';
+pasangKerangka({ aktif: 'kinerja' });
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const N = n => new Intl.NumberFormat('id-ID').format(n);
+const rapi = s => { const t = String(s || '').replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
+const mati = k => (window.FITUR_MATI || []).includes(k);
+
+// Mutu publikasi dalam 4 tingkat berurutan (8 kelas indeksasi terlalu banyak untuk satu rona).
+const MUTU = [['o1', 'Scopus Q1–Q2', ['scopus_q1', 'scopus_q2']], ['o2', 'Scopus Q3–Q4 / tanpa kuartil', ['scopus_q3', 'scopus_q4', 'scopus']],
+  ['o3', 'SINTA 1–4', ['sinta_1_2', 'sinta_3_4']], ['o4', 'SINTA 5–6 / lainnya', null]];
+const mutu = p => (MUTU.find(m => m[2] && m[2].includes(p.indeksasi)) || MUTU[3])[0];
+const TINGKAT = [['o1', 'Internasional', 'internasional'], ['o2', 'Nasional', 'nasional'], ['o4', 'Wilayah/lokal', 'wilayah_lokal']];
+const JABATAN = [['guru_besar', 'Guru Besar'], ['lektor_kepala', 'Lektor Kepala'], ['lektor', 'Lektor'],
+  ['asisten_ahli', 'Asisten Ahli'], ['tanpa_jabatan', 'Belum berjabatan fungsional']];
+const BENTUK = { invited_speaker: 'Pembicara undangan', keynote_speaker: 'Pembicara kunci', visiting_lecturer: 'Dosen tamu',
+  editor: 'Editor', reviewer: 'Penelaah (reviewer)', juri: 'Juri', penghargaan: 'Penghargaan', tenaga_ahli: 'Tenaga ahli' };
+
+let D = null, PERIODE = 'semua';
+
+// Periode: semua tahun, atau 3 TS terakhir (tahun_ts >= TS terbaru - 2), sama dengan Rekap SDGs.
+function saring(xs){
+  if (PERIODE === 'semua') return xs || [];
+  const maks = Math.max(0, ...[...D.publikasi, ...D.kegiatan, ...(D.prestasi_agregat || [])].map(x => +x.tahun_ts || 0));
+  return (xs || []).filter(x => +x.tahun_ts >= maks - 2);
+}
+
+// ---------------------------------------------------------------- grafik batang per tahun (SVG)
+// seri: [{kelas, nama, nilai:[per tahun]}]; mode 'tumpuk' atau 'kelompok'. Total di atas batang tumpuk
+// (label selektif), legenda bila >= 2 seri, tooltip per tahun, dan tabel data untuk pembaca layar/cetak.
+function batang(tahun, seri, mode){
+  const W = 520, H = 210, kiri = 26, bawah = 22, atas = 16, lebar = W - kiri - 4, tinggi = H - bawah - atas;
+  const totals = tahun.map((_, i) => seri.reduce((a, s) => a + s.nilai[i], 0));
+  const maks = Math.max(1, ...(mode === 'tumpuk' ? totals : seri.flatMap(s => s.nilai)));
+  const langkah = Math.max(1, Math.ceil(maks / 4)), puncak = langkah * Math.ceil(maks / langkah);
+  const y = v => atas + tinggi - (v / puncak) * tinggi;
+  const slot = lebar / tahun.length, bw = Math.min(46, slot * (mode === 'tumpuk' ? .55 : .7));
+  let g = '';
+  for (let v = 0; v <= puncak; v += langkah)
+    g += `<line class="${v ? 'bantu' : 'dasar'}" x1="${kiri}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}"/><text x="${kiri - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  tahun.forEach((t, i) => {
+    const x0 = kiri + slot * i + (slot - bw) / 2;
+    let isi = '';
+    if (mode === 'tumpuk') {
+      let dasar = 0;
+      seri.forEach(s => {
+        const v = s.nilai[i]; if (!v) return;
+        const y1 = y(dasar + v), h = y(dasar) - y1 - (dasar ? 2 : 0);   // celah 2px antarsegmen
+        isi += `<rect class="m ${s.kelas}" x="${x0}" y="${y1}" width="${bw}" height="${Math.max(h, 1)}" rx="2"/>`;
+        dasar += v;
+      });
+      if (totals[i]) isi += `<text class="total" x="${x0 + bw / 2}" y="${y(totals[i]) - 5}" text-anchor="middle">${totals[i]}</text>`;
+    } else {
+      const lb = (bw - 2 * (seri.length - 1)) / seri.length;
+      seri.forEach((s, j) => {
+        const v = s.nilai[i]; if (!v) return;
+        isi += `<rect class="m ${s.kelas}" x="${x0 + j * (lb + 2)}" y="${y(v)}" width="${lb}" height="${y(0) - y(v)}" rx="2"/>`;
+      });
+    }
+    const rinci = seri.map(s => `${s.kelas}|${s.nama}|${s.nilai[i]}`).join(';');
+    g += `<g class="th" data-t="${t}" data-r="${esc(rinci)}">${isi}<rect class="kena" x="${kiri + slot * i}" y="${atas}" width="${slot}" height="${tinggi}"/>
+      <text x="${x0 + bw / 2}" y="${H - 6}" text-anchor="middle">${t}</text></g>`;
+  });
+  const legenda = seri.length > 1 ? `<div class="legenda">${seri.map(s => `<span class="${s.kelas}"><i></i>${esc(s.nama)}</span>`).join('')}</div>` : '';
+  const tabel = `<details class="tabel"><summary>Tabel data</summary><table><thead><tr><th>Tahun</th>${seri.map(s => `<th>${esc(s.nama)}</th>`).join('')}${
+    seri.length > 1 ? '<th>Jumlah</th>' : ''}</tr></thead><tbody>${tahun.map((t, i) => `<tr><td>${t}</td>${seri.map(s => `<td>${s.nilai[i]}</td>`).join('')}${
+    seri.length > 1 ? `<td>${totals[i]}</td>` : ''}</tr>`).join('')}</tbody></table></details>`;
+  return `${legenda}<svg class="grafik" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik per tahun">${g}</svg>${tabel}`;
+}
+
+function mendatar(baris, kelas = 's1'){
+  const maks = Math.max(1, ...baris.map(b => b[1]));
+  return baris.map(([nama, n]) => `<div class="mendatar ${kelas}"><div>${esc(nama)}</div>
+    <div class="tr"><div class="is" style="width:${(n / maks) * 100}%"></div></div><div class="an">${n}</div></div>`).join('');
+}
+
+const kartu = (judul, ket, isi) => `<div class="kartu"><h3>${esc(judul)}</h3>${ket ? `<p class="ket">${esc(ket)}</p>` : ''}${
+  isi || '<p class="kosong">Belum ada data terverifikasi untuk periode ini.</p>'}</div>`;
+const bagian = (id, judul, tautan, isi) => `<section class="bag" id="${id}"><div class="bag-kepala"><h2>${judul}</h2>${
+  tautan ? `<a class="lagi" href="${tautan[0]}">${tautan[1]} &rarr;</a>` : ''}</div>${isi}</section>`;
+
+// Tahun pada sumbu: tahun berurutan (tanpa lompatan, supaya tren tidak menyesatkan), paling banyak 6
+// tahun yang berakhir di tahun terbaru yang punya data, dan tidak lebih awal dari tahun data pertama.
+function sumbu(...kumpulan){
+  const ada = kumpulan.flat().map(x => +x.tahun).filter(Boolean);
+  if (!ada.length) return [];
+  const akhir = Math.max(...ada), awal = Math.max(Math.min(...ada), akhir - 5);
+  return Array.from({ length: akhir - awal + 1 }, (_, i) => awal + i);
+}
+
+// Mitra dari karya: nama tanpa beda huruf besar-kecil (sama dengan halaman Kerja sama).
+function mitra(xs){
+  const m = new Map();
+  xs.forEach(x => (x.mitra || []).forEach(t => { const k = (t.nama || '').trim().toLowerCase(); if (k && !m.has(k)) m.set(k, t.tingkat || ''); }));
+  (D.kerja_sama || []).forEach(k => { const n = (k.mitra || '').trim().toLowerCase(); if (n && !m.has(n)) m.set(n, k.tingkat === 'wilayah' ? 'wilayah_lokal' : k.tingkat || ''); });
+  return m;
+}
+
+function gambar(){
+  const pub = saring(D.publikasi), keg = saring(D.kegiatan), pres = saring(D.prestasi_agregat), rek = saring(D.rekognisi),
+        lua = saring(D.luaran_dosen), mhs = saring(D.mahasiswa_agregat);
+  const pen = keg.filter(k => k.kategori === 'penelitian'), pkm = keg.filter(k => k.kategori === 'pkm');
+  const dt = D.dtps || {}, nDosen = dt.jumlah || (D.dosen || []).length;
+  const nPres = pres.reduce((a, b) => a + (b.jumlah || 0), 0);
+  const M = mitra([...pub, ...keg]);
+  const nIntl = [...M.values()].filter(t => t === 'internasional').length;
+  const sdgSet = new Set([...pub, ...keg, ...lua].flatMap(k => k.sdgs || []));
+  const scopus = pub.filter(p => /^scopus(_|$)/.test(p.indeksasi || '')).length;   // Q1-Q4 dan tanpa kuartil (153)
+
+  // Angka utama, masing-masing menaut ke rinciannya.
+  $('ringkas').innerHTML = [
+    [nDosen, 'Dosen tetap', dt.doktor != null && nDosen ? `${Math.round(100 * dt.doktor / nDosen)}% bergelar doktor` : '', '#dosen'],
+    [pub.length, 'Publikasi', `${scopus} terindeks Scopus`, '#publikasi'],
+    [pen.length, 'Penelitian', '', '#riset'],
+    [pkm.length, 'Pengabdian', '', '#riset'],
+    [nPres, 'Prestasi mahasiswa', '', '#mahasiswa'],
+    [M.size, 'Institusi mitra', nIntl ? `${nIntl} internasional` : '', '#dampak'],
+    ...(mati('sdgs') ? [] : [[sdgSet.size, 'SDG tersentuh', 'dari 17 SDG', '#dampak']]),
+  ].map(([v, l, k, h]) => `<a href="${h}"><b>${N(v)}</b><span>${esc(l)}</span>${k ? `<small>${esc(k)}</small>` : ''}</a>`).join('');
+
+  // 1. Dosen
+  const jab = dt.jabatan || {};
+  const barisJab = JABATAN.map(([k, l]) => [l, jab[k] || 0]).filter(b => b[1]);
+  const daftarRek = [...rek].sort((a, b) => (b.tahun || 0) - (a.tahun || 0)).slice(0, 6).map(r =>
+    `<li>${esc((r.nama_kegiatan || '').trim())}<small>${esc(r.dosen || '')} · ${esc(BENTUK[r.bentuk] || rapi(r.bentuk))} · ${esc(rapi(r.tingkat))} · ${esc(r.tahun || '')}</small></li>`).join('');
+  const sDosen = bagian('dosen', 'Dosen', ['daftar.html?jenis=dosen', 'Daftar dosen'], `<div class="grid2">
+    ${kartu('Kualifikasi dan jabatan fungsional', 'Dosen tetap program studi', `<div class="angka-k">
+      <div><b>${N(nDosen)}</b><span>dosen tetap</span></div>
+      ${dt.doktor != null ? `<div><b>${N(dt.doktor)}</b><span>bergelar doktor</span></div>` : ''}
+      ${jab.guru_besar ? `<div><b>${N(jab.guru_besar)}</b><span>guru besar</span></div>` : ''}</div>${mendatar(barisJab)}`)}
+    ${kartu('Rekognisi dosen', 'Pembicara undangan, editor, penelaah, penghargaan', daftarRek ? `<ul class="daftar-r">${daftarRek}</ul>` : '')}
+  </div>`);
+
+  // 2. Publikasi per tahun menurut mutu
+  const tPub = sumbu(pub);
+  const sPub = bagian('publikasi', 'Publikasi', ['daftar.html?jenis=publikasi', 'Semua publikasi'], `<div class="grid2">
+    ${kartu('Publikasi per tahun menurut mutu', 'Scopus menurut kuartil, SINTA menurut peringkat',
+      tPub.length ? batang(tPub, MUTU.map(([k, l]) => ({ kelas: k, nama: l, nilai: tPub.map(t => pub.filter(p => +p.tahun === t && mutu(p) === k).length) })), 'tumpuk') : '')}
+    ${kartu('Sebaran mutu', 'Seluruh publikasi pada periode ini', pub.length ? `<div class="angka-k">
+      <div><b>${N(pub.length)}</b><span>publikasi</span></div><div><b>${N(scopus)}</b><span>terindeks Scopus</span></div>
+      <div><b>${N(pub.filter(p => p.tingkat === 'internasional').length)}</b><span>tingkat internasional</span></div></div>
+      ${MUTU.map(([k, l]) => [l, pub.filter(p => mutu(p) === k).length, k]).map(([l, n, k]) => mendatar([[l, n]], k)).join('')}` : '')}
+  </div>`);
+
+  // 3. Penelitian dan pengabdian
+  const tKeg = sumbu(keg);
+  const kel = {};
+  keg.forEach(k => { if (k.kelompok) kel[k.kelompok] = (kel[k.kelompok] || 0) + 1; });
+  const sumMhs = kat => mhs.filter(m => m.kategori === kat).reduce((a, b) => a + (b.keterlibatan || 0), 0);
+  const sRiset = bagian('riset', 'Penelitian dan pengabdian', ['daftar.html?jenis=penelitian', 'Daftar penelitian'], `<div class="grid2">
+    ${kartu('Kegiatan per tahun', 'Penelitian dan pengabdian kepada masyarakat yang terverifikasi',
+      tKeg.length ? batang(tKeg, [{ kelas: 's1', nama: 'Penelitian', nilai: tKeg.map(t => pen.filter(k => +k.tahun === t).length) },
+                                  { kelas: 's2', nama: 'Pengabdian', nilai: tKeg.map(t => pkm.filter(k => +k.tahun === t).length) }], 'kelompok') : '')}
+    ${kartu('Sumber pendanaan dan keterlibatan mahasiswa', 'Jumlah kegiatan menurut asal dana', Object.keys(kel).length ? `${
+      mendatar(Object.entries(kel).sort((a, b) => b[1] - a[1]).slice(0, 6))}
+      <div class="angka-k" style="margin-top:14px"><div><b>${N(sumMhs('penelitian'))}</b><span>keterlibatan mahasiswa dalam penelitian</span></div>
+      <div><b>${N(sumMhs('pkm'))}</b><span>keterlibatan mahasiswa dalam pengabdian</span></div></div>` : '')}
+  </div>`);
+
+  // 4. Mahasiswa
+  const tPres = sumbu(pres);
+  const jPres = (t, g) => pres.filter(p => +p.tahun === t && p.tingkat === g).reduce((a, b) => a + b.jumlah, 0);
+  const akad = pres.filter(p => p.bidang === 'akademik').reduce((a, b) => a + b.jumlah, 0), non = nPres - akad;
+  const sMhs = bagian('mahasiswa', 'Prestasi mahasiswa', ['prestasi.html', 'Semua prestasi'], `<div class="grid2">
+    ${kartu('Prestasi per tahun menurut tingkat', 'Capaian mahasiswa yang terverifikasi',
+      tPres.length ? batang(tPres, TINGKAT.map(([k, l, g]) => ({ kelas: k, nama: l, nilai: tPres.map(t => jPres(t, g)) })), 'tumpuk') : '')}
+    ${kartu('Bidang prestasi', 'Akademik dibanding nonakademik', nPres ? `<div class="angka-k">
+      <div><b>${N(akad)}</b><span>akademik</span></div><div><b>${N(non)}</b><span>nonakademik</span></div></div>
+      <div class="proporsi" role="img" aria-label="${akad} akademik, ${non} nonakademik">${akad ? `<div class="s1" style="flex:${akad}"></div>` : ''}${
+        non ? `<div class="s2" style="flex:${non}"></div>` : ''}</div>
+      <div class="legenda"><span class="s1"><i></i>Akademik</span><span class="s2"><i></i>Nonakademik</span></div>` : '')}
+  </div>`);
+
+  // 5. Kerja sama dan dampak
+  const perT = g => [...M.values()].filter(t => t === g).length;
+  const resmi = (D.kerja_sama || []).filter(k => k.aktif).length;
+  const jenisLuaran = {};
+  lua.forEach(l => { const n = l.nama_bagian || rapi(l.jenis); jenisLuaran[n] = (jenisLuaran[n] || 0) + 1; });
+  const sDampak = bagian('dampak', 'Kerja sama dan dampak', ['kerja-sama.html', 'Kerja sama'], `<div class="grid2">
+    ${kartu('Mitra', 'Lembaga mitra pada karya dan kerja sama resmi', M.size ? `<div class="angka-k">
+      <div><b>${N(M.size)}</b><span>institusi mitra</span></div>${resmi ? `<div><b>${N(resmi)}</b><span>kerja sama resmi berlaku</span></div>` : ''}</div>
+      ${TINGKAT.map(([k, l, g]) => mendatar([[l, perT(g)]], k)).join('')}` : '')}
+    ${kartu('SDGs dan luaran', 'Kontribusi pada Tujuan Pembangunan Berkelanjutan dan luaran dosen', `<div class="angka-k">
+      ${mati('sdgs') ? '' : `<div><b>${N(sdgSet.size)}</b><span>dari 17 SDG tersentuh · <a href="sdgs.html">Rekap SDGs</a></span></div>`}
+      <div><b>${N(lua.length)}</b><span>luaran dosen (buku, HKI, dll.)</span></div></div>
+      ${Object.keys(jenisLuaran).length ? mendatar(Object.entries(jenisLuaran).sort((a, b) => b[1] - a[1])) : ''}`)}
+  </div>`);
+
+  $('isi').innerHTML = sDosen + sPub + sRiset + sMhs + sDampak +
+    `<p class="catatan">Data terverifikasi program studi · diperbarui ${esc(D.diperbarui || '')}. Grafik per tahun memuat paling banyak 6 tahun terakhir; angka di atas
+    menghitung seluruh periode terpilih. TS = tahun akademik penuh terakhir (istilah LKPS).</p>`;
+}
+
+// Tooltip per tahun pada grafik batang (hover/fokus), isi dari data-r.
+const tip = $('tip');
+document.addEventListener('pointermove', ev => {
+  const g = ev.target.closest?.('g.th');
+  if (!g) { tip.hidden = true; return; }
+  tip.innerHTML = `<b>${esc(g.dataset.t)}</b>` + g.dataset.r.split(';').map(x => { const [k, n, v] = x.split('|');
+    return `<div class="${k}"><i></i>${esc(n)}: ${esc(v)}</div>`; }).join('');
+  tip.hidden = false;
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8), y = Math.min(ev.clientY + 14, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+
+document.querySelectorAll('.periode button').forEach(b => b.onclick = () => {
+  PERIODE = b.dataset.p;
+  document.querySelectorAll('.periode button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  gambar();
+});
+
+fetch('data.json', {cache: 'no-cache'})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    D = d;
+    isiKerangka(d);
+    $('hProdi').textContent = ['Program Studi ' + (d.prodi || ''), d.institusi].filter(Boolean).join(' · ');
+    document.title = 'Kinerja program studi — ' + ['Program Studi ' + d.prodi, d.institusi].filter(Boolean).join(' ');
+    gambar();
+  })
+  .catch(() => { $('ringkas').textContent = ''; $('isi').innerHTML = '<p class="kosong">Data sedang diperbarui. Silakan muat ulang beberapa saat lagi.</p>'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+-- =====================================================================
+--  ISI KATA KUNCI VISI KEILMUAN PRODI (contoh; bukan tabel baru)
+--
+--  Jalankan SETELAH instal-lengkap.sql. Aman dijalankan ulang.
+--
+--  CARA KERJA: judul karya dicocokkan sebagai POTONGAN KATA (substring),
+--  dua bahasa. Karya yang judulnya tidak memuat satu pun potongan ini
+--  diberi label "periksa relevansi" di halaman Verifikasi; keputusan tetap pada
+--  centang admin. Daftar sengaja luas, tetapi hindari istilah terlalu umum
+--  (data, analisis, teknologi, inovasi) yang membuat semua judul lolos.
+--
+--  Isi dari visi keilmuan dan bidang kompetensi prodi Anda, lalu jalankan
+--  bagian di bawah (hapus tanda -- di depan baris insert).
+-- =====================================================================
+
+-- insert into public.ref_kata_visi (kata) values
+--   ('kata_bidang_1'), ('field_word_1'),
+--   ('kata_bidang_2'), ('field_word_2')
+-- on conflict (kata) do nothing;
+
+-- Verifikasi cepat:
+--   select count(*) from public.ref_kata_visi;

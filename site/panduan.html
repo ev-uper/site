@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Panduan pengguna — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  /* Panduan pengguna ruang kerja (pemilik 2026-11-04). Bagian admin hanya
+     tampil untuk peran admin. Perbarui bila tombol atau halaman berubah. */
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .hero-in{max-width:960px}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 20px 80px}
+  a{color:var(--biru-2)}
+  nav.isi{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px 20px;margin-bottom:22px}
+  nav.isi b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  nav.isi ol{margin:6px 0 0;padding-left:20px;columns:2;column-gap:28px}
+  nav.isi li{margin:2px 0}
+  section{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--biru);
+          border-radius:2px;padding:18px 24px 14px;margin-bottom:18px}
+  section.admin{border-top-color:var(--merah)}
+  h2{font-family:var(--serif);font-size:20px;color:var(--biru);margin:0 0 8px}
+  h3{font-size:15.5px;margin:16px 0 4px}
+  p,li{max-width:76ch}
+  ol,ul{padding-left:22px}
+  li{margin:3px 0}
+  .tbl{font-family:var(--mono);font-size:12.5px;background:var(--biru-m8);color:var(--biru);
+       padding:1px 6px;border-radius:2px;white-space:nowrap}
+  .cat{background:#FFF8E5;border:1px solid #E8D9A8;border-radius:3px;padding:8px 12px;font-size:14px;margin:10px 0}
+  .peran{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+         color:#fff;background:var(--merah);padding:2px 7px;border-radius:2px;margin-left:8px;vertical-align:3px}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+  th,td{text-align:left;padding:7px 10px 7px 0;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400}
+  @media(max-width:640px){nav.isi ol{columns:1}.wrap{padding:18px 16px 60px}}
+  @media print{nav.isi{display:none}section{break-inside:avoid}}
+</style>
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+</head>
+<body>
+
+<div class="hero" role="region" aria-label="Pembuka halaman">
+  <div class="hero-in">
+    <div class="hero-inst" data-identitas></div>
+    <h1>Panduan pengguna</h1>
+    <div class="sub" id="hSub">Cara memakai ruang kerja: dosen dan admin prodi.</div>
+  </div>
+</div>
+
+<main class="wrap">
+  <nav class="isi" aria-label="Daftar isi"><b>Isi</b>
+    <ol>
+      <li><a href="#masuk">Masuk dan menu</a></li>
+      <li><a href="#karya">Mengisi karya</a></li>
+      <li><a href="#bukti">Bukti karya</a></li>
+      <li><a href="#ubah">Mengubah atau menghapus karya</a></li>
+      <li><a href="#rekan">Karya rekan dan klaim penulis</a></li>
+      <li><a href="#profil">Profil saya</a></li>
+      <li><a href="#rps">Menyusun RPS</a> · <a href="#rps-review">review sejawat</a></li>
+      <li><a href="#evaluasi">Evaluasi pembelajaran</a></li>
+      <li><a href="#kelas">Kelas, beban mengajar, dan ekuivalensi</a></li>
+      <li><a href="#berhalangan">Jadwal berhalangan</a></li>
+      <li data-fitur="rapat"><a href="#cari-waktu">Mencari waktu rapat</a></li>
+      <li><a href="#lihat">Monitoring dan skor</a></li>
+      <li><a href="#publik">Apa yang tampil untuk umum</a></li>
+      <li class="adm" hidden><a href="#verifikasi">Admin: verifikasi dan ajuan</a></li>
+      <li class="adm" hidden><a href="#dosen">Admin: kelola dosen</a></li>
+      <li class="adm" hidden><a href="#dataprodi">Admin: data prodi</a></li>
+      <li class="adm" hidden><a href="#butir">Admin: isian butir dan dokumen</a></li>
+      <li class="adm" hidden><a href="#ppepp">Admin: standar SPMI dan siklus PPEPP</a></li>
+      <li class="adm" hidden><a href="#skor">Admin: skor dan draf LED</a></li>
+      <li class="adm" hidden><a href="#perbarui">Admin: kapan situs diperbarui</a></li>
+    </ol>
+  </nav>
+
+  <section id="masuk">
+    <h2>1. Masuk dan menu</h2>
+    <ol>
+      <li>Buka <a href="ruang-kerja.html">Ruang kerja</a>, isi email kampus yang sudah didaftarkan admin, klik <b>Kirim tautan masuk</b>.</li>
+      <li>Buka email, klik tautannya. Tidak ada kata sandi.</li>
+      <li>Di atas Ruang kerja tampil <b>Tugas saya</b>: hal yang menunggu tindakan Anda, yang lewat tenggat paling atas. Isinya: isian profil yang kosong, draf karya yang belum diajukan, karya atau BKD yang dikembalikan admin, karya terverifikasi tanpa bukti, tindak lanjut rapat dengan Anda sebagai PJ, tenggat hibah tim Anda, temuan AMI dengan Anda sebagai PJ, dan kelas yang berkas nilai CPL-nya belum diunggah. Klik judulnya untuk langsung ke halaman yang tepat. Tugas hilang sendiri setelah dikerjakan.</li>
+      <li><b>Kotak cari</b> di menu atas (tekan <kbd>/</kbd> dari mana saja): ketik nama halaman atau istilah sehari-hari (mis. <i>notulen</i>, <i>BKD</i>, <i>tracer</i>), nomor atau judul butir akreditasi (mis. <i>23</i>), nama dosen, judul karya atau DOI, mitra, dokumen, rapat, dan temuan AMI. Panah atas/bawah memilih, Enter membuka. Beranda umum punya kotak cari serupa untuk data publik.</li>
+      <li data-fitur="kalender"><b>Kegiatan ▾ › Kalender kegiatan</b> menampilkan rapat, kegiatan prodi (diisi admin), tenggat panggilan hibah, dan tenggat milik Anda (tindak lanjut rapat, hibah tim, temuan AMI) per bulan atau sebagai daftar 90 hari. <b>Unduh .ics</b> lalu impor ke Google Calendar (Setelan › Impor &amp; ekspor); berkas ini tidak tersinkron otomatis, jadi unduh dan impor lagi bila ada perubahan.</li>
+      <li>Menu biru di atas tiap halaman: <b>Data saya</b> (profil dan karya), <b>Operasional</b> (survei, dan bila diaktifkan: kalender, rapat, hibah, pengingat), <b>Admin prodi</b> (khusus admin), <b>Monitoring</b>, <b>Akreditasi</b>, dan <b>Bantuan</b>. Isinya mengikuti peran Anda; halaman khusus admin tidak tampil untuk dosen. Anggota tim penyusun LED juga melihat <b>Mutu dan akreditasi ▾ › Narasi LED</b>; tombol <b>Bagian saya</b> di sana menampilkan bagian yang ditugaskan kepada Anda.</li>
+    </ol>
+    <p class="cat">Muncul "Email belum terdaftar"? Minta admin prodi menambahkan email Anda di Kelola dosen.
+      Halaman tampil kosong atau "gagal dimuat"? Tekan <b>Ctrl+Shift+R</b> (memuat ulang tanpa cache).</p>
+  </section>
+
+  <section id="karya">
+    <h2>2. Mengisi karya</h2>
+    <p>Buka <b>Data saya ▾ › Karya dosen</b>. Pilih tab sesuai jenis karya:</p>
+    <p class="cat"><b>Impor publikasi dan draf.</b> Di <b>Karya saya</b>, buka <b>Impor publikasi</b>, tempel satu DOI atau lebih (satu per baris), lalu <b>Cari</b>. Data diambil dari OpenAlex; centang yang benar karya Anda, lalu <b>Jadikan draf</b>. Draf hanya terlihat oleh Anda dan belum dikirim ke admin. Klik <b>Lengkapi &amp; ajukan</b> pada drafnya, isi tingkat, indeksasi, payung penelitian, mitra, mahasiswa, dan bukti, lalu <b>Simpan dan ajukan</b> (atau <b>Simpan draf</b> untuk melanjutkan nanti). Sitasi tercatat <b>per tahun</b> sejak tahun terbit, terisi dari OpenAlex sebagai nilai awal; ganti angka tiap tahun dengan angka Google Scholar bila ada (tombol <b>Tarik data dan sitasi dari OpenAlex</b> tidak menimpa angka yang Anda isi). Di formulir publikasi biasa, isi DOI lalu klik tombol yang sama: judul, jenis, tahun, bulan, nama jurnal, volume, nomor, halaman, dan tautan yang masih kosong ikut terisi dari OpenAlex; isian Anda tidak ditimpa. Angka sitasi boleh diperbarui kapan saja, juga setelah karya terverifikasi, tanpa ajuan. LKPS 4.i menjumlahkan sendiri tahun kalender yang beririsan dengan TS-2 s.d. TS. Bila DOI sudah dicatat rekan, pakai tombol <b>Tambahkan saya sebagai penulis</b>.</p>
+    <p class="cat"><b>Dari ORCID.</b> Klik <b>Tarik semua dari ORCID saya</b> di Impor publikasi: semua karya yang tercatat di OpenAlex untuk ORCID di <b>Profil saya</b> tampil di tabel. Situs menyebut nama pemilik data itu di OpenAlex; pastikan itu Anda. Hasil paling lengkap bila profil orcid.org Anda terhubung ke Scopus dan Crossref.</p>
+    <p class="cat"><b>Dari Google Scholar.</b> Di profil Google Scholar Anda, centang artikel (kotak paling atas memilih semua), klik <b>Export › BibTeX</b>, simpan berkasnya, lalu pilih berkas itu di <b>Impor publikasi</b>. Situs mencari DOI dan sitasi per tahun di OpenAlex menurut judul; yang tidak ditemukan (sering jurnal nasional) dibuat dari data Google Scholar tanpa DOI, dan DOI-nya bisa Anda isi di drafnya. Judul yang sudah ada di situs dan entri ganda tidak dibuat lagi; disertasi dan entri tanpa tahun tidak dicentang. OpenAlex membatasi jumlah pencarian per hari untuk satu jaringan; bila batasnya habis, situs memberi tahu jam pulihnya dan draf tetap dibuat dari data Google Scholar.</p>
+    <p class="cat"><b>Payung penelitian.</b> Saat mengisi publikasi atau luaran, pilih penelitian atau PkM asalnya di <b>Berasal dari penelitian / PkM</b>. Dengan payung, karya itu menjadi bukti luaran kerja sama kegiatan tersebut di LKPS 2.a, dan mitra yang sama tidak dihitung dua kali. Tanpa payung, karya bermitra dicatat sebagai kerja sama tersendiri sampai payungnya diisi; situs menanyakannya saat menyimpan, dan admin prodi melihat daftarnya. Bila penelitiannya belum tercatat, catat dulu di tab <b>Penelitian dan PkM</b>.</p>
+    <table>
+      <tr><th>Tab</th><th>Isinya</th></tr>
+      <tr><td>Publikasi</td><td>artikel jurnal, prosiding, buku, bab buku, HKI. Isi DOI bila ada: itu yang mencegah entri ganda. <b>Jumlah sitasi</b> mengisi LKPS 4.i: sitasi yang <b>diterima dalam tiga tahun terakhir</b> (TS-2 s.d. TS), bukan total sepanjang masa; artikel tahun lama boleh, asal disitasi dalam tiga tahun itu. Tabel 4.i hanya memuat jurnal/prosiding terindeks Scopus atau WoS yang tidak ditandai di luar visi. Kolom LKPS meminta angka Google Scholar: jumlahkan grafik sitasi per tahun di halaman artikel (pembanding: <i>Citation overview</i> Scopus dengan rentang tahun). Simpan tangkapan layarnya sebagai bukti dan perbarui tiap tahun.</td></tr>
+      <tr><td>Penelitian dan PkM</td><td>satu entri per kegiatan, sebaiknya diisi ketua; anggota cukup mengklaim (bagian 5). Bila bersama mitra, isi <b>manfaat bagi prodi</b> (ada contoh yang bisa diklik), <b>tanggal awal dan akhir</b> (durasi dan status LKPS 2.a terhitung sendiri), dan <b>jenis bukti</b>; kosong berarti memakai isian kerja sama induk. Pilih <b>Kerja sama induk</b> bila ada MoU/PKS, <b>Tema peta jalan</b>, dan <b>Bentuk keterlibatan mahasiswa</b> (LKPS 2.a, 6.h.1, 6.i).</td></tr>
+      <tr><td>Luaran &amp; HKI</td><td>paten, hak cipta, TTG, produk, buku ber-ISBN. Untuk TTG dan produk isi <b>TKT</b> dan <b>nomor sertifikat TKT</b>: tanpa keduanya luaran tidak terhitung di LKPS 4.f.3.</td></tr>
+      <tr><td>Rekognisi</td><td>pembicara undangan, editor, reviewer, penghargaan.</td></tr>
+      <tr><td>Integrasi MK</td><td>penelitian/PkM yang dipakai di mata kuliah, dengan <b>bukti sahih</b> dan kesesuaian <b>RPS</b> (LKPS 3.a.3).</td></tr>
+    </table>
+    <ol>
+      <li>Isi kolom bertanda <b>*</b>. <b>Bulan</b> menentukan tahun akademik (TS): September ke atas masuk TS berikutnya.</li>
+      <li>Pilih <b>Posisi saya</b> dan centang rekan dosen prodi yang ikut, beserta perannya. Rekan tidak perlu menginput ulang.</li>
+      <li>Tambahkan mitra (institusi lain) dan mahasiswa yang terlibat, masing-masing dengan tombol <b>Tambah</b>.</li>
+      <li>Klik <b>Simpan</b>. Karya menunggu verifikasi admin dan baru dihitung setelah terverifikasi.</li>
+    </ol>
+    <p class="cat">Muncul "Karya ini sepertinya sudah ada"? Karya dengan DOI atau judul sama sudah dicatat rekan.
+      Klik <b>Saya juga penulis karya ini</b> daripada membuat catatan ganda.</p>
+  </section>
+
+  <section id="bukti">
+    <h2>3. Bukti karya</h2>
+    <ul>
+      <li>Saat mengisi karya: pilih jenis bukti (naskah, SK, korespondensi, sertifikat, …), pilih satu atau beberapa berkas, klik <b>Unggah</b>. Ulangi untuk jenis lain. Bisa juga menempel satu tautan (DOI, halaman jurnal).</li>
+      <li>Setelah tersimpan: di tab <b>Karya saya</b>, klik <b>Tambah bukti</b> pada karya itu. Bukti boleh ditambah walau karya sudah terverifikasi.</li>
+      <li><b>Salin</b> menyalin satu tautan bukti; <b>Salin semua tautan bukti</b> menyalin semuanya sekaligus, misalnya untuk SISTER atau BKD.</li>
+      <li>Berkas disimpan di Google Drive prodi; tautannya bisa dibuka asesor tanpa masuk akun. Tutupi NIK, nomor rekening, dan tanda tangan sebelum mengunggah.</li>
+      <li>Jenis bertanda <b>(privat)</b>, misalnya SK, kontrak, daftar hadir, surat tugas, dan LKD, tidak punya tautan publik: hanya Anda dan admin yang bisa membuka, dan asesor memakai kata sandi. Untuk laporan SISTER, buka berkasnya lalu tekan <b>Buat tautan sementara (2 bulan)</b>.</li>
+    </ul>
+  </section>
+
+  <section id="ubah">
+    <h2>4. Mengubah atau menghapus karya</h2>
+    <table>
+      <tr><th>Keadaan karya</th><th>Tombol</th><th>Yang terjadi</th></tr>
+      <tr><td>Belum diverifikasi, Anda yang mengisi</td><td><b>Ubah</b>, <b>Hapus</b></td><td>langsung berubah/terhapus; karya kembali menunggu verifikasi</td></tr>
+      <tr><td>Sudah terverifikasi, atau diisi rekan</td><td><b>Ajukan perubahan</b></td><td>formulir terisi; ubah yang perlu, tulis alasan, kirim. Berlaku setelah disetujui admin.</td></tr>
+      <tr><td>Sudah terverifikasi</td><td><b>Ajukan hapus</b></td><td>tulis alasan; karya terhapus setelah disetujui admin</td></tr>
+      <tr><td>Ajuan masih menunggu</td><td><b>Batalkan ajuan</b></td><td>ajuan ditarik</td></tr>
+      <tr><td>Ajuan ditolak</td><td><b>Lihat alasan</b></td><td>baca alasan admin, lalu tutup dan ajukan ulang bila perlu</td></tr>
+    </table>
+  </section>
+
+  <section id="rekan">
+    <h2>5. Karya rekan dan klaim penulis</h2>
+    <p>Tab <b>Karya prodi</b> memuat semua karya prodi. Bila Anda ikut menulis karya yang diinput rekan, klik
+      <b>Saya penulis</b> pada karya itu. Admin meninjau klaim tersebut. <b>Hapus klaim</b> membatalkannya.</p>
+    <p><b>Admin:</b> di form input ada pilihan <b>Diisi atas nama</b>. Dosen yang dipilih tercatat sebagai
+      penulis dan pelapor; admin tidak ikut menjadi penulis. Di <b>Karya prodi</b>, tombol <b>Ubah</b> mengubah
+      karya dosen mana pun langsung, tanpa ajuan, dan status karya tidak berubah. Panel bukti di sana dipakai
+      untuk mengunggah atau menghapus bukti. Semua isian admin tercatat di <b>Jejak perubahan</b> atas nama
+      akun admin.</p>
+  </section>
+
+  <section id="profil">
+    <h2>6. Profil saya</h2>
+    <p>Buka <b>Data saya ▾ › Profil saya</b>. Email, NIDN, dan peran hanya ditampilkan (diatur admin).
+      Nama, pendidikan, jabatan, SINTA, Scopus, dan ORCID bisa diubah: isi, lalu klik <b>Kirim ajuan</b>.
+      Perubahan berlaku setelah disetujui admin. Tautan profil SINTA/Scopus/ORCID boleh ditempel utuh;
+      yang disimpan hanya ID-nya.</p>
+    <p>Bagian <b>Profil untuk LKPS (Tabel 4.a)</b> dipakai untuk LKPS dan LED: riwayat pendidikan
+      (sarjana, magister, doktor: perguruan tinggi, program studi, bidang ilmu), bidang keahlian,
+      perusahaan/industri bila dosen praktisi, nomor sertifikat pendidik, sertifikat kompetensi/profesi/industri,
+      SKIP, nomor STRI, dan mata kuliah yang diampu di prodi lain. Klik <b>+ Tambah baris</b> untuk
+      menambah jenjang atau sertifikat. Pendidikan tertinggi dihitung otomatis dari riwayat pendidikan.</p>
+  </section>
+
+  <section id="rps">
+    <h2>7. Menyusun RPS</h2>
+    <p>RPS disusun di situs mengikuti formulir RPS universitas (UP-SPMI/FR008/R05) dan Panduan Pengisian RPS, lalu diunduh sebagai Word.
+      Pilih kurikulumnya (K21, K26, atau kurikulum berikutnya) di daftar mata kuliah.
+      Yang menyusun: <b>koordinator MK</b> (ditetapkan admin/GKM) atau <b>dosen pengampu</b> kelas MK itu semester ini.
+      GKM dan admin hanya melihat. Bagian B (CPL, CPMK, Sub-CPMK, asesmen, bobot) sama dengan yang dipakai templat nilai CPL,
+      jadi RPS dan capaian CPL selalu memakai bobot yang sama.</p>
+    <p><b>Sekali saja:</b> isi <b>Nama dengan gelar</b> di <a href="profil.html">Profil saya</a> (dipakai di lembar pengesahan).
+      NIP diisi admin di Kelola dosen; minta bila belum ada.</p>
+    <ol>
+      <li><b>Isi CPMK dulu</b> di <b>Mata kuliah saya ▾ › CPMK dan penilaian</b>, pilih mata kuliah:
+        <ul>
+          <li>CPMK paling banyak 2 (kecuali MK kulminasi). Akhiri setiap rumusan dengan kode Bloom, mis. <i>… dengan tepat (C4)</i>.</li>
+          <li>Sub-CPMK: rumusan dengan kode Bloom, dan pilih <b>CPL yang didukung</b> (satu Sub-CPMK, satu CPMK, satu CPL).</li>
+          <li>Butir asesmen (Kuis 1, Tugas 1, UTS, UAS, …) dan <b>jenisnya</b>; jenis ditebak dari nama dan bisa diubah.</li>
+          <li>Bobot butir per Sub-CPMK, total 100. Klik <b>Simpan CPMK dan bobot</b>.</li>
+        </ul></li>
+      <li><b>Buka RPS</b>: tombol <b>Susun RPS di situs</b> (bagian 5 halaman CPMK) atau menu <b>Mata kuliah saya ▾ › RPS</b>, lalu pilih kurikulum.
+        Isian awal sudah terisi dari data MK (kode, sks, semester, pengampu); periksa dan lengkapi.</li>
+      <li><b>Isi bagian per bagian</b>:
+        <ul>
+          <li><b>A. Identitas</b>: jenis MK, sebaran sks T/P/PL/S (jumlahnya = sks MK), semester, penyelenggara, dosen pengembang.</li>
+          <li><b>Peta Analisis</b>: untuk tiap Sub-CPMK pilih ke mana ia menuju dan hubungannya: <i>hierarkikal</i> (prasyarat),
+            <i>prosedural</i> (urutan langkah), atau <i>pengelompokan</i> (setara). Peta digambar otomatis dan ikut masuk Word.</li>
+          <li><b>C. Tujuan dan deskripsi</b>: tujuan (3-5 poin, sesuai silabus K26), deskripsi dan bahan kajian, pengampu, MK syarat,
+            pustaka (beri kode singkat, mis. DAS, untuk dirujuk di rencana pekanan), kriteria ketercapaian, metode SCL, integrasi
+            penelitian/PkM, Direktori Kompetensi Teknis Pertamina.</li>
+          <li><b>D. Rencana 16 pekan</b>: pekan boleh digabung (mis. 5-7); UTS pekan 8, UAS pekan 16. Centang Sub-CPMK dan asesmen sumatif
+            tiap pekan, isi materi dan pustaka, <b>indikator dengan ambang</b> (mis. ≥ 80% benar), bentuk dan kriteria asesmen, serta kegiatan
+            luring/daring dengan estimasi waktu (mis. "Kuliah + Case Method; PB 2×50′, PT 2×60′, KM 2×60′"). Pakai minimal satu metode SCL.
+            Centang <b>bentuk pembelajaran</b> tiap pekan (kuliah, praktikum, …, <b>Penugasan (tugas besar/proyek)</b>) untuk lampiran rekap.</li>
+          <li><b>E. Evaluasi sebelumnya</b>: klik <b>Isi dari data prodi</b> (semester terakhir, jumlah mahasiswa, bahan rekomendasi dari capaian
+            CPL dan evaluasi pembelajaran), lalu <b>ganti tanda "…"</b> dengan persentase lulus dan rerata nilai akhir dari SIAKAD. MK baru di K26:
+            isi dulu kode MK ekuivalen K21, atau centang "belum pernah diselenggarakan".</li>
+        </ul></li>
+      <li><b>Lebih suka mengisi di Excel?</b> Klik <b>Unduh templat Excel</b> di kartu atas halaman RPS. Berkas sudah berisi data MK dan isian
+        yang ada (lembar A Identitas, B CPMK/asesmen/bobot, C Deskripsi dan pustaka, D 16 pekan, E Evaluasi). Isi di Excel tanpa mengubah
+        nama lembar dan judul kolom, lalu klik <b>Impor dari Excel</b>. Situs menampilkan ringkasan dulu (bagian yang berubah, dan masalah
+        dengan nama lembar dan barisnya); klik <b>Terapkan</b>, periksa, lalu <b>Simpan</b>. Bagian B ikut disimpan ke halaman CPMK hanya bila
+        dicentang. Rubrik, Peta Analisis, dan pilihan penelitian/PkM yang diintegrasikan tetap diisi di halaman.</li>
+      <li><b>Simpan</b> sesering perlu. <b>Daftar periksa</b> di bagian atas menunjukkan butir yang belum lengkap menurut Panduan Pengisian RPS
+        (merah = wajib, cokelat = saran). <b>Klik butirnya</b> untuk langsung menuju isian yang dimaksud (isian disorot kuning).</li>
+      <li><b>Perhatikan tenggat.</b> Bila admin sudah mengisi tenggat semester, judul kolom Ganjil/Genap di daftar RPS menampilkannya, dan
+        <b>Tugas saya</b> di Ruang kerja mengingatkan RPS yang belum diajukan (ditandai <i>segera</i> atau <i>lewat</i>). RPS dianggap tepat
+        waktu bila sudah <b>diajukan</b> sebelum tenggat.</li>
+      <li><b>Ajukan ke Kaprodi</b> bila daftar periksa sudah lengkap. Selama diajukan RPS terkunci.</li>
+      <li><b>Dikembalikan?</b> Baca catatan Kaprodi di kotak Pengesahan, perbaiki, simpan, lalu ajukan lagi.</li>
+      <li><b>Review sejawat</b> (bila Kaprodi menunjuk reviewer): hasil review muncul di kartu <b>Review sejawat RPS</b> di bawah halaman RPS,
+        dan <b>Tugas saya</b> mengingatkan bila belum ditanggapi. Lihat bagian <a href="#rps-review">Review sejawat RPS</a> di bawah.</li>
+      <li><b>Disahkan dan ditetapkan secara elektronik</b>: Kaprodi mengesahkan, lalu Dekan menetapkan (bila jabatan Dekan sudah diisi). Tidak ada
+        tanda tangan basah: Word yang diunduh memuat <b>kode QR</b> di kolom Kaprodi dan Dekan, tanggal dokumen semester, dan alamat verifikasi.
+        Siapa pun yang memindai QR melihat halaman <b>Verifikasi RPS</b>: siapa yang mengesahkan dan menetapkan, waktunya, dan apakah versi itu
+        masih berlaku. Bila RPS direvisi dan disahkan ulang, kode lama tidak berlaku lagi.</li>
+      <li><b>Bukti akreditasi</b>: <b>tidak perlu mengunggah PDF</b> (pemilik 2026-11-19). Begitu disahkan, mata kuliah terhitung <i>RPS ada</i>
+        dan <i>9 komponen</i>; begitu ditetapkan Dekan (atau disahkan, bila jabatan Dekan belum diisi), RPS <b>lengkap</b> dan tautan verifikasinya
+        otomatis menjadi <b>Dokumen RPS</b> untuk asesor. Dari tautan itu siapa pun bisa membaca isi RPS versi disahkan dan mengunduh Word-nya
+        tanpa login. Unggah ke SIUP tetap mengikuti ketentuan universitas (Word dari <b>Unduh versi disahkan</b>). Hanya RPS lama yang disusun
+        di luar situs (mis. K21) dan sudah bertanda tangan yang diunggah, di kotak <b>Bukti akreditasi (RPS di luar situs)</b>.</li>
+      <li><b>Mengubah RPS yang sudah disahkan</b>: ubah dan simpan (status kembali draf; versi disahkan tetap bisa diunduh), lalu ajukan lagi
+        dengan <b>ringkasan perubahan</b>. Daftar revisi RPS (bagian F) tersusun otomatis dari pengesahan berikutnya.</li>
+    </ol>
+    <p><b>Contoh tugas besar.</b> Butir 18 (PJP) hanya menghitung sks praktikum/praktik lapangan/penugasan; tugas besar di dalam
+      sks kuliah adalah penugasan terstruktur (PT) dan tidak menambah PJP. Misalnya MK 3 sks dengan tugas besar pekan 12-15 (4 pekan)
+      dan konsultasi terjadwal 50′ per pekan: kegiatan terjadwal 4 × 50′ = 200′ = 0,07 sks, jauh dari 1 sks (2.700′ per semester).
+      Supaya terhitung 1 sks penugasan, tugas besar perlu sekitar 675′ per pekan selama 4 pekan (termasuk kerja di luar kelas yang
+      dicatat di logbook dan diparaf saat konsultasi), atau dijalankan sepanjang semester seperti praktikum (170′ per pekan).
+      Bila disepakati prodi: bagian A ditulis 2 sks kuliah + 1 sks penugasan, data MK disamakan (Data prodi › Mata kuliah),
+      bentuk <b>Penugasan (tugas besar/proyek)</b> dicentang di pekan itu, dan tugas besar tidak dihitung lagi sebagai PT kuliah.
+      Kaprodi dan GKM dapat menghitungnya di <b>Simulasi PJP › Kalkulator per mata kuliah</b>.</p>
+    <p><b>Kaprodi:</b> buka <b>RPS</b>, centang <i>Hanya yang menunggu pemeriksaan Anda</i> (jumlahnya juga tampil di Dasbor operasional),
+      klik <b>Periksa</b>, baca RPS, daftar periksa, dan hasil review sejawat beserta tanggapan penyusun, lalu <b>Sahkan</b> atau
+      <b>Kembalikan</b> dengan catatan untuk dosen. <b>Dekan</b> (bila jabatannya diisi di Penugasan koordinator) lalu centang <i>Hanya yang menunggu penetapan Anda</i>
+      (juga diingatkan di Tugas saya), buka RPS-nya, dan klik <b>Tetapkan</b>. Pantau seluruh prodi di <b>Kurikulum dan CPL prodi ▾ › Rekap RPS kurikulum</b>: kartu <b>Kemajuan RPS</b> (belum dibuat,
+      draf, diajukan, disahkan, bertanda tangan) dan kotak <b>Review sejawat</b> (sudah direview, reviewer belum mengirim, RPS tanpa reviewer,
+      perlu perbaikan besar, belum ditanggapi); klik angkanya untuk menyaring, atau unduh CSV untuk rapat.</p>
+    <h3 id="rps-review">Review sejawat RPS</h3>
+    <p>RPS dinilai dosen lain dengan form 14 butir (dari Panduan Pengisian RPS bagian 6), skala 1 Kurang, 2 Cukup, 3 Baik, 4 Sangat baik.
+      Review tidak mengunci pengesahan; hasilnya menjadi bahan Kaprodi dan bukti tinjauan sejawat untuk akreditasi.</p>
+    <ol>
+      <li><b>Kaprodi atau admin menunjuk reviewer</b> di kartu <b>Review sejawat RPS</b> (bagian bawah halaman RPS MK itu): pilih dosen, biarkan
+        <i>kirim email ke reviewer</i> tercentang, klik <b>Tunjuk</b>. Dosen pengembang RPS itu tidak bisa ditunjuk. Reviewer menerima email
+        berisi MK, tenggat review (bawaan 14 hari sejak ditunjuk), dan tautan ke RPS. Email gagal? Klik <b>Kirim ulang email</b> di baris reviewernya.</li>
+      <li><b>Reviewer</b> membuka tautan di email atau <b>Tugas saya</b>. Form review tampil di <b>samping RPS</b> (di ponsel: tombol
+        <i>Form review</i> di bawah layar), jadi RPS bisa dibaca sambil mengisi:
+        <ul>
+          <li>Klik judul butir (mis. <i>B4 Bentuk asesmen dan bobot</i>) untuk membuka bagian RPS yang dinilai; butir bagian yang sedang dibaca
+            ditandai garis kuning.</li>
+          <li>Di bawah tiap butir ada <b>ringkasan otomatis</b> (mis. total bobot dan komposisi penilaian, HOTS, jumlah pekan terisi, pustaka
+            terbaru). Ringkasan hanya bahan; skor tetap penilaian Anda.</li>
+          <li>Beri skor 1-4 dan catatan per butir, catatan umum, dan kesimpulan (Layak disahkan, Layak dengan perbaikan kecil, Perlu perbaikan besar).
+            <b>Simpan draf</b> (hanya terlihat oleh Anda) atau <b>Kirim review</b>. Tombol <b>Unduh RPS (Word)</b> ada di form bila lebih nyaman
+            membaca di Word.</li>
+        </ul></li>
+      <li><b>Penyusun RPS menanggapi</b>: di kartu Review sejawat klik <b>Lihat penilaian … dan tanggapi</b>. Untuk tiap catatan atau skor rendah,
+        pilih <i>Diperbaiki</i>, <i>Diperbaiki sebagian</i>, atau <i>Tidak diubah</i> dan tulis uraiannya (alasan wajib bila tidak diperbaiki penuh),
+        lalu <b>Simpan tanggapan</b>. Tanggapan tampil berdampingan dengan catatan reviewer bagi Kaprodi dan reviewer.</li>
+      <li><b>Bukti akreditasi</b>: klik <b>Unduh berkas review (Word)</b> di kartu Review sejawat. Berkas memuat skor, catatan reviewer, tanggapan
+        penyusun, kesimpulan, dan waktu yang dicatat sistem.</li>
+    </ol>
+    <p><b>Tinjauan RPS tiap semester</b> (butir 15 unsur 5-8): setelah nilai akhir keluar, buka <b>Mata kuliah saya ▾ › Tinjauan RPS</b>,
+      pilih semester dan mata kuliah. Capaian CPL per kelas tampil otomatis; isi analisis CPL, kesesuaian materi dan metode, metode penilaian,
+      dan pembaruan materi, lalu pilih keputusan: RPS tetap atau direvisi (dengan rencana dan tenggat). Ajukan ke Kaprodi. Bila revisi disetujui,
+      RPS mata kuliahnya kembali menjadi draf; perbaiki dan ajukan lagi, dan tindak lanjut selesai saat RPS revisi disahkan. MK kurikulum lama
+      (mis. K21) ditinjau oleh koordinator MK padanannya di kurikulum baru.</p>
+    <p>Daftar mata kuliah di halaman CPMK dan penilaian, RPS, Silabus, Portofolio, dan Tinjauan RPS bisa disaring dengan <b>Hanya MK saya</b>:
+      mata kuliah yang Anda ampu atau ajar bersama. Anggota team teaching (Penyusunan kelas) ikut menyusun CPMK dan RPS MK itu selama kelasnya
+      di semester berjalan atau sesudahnya.</p>
+    <p class="adm-p" hidden><b>Admin, tanggal dan tenggat:</b> di halaman RPS buka kotak <b>Tanggal dokumen dan tenggat RPS (admin)</b>: tanggal
+      dokumen semester (dicetak di Word), tenggat pengajuan RPS semester ganjil/genap, dan tenggat review (hari sejak ditunjuk). Pengingat ke
+      penyusun dan reviewer dikirim dari <b>Pengingat</b> (kelompok <i>RPS belum diajukan</i>, <i>Review RPS belum dikirim</i>,
+      <i>Review RPS belum ditanggapi</i>); tidak ada yang terkirim tanpa tombol Kirim. RPS yang sudah lengkap sebelum
+      fitur Dokumen RPS elektronik: klik <b>Pasang tautan untuk … RPS</b> di kotak yang sama.</p>
+    <p class="adm-p" hidden><b>Admin atas nama pejabat (khusus RPS):</b> bila Kaprodi atau Dekan berhalangan, admin boleh mengklik
+      <b>Sahkan a.n. Kaprodi</b> atau <b>Tetapkan a.n. Dekan</b>. Tercatat "a.n." di riwayat, Word, dan halaman verifikasi. Ketentuan ini hanya
+      untuk tanda tangan RPS; persetujuan lain di situs tetap dilakukan pejabat terkait. Admin juga tidak mengisi review atau tanggapan atas
+      nama dosen. Sebutan pejabat di dokumen (mis. <i>Pjs. Dekan …</i>) diisi di Penugasan koordinator.</p>
+    <p class="adm-p" hidden><b>Admin:</b> tetapkan Kaprodi di <b>Penugasan koordinator</b> (jabatan Ketua Program Studi), koordinator MK di halaman
+      CPMK dan penilaian (bagian Koordinator MK / pengampu), dan lengkapi NIP dosen di Kelola dosen. Di halaman Tinjauan RPS, admin mengatur
+      semester mulai ditinjau dan mengimpor CSV padanan MK kurikulum lama ke baru.</p>
+  </section>
+
+  <section id="evaluasi">
+    <h2>8. Evaluasi pembelajaran</h2>
+    <p>Buka <b>Mata kuliah saya ▾ › Evaluasi pembelajaran</b> dan pilih semester. Setiap mata kuliah yang Anda ampu tampil dengan nilai EDOM
+      (evaluasi dosen oleh mahasiswa, skala 0–4, rekap dari kampus), capaian CPL kelasnya, dan refleksi Anda.</p>
+    <ol>
+      <li><b>Isi refleksi</b> di akhir semester: klik <b>Isi</b>, pilih apakah pelaksanaan <b>sesuai RPS</b> (materi, jadwal, penilaian), tulis catatan,
+        dan evaluasi metode pembelajaran beserta peluang perbaikannya, lalu <b>Simpan evaluasi</b>.</li>
+      <li><b>Tindak lanjut</b>: baris ditandai perlu tindak lanjut bila EDOM di bawah ambang (bawaan 3,00), ada CPL kelas yang belum tercapai,
+        atau pelaksanaan tidak sesuai RPS. Klik <b>+ Tambah tindak lanjut</b>: masalah, penyebab, rencana, penanggung jawab, dan tenggat.
+        Tindak lanjut masuk <b>Tugas saya</b> dan <b>Kalender</b> penanggung jawabnya.</li>
+      <li><b>Selesaikan</b>: pada tindak lanjut, pilih <b>Selesai</b>, tulis hasilnya dan tanggal selesai, lalu <b>Perbarui</b>.</li>
+    </ol>
+    <p>Dosen hanya melihat nilai EDOM-nya sendiri; admin dan pimpinan melihat semua; asesor hanya rekap prodi tanpa angka per dosen.</p>
+    <p class="adm-p" hidden><b>Admin:</b> buka <b>Alat admin</b> di halaman itu. (1) <b>Siapkan dari daftar kelas</b> membuat baris dari daftar kelas
+      Berkas nilai CPL semester itu, supaya dosen bisa mengisi refleksi. (2) <b>Tempel rekap EDOM</b>: salin tabel rekap dari kampus di Excel
+      (kode MK, dosen sebagai email/NIDN/nama, nilai, boleh jumlah responden dan nama MK), tempel, <b>Periksa</b>, lalu <b>Simpan</b>; baris yang ada
+      diperbarui angkanya saja. (3) Ubah <b>ambang</b> bila perlu. Tindak lanjut yang ditautkan ke butir standar SPMI ikut terhitung di Siklus PPEPP.
+      <b>Unduh CSV</b> menyimpan tabel semester untuk rapat evaluasi akhir semester (bukti butir 16, tinjauan rutin proses pembelajaran).</p>
+  </section>
+
+  <section id="kelas">
+    <h2>9. Kelas, beban mengajar, dan ekuivalensi</h2>
+    <ul>
+      <li><b>Kurikulum dan CPL prodi ▾ › Penyusunan kelas</b>: pilih semester. Dosen melihat kelasnya; Kaprodi dan admin menyusun kelas.
+        Satu MK boleh beberapa kelas; tiap kelas punya satu koordinator dan boleh beberapa anggota team teaching, masing-masing dengan jumlah
+        pertemuan. <b>Buat kelas A untuk MK yang belum punya kelas</b> membuat usulan awal; <b>Impor</b> dan <b>Unduh CSV</b> untuk bertukar dengan
+        berkas penyusunan jadwal; <b>Salin ke daftar kelas nilai CPL</b> menyiapkan Berkas nilai CPL semester itu.</li>
+      <li><b>Beban per dosen</b> (bagian bawah halaman yang sama): sks mengajar = sks MK × bagian dosen di kelas itu (menurut jumlah pertemuan bila
+        semua dosen kelas itu mengisinya, selain itu dibagi rata), ditambah bimbingan KP, TA, menguji, dan lomba per tahun akademik.
+        <b>Unduh CSV beban</b> untuk rapat. Belum ada batas sks atau konversi bimbingan ke sks.</li>
+      <li><b>Kurikulum dan CPL prodi ▾ › Ekuivalensi mata kuliah</b>: padanan MK kurikulum lama ke baru untuk mahasiswa angkatan lama. Admin mengisi
+        padanan (langsung atau <b>Impor CSV</b>), Kaprodi menekan <b>Sahkan (Kaprodi)</b>, lalu Dekan menekan <b>Tetapkan (Dekan)</b>; tabel yang
+        ditetapkan terbit di halaman publik. Kaprodi atau Dekan bisa <b>Kembalikan ke admin</b>. Padanan yang diubah kembali berstatus draf.</li>
+    </ul>
+  </section>
+
+  <section id="berhalangan">
+    <h2>10. Jadwal berhalangan</h2>
+    <p>Buka <b>Kegiatan ▾ › Jadwal berhalangan</b>. Isinya dipakai untuk menyusun jadwal kuliah, mencari waktu sidang, dan mencari waktu rapat.
+      Judul atau alasan Anda hanya terlihat admin, Kaprodi, serta koordinator TA dan KP; dosen lain hanya melihat jumlahnya.</p>
+    <ol>
+      <li><b>Kalender saya</b>: seret dari jam mulai sampai jam selesai yang tidak bisa Anda pakai, lalu isi judul (wajib) dan jenis. Seret melintasi
+        beberapa hari untuk jam yang sama di hari-hari itu. Klik nama hari di kepala kolom untuk memblok sepanjang hari. Klik blok yang sudah ada
+        untuk melihat atau menghapusnya. Hari libur ditandai di kepala kolom.</li>
+      <li><b>Jadwal rutin atau rentang tanggal</b>: di formulir blok, ubah <b>Sampai</b> dan centang <b>Hari</b> (mis. hanya Senin tiap minggu sampai
+        akhir semester). Sebelum menyimpan, baca ringkasan <i>Akan diblok: …</i> untuk memastikan hari dan jamnya benar.</li>
+      <li><b>Mingguan semester</b>: klik sel slot yang tidak bisa selama satu semester penuh (mis. mengajar di prodi lain).</li>
+      <li><b>Tandai isian lengkap</b> (tab Mingguan semester): tekan setelah semua halangan semester itu diisi. <b>Bila tidak ada halangan, tetap
+        tandai lengkap</b>, supaya penyusun jadwal tahu Anda sudah memeriksa. Selama semester berikutnya belum ditandai, Kalender saya menampilkan
+        pengingat kuning.</li>
+    </ol>
+    <p class="adm-p" hidden><b>Admin:</b> tab <b>Atur slot dan hari</b>: <b>Buat slot otomatis</b> (mis. 07.00–17.00 per 30 menit), <b>Simpan slot</b>,
+      lalu pilih hari kuliah. Tab <b>Rekap dan cari slot kosong</b> (juga untuk Kaprodi dan koordinator TA/KP) memuat kelengkapan isian per dosen,
+      pencarian slot kosong untuk beberapa dosen, dan <b>Unduh Excel berhalangan</b> untuk penyusunan jadwal. Pengingat email: <b>Pengingat ›
+      Jadwal berhalangan belum lengkap</b>. Hari libur diisi di <b>Kalender kegiatan</b>, kartu <b>Hari libur</b> (satu per satu, rentang, atau
+      Impor CSV <span class="tbl">tanggal;nama;jenis</span>); pada hari libur email kabar pemeriksa tidak dikirim dan Cari waktu rapat tidak
+      mengusulkannya. Tenggat tidak digeser.</p>
+  </section>
+
+  <section id="cari-waktu" data-fitur="rapat">
+    <h2>11. Mencari waktu rapat</h2>
+    <p>Di <b>Kegiatan ▾ › Rapat dan notulen</b>, saat membuat atau mengubah rapat: centang peserta dosen, lalu di bagian <b>Cari waktu</b> isi
+      rentang tanggal (paling lama 32 hari) dan durasi, dan klik <b>Cari waktu</b>. Usulan diambil dari jadwal berhalangan dan rapat lain para
+      peserta: yang paling sedikit bentrok di atas, paling banyak dua per tanggal, hari libur dilewati. <b>Pakai</b> mengisi tanggal dan jam rapat.
+      Nama peserta yang tidak bisa hanya terlihat admin, Kaprodi, serta koordinator TA dan KP. Jadwal kuliah belum ikut dihitung.</p>
+  </section>
+
+  <section id="lihat">
+    <h2>12. Monitoring dan skor</h2>
+    <ul>
+      <li><b>Pemantauan ▾ › Pemantauan kinerja</b>: rekap per tahun atau TS, per dosen, dan syarat unggul.</li>
+      <li><b>Data saya ▾ › Target kinerja dosen</b>: target tahun ini (publikasi, penelitian, PkM, luaran, rekognisi, proposal hibah eksternal) dan capaian Anda. Capaian dihitung dari karya tahun itu yang mencantumkan Anda sebagai penulis atau anggota: yang terverifikasi masuk "Tercapai", yang masih diajukan tampil sebagai "menunggu". Target ditetapkan admin per jabatan akademik (bisa khusus per dosen). Yang belum tercapai juga tampil di <b>Tugas saya</b>. Admin dan pimpinan melihat semua dosen; admin mengisi target baku dan target khusus di halaman yang sama.</li>
+      <li><b>Pemantauan ▾ › Grafik untuk LED</b>: grafik siap tempel untuk laporan dan LED.</li>
+      <li><b>Mutu dan akreditasi ▾ › Skor akreditasi dan LED</b>: perkiraan skor tiap butir LAM. Pilih TS di bagian atas; klik nomor butir untuk membuka kartunya.</li>
+      <li><b>Mutu dan akreditasi ▾ › Rincian butir</b>: data di balik angka tiap butir.</li>
+    </ul>
+    <p class="cat">Angka baru tampil setelah situs diperbarui: otomatis tiap jam (menit ke-23).</p>
+  </section>
+
+  <section id="publik">
+    <h2>13. Apa yang tampil untuk umum</h2>
+    <p>Beranda tanpa masuk akun hanya menampilkan grafik dan angka rekap; daftar dosen, publikasi, penelitian,
+      pengabdian, prestasi, dan mitra dibuka dengan mengklik angkanya. Yang tampil hanya karya
+      <b>terverifikasi</b>, tanpa tautan bukti, tanpa nominal dana, tanpa beban kerja dosen, dan tanpa
+      nama atau NIM mahasiswa.</p>
+  </section>
+
+  <div id="bagian-admin" hidden>
+  <section id="verifikasi" class="admin">
+    <h2>14. Verifikasi dan ajuan <span class="peran">admin</span></h2>
+    <p>Buka halaman <b>Verifikasi</b> (menu Admin prodi, atau tautan <b>Verifikasi</b> di
+      Karya dosen). Tab <b>Karya dosen</b>, <b>Profil dosen</b>, <b>BKD</b>, dan <b>Prestasi mahasiswa</b>
+      masing-masing menampilkan jumlah yang menunggu; angka total juga tampil di kartu ruang kerja.
+      Tab Karya dosen berisi:</p>
+    <ul>
+      <li><b>Menunggu verifikasi</b>: periksa isian dan buktinya, lalu <b>Verifikasi</b> atau <b>Tolak</b> (alasan dibaca dosen). Kotak relevansi visi menandai karya di luar visi keilmuan: tampil di profil, tidak dihitung di butir prodi.</li>
+      <li><b>Ajuan hapus karya</b>: <b>Setujui hapus</b> menghapus karya beserta berkas buktinya (ke Sampah Drive); <b>Tolak</b> menyimpan alasan.</li>
+      <li><b>Ajuan perubahan karya</b>: tabel <i>Isian | Lama | Baru</i>. <b>Setujui</b> menerapkan semua perubahan sekaligus; <b>Tolak</b> dengan alasan.</li>
+      <li><b>Klaim penulis untuk ditinjau</b>: dosen yang mengaku ikut menulis karya rekan.</li>
+      <li><b>Publikasi dan luaran tanpa payung penelitian</b>: karya yang belum dikaitkan dengan penelitian atau PkM asalnya. Yang bermitra dicatat sebagai kerja sama tersendiri di LKPS 2.a sampai payungnya diisi. Pilih kegiatan payung lalu <b>Tautkan</b>; bila penelitiannya belum tercatat, minta dosennya mencatatnya (misalnya berdasarkan SK penelitian mandiri), lalu tautkan. Panel ini tidak dihitung sebagai "menunggu".</li>
+    </ul>
+    <p>Tab lain: <b>Profil dosen</b> (ajuan dari halaman Profil saya, tabel <i>Isian | Sekarang | Diajukan</i>),
+      <b>BKD</b> (cocokkan dengan bagian C LKD), dan <b>Prestasi mahasiswa</b> (periksa sertifikat atau piagam).
+      Masing-masing: <b>Setujui</b> atau <b>Verifikasi</b>, atau <b>Tolak</b> dengan alasan yang dibaca pengajunya.</p>
+    <p class="cat">Bukti yang dihapus admin masuk Sampah Google Drive akun prodi dan bisa dipulihkan
+      30 hari (drive.google.com › Sampah › Pulihkan); catatannya di situs harus dibuat ulang.</p>
+    <p class="cat"><b>Jejak perubahan</b> (menu Admin prodi): siapa menambah, mengubah, atau menghapus data penting
+      (karya, penulis, bukti, dosen, LKPS, bukti butir, dokumen, narasi LED, temuan AMI, CPL) dan kapan, dengan nilai
+      lama dan baru. Saring per tabel, aksi, email, atau tanggal; klik id baris untuk melihat seluruh riwayat baris itu.
+      Isi baris yang dihapus tetap terbaca di sana. Jejak disimpan 3 tahun dan hanya terlihat oleh admin.</p>
+  </section>
+
+  <section id="dosen" class="admin">
+    <h2>15. Kelola dosen <span class="peran">admin</span></h2>
+    <ul>
+      <li>Tambah dosen: email (untuk masuk), NIDN, nama, peran, pendidikan, jabatan. Staf tanpa NIDN memakai nomor pegawai.</li>
+      <li>Peran: <span class="tbl">dosen</span> mengisi karya; <span class="tbl">admin</span> semua halaman;
+        <span class="tbl">pimpinan</span> melihat skor dan rincian per dosen; <span class="tbl">asesor</span> hanya melihat.</li>
+      <li><b>Aktif</b> = boleh masuk situs. <b>DTPS</b> = dihitung sebagai dosen tetap prodi (pembagi NDTPS). Dosen yang pindah dinonaktifkan, jangan dihapus.</li>
+      <li><b>Ajuan perubahan profil</b> dari dosen diputuskan di halaman <b>Verifikasi</b>, tab Profil dosen.</li>
+      <li><b>Profil untuk LKPS (Tabel 4.a)</b> pada formulir ubah: <b>kategori dosen</b> (Dosen Tetap, Dosen Tidak Tetap,
+        Dosen Industri; kosong untuk staf dan asesor) dan dua penilaian prodi: sesuai kompetensi inti PS, dan
+        bidang keahlian sesuai MK yang diampu. Tanda V di LKPS hanya muncul bila dicentang. Isian profil
+        lainnya sama dengan milik dosen dan bisa dilengkapi admin langsung.</li>
+    </ul>
+  </section>
+
+  <section id="dataprodi" class="admin">
+    <h2>16. Data prodi <span class="peran">admin</span></h2>
+    <p>Buka <b>Pengelolaan ▾ › Data prodi</b>. Tiap tab satu tabel LKPS; <b>Tambah baris</b>, <b>Ubah</b>,
+      <b>Hapus</b>, dan bukti per baris. Tab dikelompokkan: baris atas memilih kelompok (Dokumen,
+      Dosen &amp; SDM, Kurikulum &amp; CPL, Penelitian &amp; kerja sama, Mahasiswa &amp; lulusan,
+      Institusi &amp; keuangan, Sarana &amp; K3L, SPMI), baris bawah memilih tabel di kelompok itu. Alamat halaman
+      (<code>?tab=…</code>) menyimpan tab yang terbuka.</p>
+    <p>Tabel langsung terlihat; formulir ada di kotak <b>＋ Tambah baris</b> di atasnya dan terbuka sendiri saat
+      menekan <b>Ubah</b>. Tabel yang lebar hanya menampilkan kolom terpenting: <b>klik baris</b> untuk melihat
+      semua isinya, atau tekan <b>Semua kolom</b> untuk menampilkan semua kolom tab itu.</p>
+    <p><b>Tab Dokumen</b> (tab pertama) adalah pustaka dokumen prodi: setiap dokumen tersimpan <b>satu kali</b> menurut jenis + tahun + judul, lalu bisa dipakai sebagai bukti di banyak tab dan butir. Di bukti baris: <b>Tautkan dari pustaka</b> untuk dokumen yang sudah ada; <b>Unggah dokumen baru</b> menyimpan berkas ke pustaka lalu menautkannya (bila jenis, tahun, dan judulnya sudah ada, berkas itu <b>diganti</b>, tidak disalin); <b>Tambah tautan luar</b> untuk DOI atau halaman mitra. Melepas bukti dari baris tidak menghapus dokumennya; dokumen dihapus hanya dari tab Dokumen, yang menampilkan di mana saja dokumen itu dipakai.</p>
+    <p><b>Berkas untuk mahasiswa.</b> Centang kolom <b>Mahasiswa</b> di tab Dokumen untuk menampilkan dokumen itu di halaman publik <a href="layanan-mahasiswa.html">Layanan mahasiswa</a> (tanpa masuk akun; tautannya juga ada di beranda). Pengumuman seperti jadwal sidang TA diunggah dengan jenis <b>Pengumuman untuk mahasiswa</b>; isi <b>berlaku sampai</b> (tombol Nomor/tanggal) supaya pengumuman hilang sendiri setelah tanggal itu. Berkas privat tidak bisa dicentang. Pengumuman singkat tanpa berkas, tanya-jawab (pertanyaan yang sering ditanya), dan kotak masuk pertanyaan/masukan mahasiswa dikelola di menu <a href="kelola-layanan-mahasiswa.html">Kelola layanan mahasiswa</a> (Kemahasiswaan). Pengumuman yang berlaku juga tampil di pita atas beranda. Kiriman mahasiswa hanya dibaca admin; pertanyaan yang sering muncul bisa dijadikan tanya-jawab publik (tombol <b>Jadikan Tanya-jawab</b>) setelah nama atau data pribadinya dibuang.</p>
+    <p><b>Beranda dan halaman dosen.</b> <a href="index.html">Beranda</a> adalah wajah program studi: menu, angka, bidang keahlian, kegiatan dan publikasi terbaru, dosen, dan layanan mahasiswa. Dasbor kinerja (angka dan grafik) ada di <a href="kinerja.html">Kinerja program studi</a>. Setiap jam pembangunan situs menulis satu halaman per dosen (<code>dosen/nama-dosen.html</code>, teksnya terbaca mesin pencari) dan <code>sitemap.xml</code>. Kalimat ciri khas prodi, alamat dan kontak, media sosial, dan tautan pendaftaran diisi di <code>config.yaml</code> bagian <code>public_site</code>; bagian yang kosong tidak ditampilkan.</p>
+    <p><b>Kegiatan sebagai bukti akreditasi.</b> Saat mengajukan kabar kegiatan, dosen penyelenggara dapat mengisi bagian <i>Untuk akreditasi</i>: keterkaitan butir (suasana akademik, pembelajaran/praktik lapangan, pelaksanaan kerja sama, pemangku eksternal), MK terkait, narasumber, kerja sama induk, jumlah mahasiswa, dan berkas bukti (privat, tidak tampil di situs). Kegiatan internal bisa dicatat tanpa dipublikasikan (hapus centang <i>Tampil di situs publik</i>). Setelah admin menerbitkan, kegiatan muncul di <a href="kegiatan-akreditasi.html">Mutu dan akreditasi › Kegiatan untuk akreditasi</a> sebagai bukti pendukung, lengkap dengan agenda suasana akademik per bulan.</p>
+    <p><b>Kabar kegiatan.</b> Kuliah tamu, kunjungan lapangan, seminar, pengabdian, kompetisi, dan kerja sama diajukan dosen atau admin di <a href="kabar-kegiatan.html">Kegiatan › Kabar kegiatan</a>, lengkap dengan foto. Setelah admin menekan <b>Terbitkan</b>, kabar tampil di beranda dan halaman Kabar kegiatan paling lambat sejam kemudian; <b>Tarik dari situs</b> menurunkannya. Status akreditasi di beranda diambil dari Data prodi › Prodi di UPPS (baris "prodi ini") dan hanya tampil selama masih berlaku.</p>
+    <p><b>Foto profil dosen.</b> Setiap dosen dapat mengunggah fotonya sendiri di <a href="profil.html">Profil saya</a> (kartu Foto profil), tanpa persetujuan admin. Foto tampil di daftar dosen, halaman dosen, pengelola, dan koordinator laboratorium paling lambat sejam kemudian, dan bisa dihapus dosen kapan saja. Foto yang dipasang admin di <code>site/foto-dosen/</code> tetap dipakai untuk dosen yang belum mengunggah.</p>
+    <p><b>Laboratorium.</b> Admin mengisi profil tiap laboratorium di <a href="kelola-laboratorium.html">Pengelolaan › Kelola laboratorium</a>: ringkasan, koordinator, mata kuliah praktikum, layanan pengujian untuk pihak luar, penelitian terkait yang sudah terverifikasi, dan foto. Daftar alat tidak diisi di sana, tetapi diambil dari Data prodi › Prasarana &amp; alat (LKPS 5.a) untuk prasarana yang dipilih, sehingga alat cukup diisi sekali. Halaman publik Laboratorium diperbarui paling lambat sejam kemudian; yang tampil dari LKPS hanya nama alat dan jumlahnya.</p>
+    <p><b>Profil program studi.</b> Halaman publik <a href="profil-prodi.html">Profil program studi</a> memuat sambutan, visi-misi-tujuan (Data prodi › VMTS), profil lulusan kurikulum terbaru (Kurikulum › Profil lulusan), status akreditasi yang masih berlaku (Data prodi › Prodi di UPPS), pengelola, dan sejarah. Sambutan, sejarah, dan pengelola diisi admin di <a href="kelola-profil.html">Pengelolaan › Kelola profil prodi</a>; bagian yang belum diisi tidak tampil.</p>
+    <p><b>Kerja sama di situs.</b> Setiap kerja sama di Data prodi › Kerja sama tampil di halaman publik <a href="kerja-sama.html">Kerja sama</a> (mitra, jenis, tingkat, judul kegiatan, manfaat, masa berlaku, dan status berlaku/berakhir), bersama mitra yang tercatat di publikasi, penelitian, dan PkM. Tautan bukti tidak pernah tampil. Kerja sama yang dirahasiakan dicentang <b>Sembunyikan dari situs publik</b>.</p>
+    <p><b>Prestasi mahasiswa di situs.</b> Prestasi yang diisi dosen pembimbing (Input › Prestasi mahasiswa) dan sudah diverifikasi admin tampil otomatis di beranda dan halaman <a href="prestasi.html">Prestasi</a>, paling lambat sejam kemudian. Unggah bukti berjenis <b>Foto kegiatan</b> agar kartunya bergambar (sertifikat tidak pernah ditampilkan), isi <b>cerita singkat</b>, dan centang persetujuan mahasiswa bila namanya boleh tampil. Admin dapat mencentang <b>Sembunyikan dari situs publik</b> di Data prodi › Prestasi mahasiswa.</p>
+    <p><b>Halaman publik Kurikulum.</b> Halaman <a href="kurikulum.html">Kurikulum</a> (tanpa masuk akun; tautannya di beranda) disusun otomatis dari kelompok <b>Kurikulum &amp; CPL</b>: tab <b>Profil lulusan</b>, <b>CPL</b>, <b>Mata kuliah</b>, dan <b>Peta MK–CPL</b>, serta visi dari tab <b>VMTS</b>. Kurikulum terbaru tampil sebagai utama; kurikulum lama bisa dipilih. Dosen pengampu, tautan RPS, dan nomor SK tidak tampil. Perubahan muncul setelah pembangunan situs berikutnya (paling lama sejam). <a href="privasi.html">Kebijakan privasi</a> menyebut data pribadi yang disimpan dan masa simpannya (config.yaml <code>supabase.retention</code> dan <code>public_site</code>).</p>
+    <p><b>Berkas yang sama tidak tersimpan dua kali.</b> Sebelum mengunggah (pustaka, bukti butir, bukti baris, bukti karya), situs memeriksa isi berkas, bukan namanya. Bila berkas yang sama persis sudah tersimpan, tautannya dipakai ulang dan tidak ada unggahan baru; pesan di bawah tombol menyebut di mana berkas itu sudah ada. Menghapus bukti tidak membuang berkas yang masih dipakai di tempat lain. Untuk berkas lama, buka <b>tab Dokumen › Rapikan berkas lama › Periksa berkas lama</b>: berkas yang tersimpan lebih dari sekali bisa <b>disatukan</b> (salinannya ke Sampah Drive), dan unggahan bukti baris lama bisa <b>dimasukkan ke pustaka</b> dengan jenis, tahun, dan judul yang Anda pilih.</p>
+    <table>
+      <tr><th>Tab</th><th>Butir</th><th>Satu baris =</th></tr>
+      <tr><td>Target IKU/IKT</td><td>54–56</td><td>satu indikator per TS: target, arah, capaian, dan butir terkait; masuk kalimat capaian dan tabel LED. Untuk IKT, isi keempat unsur matriks</td></tr>
+      <tr><td>Tracer study</td><td>48–51</td><td>satu tahun lulus; termasuk jumlah lulusan per pita waktu tunggu (&lt; 3, 3–18, &gt; 18 bulan) dan per tingkat kesesuaian bidang kerja (rendah, sedang, tinggi) untuk LKPS 6.f.1 dan 6.f.2. Skor butir 49 memakai <b>rata-rata waktu tunggu</b> dari laporan tracer (pita hanya untuk tabel dan pemeriksa kecocokan); butir 50 menghitung kesesuaian <b>sedang + tinggi</b> dibagi jumlah terlacak</td></tr>
+      <tr><td>Kepuasan pengguna</td><td>52</td><td>satu aspek pada satu tahun akademik (7 aspek per TS; persentase berjumlah 100)</td></tr>
+      <tr><td>Kohort lulusan</td><td>44–45</td><td>satu angkatan masuk</td></tr>
+      <tr><td>Kerja sama</td><td>6–7</td><td>satu kerja sama induk (MoU/PKS/IA): mitra, jenis, tingkat, judul kegiatan, manfaat bagi prodi, tanggal awal dan akhir, jenis bukti. Dosen menautkan karya penelitian/PkM-nya di isian karya ("Kerja sama induk"); di LKPS 2.a kegiatan itu memakai tanggal, manfaat, dan bukti induknya.</td></tr>
+      <tr><td>Peta jalan</td><td>22–25</td><td>satu tema peta jalan penelitian/PkM; dipilih dosen pada isian kegiatan (LKPS 6.h.1, 6.i, 3.a.3). Dokumen peta jalan diunggah sebagai bukti baris.</td></tr>
+      <tr><td>VMTS</td><td>1–3</td><td>satu baris per jenis: VMTS perguruan tinggi, VMTS UPPS, visi keilmuan prodi (LKPS Tabel 1); SK penetapan diunggah sebagai bukti baris</td></tr>
+      <tr><td>Prodi di UPPS</td><td>PS, 6.a</td><td>satu program studi di UPPS (termasuk prodi ini): status akreditasi, SK, kedaluwarsa, jumlah mahasiswa aktif TS-2 s.d. TS</td></tr>
+      <tr><td>Penggunaan dana</td><td>8–11</td><td>satu tahun akademik per jenis penggunaan (LKPS 2.b), rupiah untuk UPPS dan untuk prodi</td></tr>
+      <tr><td>Tenaga kependidikan</td><td>29</td><td>satu laboran/teknisi/administrator sistem (LKPS 4.b): pendidikan terakhir, sertifikat kompetensi, unit kerja</td></tr>
+      <tr><td>Prasarana &amp; alat</td><td>38</td><td>satu alat/sarana utama pada satu ruang atau laboratorium (LKPS 5.a): jumlah standar dan dimiliki, kepemilikan, kondisi</td></tr>
+      <tr><td>Dokumen K3L, Fasilitas K3L</td><td>39</td><td>satu dokumen K3L (5.b) atau satu fasilitas K3L (5.c); dokumen diunggah sebagai bukti baris</td></tr>
+      <tr><td>SPMI (PPEPP)</td><td>53–57</td><td>satu tahap PPEPP (LKPS 7.b): dokumen, laporan audit, laporan RTM, dokumen peningkatan, semuanya dipilih dari tab Dokumen. Tabel 7.a diambil dari tab Dokumen (kebijakan, manual, standar, tata cara pendokumentasian SPMI) beserta nomor dan tanggalnya</td></tr>
+      <tr><td>Mata kuliah</td><td>15, 17, 19, 20</td><td>satu mata kuliah kurikulum: semester, SKS (kuliah, seminar,
+        praktikum; desimal memakai titik, mis. 1.5), MK kompetensi, RPS, unit penyelenggara, tanda basic science/matematika
+        dan capstone design (pilih MK pendukungnya), dosen pengampu. Mengisi LKPS 3.a.1, 3.a.4, 3.a.5, dan kolom
+        "MK yang diampu" Tabel 4.a; juga pilihan MK pada karya integrasi. MK yang tidak dipakai lagi: hapus centang Aktif.</td></tr>
+      <tr><td>Mahasiswa per TS</td><td>40–45</td><td>satu tahun akademik; mahasiswa asing dipisah penuh waktu dan paruh waktu (LKPS 6.a), IPK lulusan minimum, rerata, dan maksimum (6.b)</td></tr>
+      <tr><td>Beban kerja dosen</td><td>30</td><td>satu dosen per semester</td></tr>
+      <tr><td>Prestasi, publikasi, luaran mahasiswa</td><td>43, 46, 47</td><td>satu capaian; mahasiswa lebih dari satu: klik <b>+ Tambah mahasiswa</b> (satu orang per baris, nama dan NIM). Untuk luaran isi tanggal (tahun + bulan) dan <b>nomor</b> (registrasi/paten, HKI, sertifikat TKT, atau ISBN): tanpa keduanya luaran tidak terhitung di LKPS 6.e.3</td></tr>
+    </table>
+  </section>
+
+  <section id="butir" class="admin">
+    <h2>17. Isian butir dan dokumen <span class="peran">admin</span></h2>
+    <ul>
+      <li>Butir yang dinilai dengan matriks: isi skor 0–4 dan bukti, lalu <b>Simpan perubahan</b>.</li>
+      <li><b>Dokumen</b>: pustaka dokumen (statuta, kurikulum, SK, notulen, …). Unggah ulang dengan tahun sama mengganti versi lama; yang lama diarsipkan.</li>
+      <li><b>Berkas tak terpakai di Drive</b>: klik <b>Cari berkas tak terpakai</b>, periksa daftarnya, centang yang memang tidak dipakai, lalu buang ke Sampah. Berkas berumur kurang dari 24 jam tidak ikut.</li>
+    </ul>
+  </section>
+
+  <section id="ppepp" class="admin">
+    <h2>18. Standar SPMI dan siklus PPEPP <span class="peran">admin</span></h2>
+    <ol>
+      <li><b>Impor standar.</b> Buka <b>Data prodi › SPMI › Standar SPMI</b>, pada <b>Impor rekap standar SPM</b> pilih berkas Excel dari SPM
+        (mis. "Draft Rekap Standar"). Lembar Pendidikan, Penelitian, PkM, Akreditasi Unggul LAMTEK, dan IKU PT tercentang; lembar unit lain bisa
+        dicentang bila perlu; lembar akreditasi LAM lain tidak ditawarkan. Periksa pratinjau (baru, berubah, sama), lalu klik <b>Simpan</b>.
+        Untuk versi berikutnya cukup impor lagi: teks dan target diperbarui, capaian yang sudah diisi tidak berubah, butir yang hilang dari berkas
+        hanya dilaporkan.</li>
+      <li><b>Pilih yang dipantau.</b> Butir yang bukan urusan prodi: klik <b>Ubah</b>, hilangkan centang <b>Dipantau prodi</b>. Standar turunan prodi
+        sendiri ditambahkan lewat form (asal Prodi, kode mis. P.01.01).</li>
+      <li><b>Isi capaian per TS.</b> Buka <b>Mutu dan akreditasi ▾ › Siklus PPEPP</b>, pilih TS, klik <b>Isi</b> pada butir: capaian, status (tercapai, belum
+        tercapai, tidak berlaku bagi prodi), tautan bukti, analisis, dan rencana perbaikan. Butir yang belum tercapai wajib diberi rencana perbaikan.</li>
+      <li><b>Tautkan</b> temuan AMI (tab Temuan AMI) dan IKU/IKT (tab Target IKU/IKT) ke butir standarnya, supaya ikut terhitung pada tahap Evaluasi
+        dan Pengendalian butir itu.</li>
+      <li><b>Catat perubahan standar</b> di tab <b>Revisi standar</b>: tanggal, perubahan (sebelum → sesudah), dasar (keputusan RTM, temuan AMI,
+        evaluasi capaian), dan rapatnya. Ini bukti tahap Peningkatan.</li>
+    </ol>
+    <p>Lima tanda di kolom PPEPP: hijau = ada, merah = perlu dilengkapi, kosong = tidak perlu. Penetapan = target TS dari SPM; Pelaksanaan =
+      bukti tercatat; Evaluasi = capaian dinilai atau ada temuan AMI; Pengendalian = yang belum tercapai punya rencana; Peningkatan = ada revisi
+      pada TS itu (tidak wajib setiap siklus). Arahkan kursor ke tanda untuk keterangannya. <b>Unduh CSV</b> menyimpan tabel yang sedang tampil,
+      mis. untuk lampiran rapat. Semua pengguna terdaftar dapat membuka halaman ini; hanya admin yang mengisi.</p>
+    <p><b>Rapat tinjauan manajemen (RTM).</b> Pilih TS, lalu klik <b>Unduh bahan RTM (.docx)</b> (admin dan pimpinan). Isinya: tindak lanjut RTM
+      sebelumnya, hasil AMI, capaian standar SPMI, IKU/IKT, evaluasi pembelajaran, tindak lanjut rapat lain yang masih terbuka, revisi standar,
+      dan tabel usulan keputusan; bagian umpan balik pemangku kepentingan diisi sendiri dari hasil survei. Catat RTM-nya di
+      <b>Rapat dan notulen</b> dengan jenis RTM supaya keputusannya menjadi tindak lanjut ber-PJ dan muncul di bahan RTM berikutnya; keputusan yang
+      mengubah standar dicatat juga di <b>Revisi standar</b>. Pengingat email untuk refleksi dan tindak lanjut evaluasi pembelajaran serta target
+      kinerja dosen ada di <b>Operasional › Pengingat</b> (admin).</p>
+    <p>Indikator IKU/IKT yang belum tercapai juga perlu <b>analisis</b> dan <b>rencana perbaikan</b> di tab Target IKU/IKT (butir 56); yang belum
+      ditandai merah di ringkasan capaian dan di Kelengkapan LED.</p>
+  </section>
+
+  <section id="skor" class="admin">
+    <h2>19. Skor dan draf LED <span class="peran">admin</span></h2>
+    <p><b>Mutu dan akreditasi ▾ › Kelengkapan LED</b> menghitung sendiri yang sudah dan belum terisi: tim, narasi, Data prodi, dokumen, bukti, dan karya, dengan tautan ke tempat mengisinya. "Selesai" berarti datanya ada, bukan isinya sudah benar.</p>
+    <p>Di halaman <b>Narasi LED</b>, tombol di atas daftar menyaring bagian yang tampil, dan kotak cari menemukan satu butir. Tombol <b>Identitas</b> memuat isian Identitas Pengusul, kota pada sampul, folder induk, dan narahubung; <b>A</b> dan <b>B</b> sama dengan bagian A dan B pada Bab II. Daftar program studi dan akreditasi diambil dari <b>Data prodi</b>, tab Prodi di UPPS. Buka <b>Tim penyusun dan pembagian bagian</b>, centang yang masuk tim penyusun (dosen yang dicentang bisa menulis narasi tanpa hak admin lainnya), atur urutan dan deskripsi kerjanya, tambahkan orang di luar sistem bila ada (namanya tertulis di LED tanpa akun), lalu pilih penanggung jawab tiap bagian; tombol <b>Bagian saya</b> lalu menampilkan bagian masing-masing. Admin lain tetap boleh menyunting. Bila dua admin mengubah kotak yang sama, yang menyimpan belakangan diberi peringatan sebelum menimpa.</p>
+    <p>Tombol unduh ada di panel <b>Unduh dokumen akreditasi</b>, paling atas halaman Skor; pilih TS lebih dulu. Isi narasi di halaman <b>Mutu dan akreditasi ▾ › Narasi LED</b>: tiap kotak tersimpan sendiri dan masuk draf LED saat diunduh, jadi tidak perlu mengetik ulang di Word. Yang masih tertinggal di draf bertanda [isi].</p>
+    <ul>
+      <li><b>A. Penghalang status</b>: syarat perlu yang belum terpenuhi.</li>
+      <li><b>B. Peluang poin terbesar dan simulasi</b>: ubah angka, klik <b>Hitung simulasi</b> untuk melihat dampaknya; <b>Kosongkan simulasi</b> mengembalikan.</li>
+      <li><b>Unduh draf LED TS … (.docx)</b>: templat LED LAM Teknik terisi narasi umum, tabel data, grafik bernomor, dan tabel pendukung (daftar dosen, tendik, kerja sama, mata kuliah dan RPS, capstone, prasarana, K3L, perangkat SPMI, daftar karya). Fakta yang ada di sistem terisi sendiri dan dokumen pustaka yang disebut dalam kalimat langsung bertaut; <b>tabel bukti</b> terisi tautannya dari pustaka, bukti butir, dan bukti baris Data prodi. Yang bertanda [isi] adalah fakta yang tidak ada di sistem: analisis, target, atau berkas yang belum diunggah. Skor penilaian sendiri tidak dimuat; penyusun tinggal menguatkan narasi.</li>
+      <li><b>Perbarui sitasi dari OpenAlex</b>: mengisi sitasi per tahun semua publikasi ber-DOI yang sudah diajukan atau terverifikasi, dalam beberapa permintaan saja. Tahun yang kosong atau bersumber OpenAlex diperbarui; angka yang diisi dosen (Google Scholar, Scopus, manual) tidak diubah. Jalankan sebelum mengunduh tabel LKPS, karena Tabel 4.i menjumlahkan sitasi tahun yang beririsan dengan TS-2 s.d. TS. Publikasi tanpa DOI diisi dosen sendiri.</li>
+      <li><b>Unduh indeks bukti LKPS TS … (.docx)</b>: Word berisi No tabel LKPS, item, dan link untuk ke-44 tabel wajib Sarjana. Tautan diambil dari bukti karya, DOI, bukti baris Data prodi, dan pustaka; tabel tanpa bukti tetap tampil dengan sel kosong. Simpan sebagai PDF dari Word bila perlu.</li>
+      <li><b>Unduh tabel LKPS TS … (.xlsx)</b>: workbook sendiri berisi <b>ke-44 tabel wajib Sarjana</b> LAM Teknik, yang kosong juga, pada alamat sel yang sama dengan templat resmi. Lembar <b>Petunjuk</b> menjadi daftar isi: status tiap tabel, tempat mengisi datanya di situs, dan blok salin (tidak menutup sel rumus). Salin blok, lalu di templat klik sel kiri atas yang sama dan pakai <b>Tempel Spesial › Values + Skip blanks</b>. Di lembar tabel: kuning = data situs, putih = belum ada data, abu-abu = dihitung rumus templat; tab hijau = tabel berisi data. Isian lembar Menu ditolak Excel bila ditempel, jadi diketik; nilainya tertulis di Petunjuk.</li>
+      <li><b>Rekap bukti</b>: 60 butir dengan status lengkap, sebagian, atau kosong, beserta skor, penanggung jawab, dan bukti tertaut dibanding yang
+        dianjurkan. Saring per penanggung jawab atau status, buka <b>Kesiapan per penanggung jawab</b>, lalu <b>Unduh CSV kesiapan</b> untuk dikirim
+        ke tiap pihak; pengingat emailnya ada di <b>Pengingat › Bukti akreditasi per pihak</b>.</li>
+      <li>Kedua berkas memakai TS yang dipilih di bagian atas halaman; TS-nya tertulis pada label tombol.</li>
+    </ul>
+  </section>
+
+  <section id="perbarui" class="admin">
+    <h2>20. Kapan situs diperbarui <span class="peran">admin</span></h2>
+    <p>Situs dibangun ulang otomatis tiap jam pada menit ke-23 (GitHub Actions). Untuk memperbarui saat itu
+      juga, pengelola teknis membuka GitHub, tab Actions, memilih <b>Bangun situs</b>, lalu <b>Run workflow</b>.</p>
+  </section>
+  </div>
+</main>
+
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { gerbang } from './menu.js?v=2026-11-22-866c27';
+
+// Bagian admin hanya untuk peran admin (isinya bukan rahasia; disembunyikan
+// supaya panduan dosen tetap ringkas).
+const saya = await gerbang(createClient(window.SB_URL, window.SB_KEY));
+if (saya && saya.peran === 'admin') {
+  document.getElementById('bagian-admin').hidden = false;
+  document.querySelectorAll('nav.isi .adm, .adm-p').forEach(el => { el.hidden = false; });
+}
+// Bagian tentang modul yang dimatikan di config.js (FITUR_MATI, fitur.js) disembunyikan.
+document.querySelectorAll('[data-fitur]').forEach(el => { if ((window.FITUR_MATI || []).includes(el.dataset.fitur)) el.hidden = true; });
+</script>
+</body>
+</html>

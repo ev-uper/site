@@ -1,0 +1,37 @@
+{
+  "_catatan": "Kasus bersama tests/js/kerjasama_karya.test.mjs dan tests/test_kerjasama_karya.py (aturan payung, pemilik 2026-11-10). 'harapan' = baris selain mitra MoU: [ts, kategori, mitra huruf kecil, judul].",
+  "kerjasama": [
+    {"id": 1, "mitra": "Mitra MoU", "tingkat": "nasional"},
+    {"id": 2, "mitra": "Pemda Contoh", "tingkat": "wilayah"}
+  ],
+  "karya": [
+    {"id": "K1", "kategori": "penelitian", "judul": "Penelitian K1", "tahun": 2025, "bulan": 3, "kerjasama_id": 1,
+     "karya_mitra": [{"institusi": "Univ A", "tingkat": "nasional"}, {"institusi": "Univ B", "tingkat": "internasional"},
+                     {"institusi": "Mitra MoU", "tingkat": "nasional"}]},
+    {"id": "P1", "kategori": "publikasi", "judul": "Artikel P1", "tahun": 2026, "bulan": 2, "induk_id": "K1",
+     "karya_mitra": [{"institusi": "univ a", "tingkat": "nasional"}, {"institusi": "Univ C", "tingkat": "nasional"}]},
+    {"id": "P2", "kategori": "publikasi", "judul": "Artikel P2", "tahun": 2024, "bulan": 10, "induk_id": "K1",
+     "karya_mitra": [{"institusi": "UNIV C", "tingkat": "nasional"}]},
+    {"id": "K2", "kategori": "pkm", "judul": "PkM K2", "tahun": 2024, "bulan": 5, "kerjasama_id": 2,
+     "karya_mitra": [{"institusi": "Desa G", "tingkat": "wilayah"}]},
+    {"id": "L1", "kategori": "luaran", "judul": "Luaran L1", "tahun": 2025, "bulan": 1, "induk_id": "K2",
+     "karya_mitra": [{"institusi": "pemda contoh", "tingkat": "wilayah"}, {"institusi": "Koperasi F", "tingkat": "wilayah"}]},
+    {"id": "P3", "kategori": "publikasi", "judul": "Artikel P3 tanpa payung", "tahun": 2026, "bulan": 1,
+     "karya_mitra": [{"institusi": "Univ D", "tingkat": "nasional"}, {"institusi": "Univ D ", "tingkat": "nasional"}]},
+    {"id": "P4", "kategori": "publikasi", "judul": "Artikel P4 payung belum terverifikasi", "tahun": 2026, "bulan": 4,
+     "induk_id": "TIDAK-ADA", "karya_mitra": [{"institusi": "Univ E", "tingkat": ""}]},
+    {"id": "P5", "kategori": "publikasi", "judul": "Artikel P5 payung bukan kegiatan", "tahun": 2026, "bulan": 6,
+     "induk_id": "P3", "karya_mitra": [{"institusi": "Univ H", "tingkat": "internasional"}]},
+    {"id": "R1", "kategori": "rekognisi", "judul": "Rekognisi R1", "tahun": 2026, "bulan": 1}
+  ],
+  "harapan": [
+    [2024, "pkm", "desa g", "PkM K2"],
+    [2025, "penelitian", "univ a", "Penelitian K1"],
+    [2025, "penelitian", "univ b", "Penelitian K1"],
+    [2025, "penelitian", "univ c", "Penelitian K1"],
+    [2025, "pkm", "koperasi f", "PkM K2"],
+    [2026, "penelitian", "univ d", "Artikel P3 tanpa payung"],
+    [2026, "penelitian", "univ e", "Artikel P4 payung belum terverifikasi"],
+    [2026, "penelitian", "univ h", "Artikel P5 payung bukan kegiatan"]
+  ]
+}

@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>Data prodi — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px 80px}
+  a{color:var(--biru-2)}
+  .hero{background:var(--biru);color:#fff;border-bottom:4px solid var(--merah)}
+  .hero-in{max-width:1100px;margin:0 auto;padding:26px 20px 24px}
+  .balik{display:inline-flex;gap:7px;align-items:center;text-decoration:none;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--biru-m2);margin:0 18px 16px 0}
+  .balik:hover{color:#fff}
+  h1{font-family:var(--serif);font-size:clamp(21px,3.4vw,28px);font-weight:600;margin:0;color:#fff}
+  .sub{color:var(--biru-m4);font-size:14px;margin-top:6px}
+  .info{margin-top:18px;padding:10px 14px;border-left:3px solid var(--emas);
+        background:#FFFBEF;font-size:13.5px}
+  .grup-tab{display:flex;flex-wrap:wrap;gap:4px;margin-top:18px}
+  .grup-tab button{font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border:1px solid var(--biru);
+    background:#fff;color:var(--biru);cursor:pointer;border-radius:2px}
+  .grup-tab button[aria-selected="true"]{background:var(--biru);color:#fff}
+  .tabs{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;border-bottom:2px solid var(--biru)}
+  .tabs[hidden]{display:none}
+  .grup-tab + .tabs[hidden] + .b{margin-top:8px}
+  .sub-h{font-size:15px;margin:26px 0 6px}
+  .tabs button{font:inherit;font-size:13px;padding:7px 12px;border:1px solid var(--line);
+    border-bottom:0;background:#fff;color:var(--biru);cursor:pointer}
+  .tabs button[aria-selected="true"]{background:var(--biru);color:#fff;border-color:var(--biru)}
+  .b{background:var(--panel);border:1px solid var(--line);border-top:0;padding:16px 18px}
+  .ket{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 14px}
+  .fld label{display:block;font-size:12.5px;margin-bottom:3px}
+  .fld .wj{color:var(--merah)}
+  .fld input,.fld select{width:100%;padding:7px 9px;border:1px solid var(--line);
+    border-radius:2px;font:inherit;font-size:13.5px;background:#fff}
+  .fld input.salah,.fld select.salah{border-color:var(--merah);background:var(--merah-m5)}
+  .fld.lebar{grid-column:1/-1}
+  .mhs-baris{display:grid;grid-template-columns:2fr 1fr auto;gap:6px;margin-bottom:5px}
+  .mhs-daftar + .btn{margin-top:2px}
+  label.cek{display:flex;gap:6px;align-items:center;font-size:13.5px;cursor:pointer}
+  label.cek input{width:auto;margin:0}
+  .fld textarea{width:100%;padding:7px 9px;border:1px solid var(--line);font:inherit;font-size:13.5px;resize:vertical}
+  details.unggah-dok{margin-top:6px} details.unggah-dok summary{cursor:pointer;font-size:12.5px;color:var(--biru-2)}
+  .tag-pustaka{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;background:var(--biru-m9);color:var(--biru);padding:1px 5px;border-radius:2px}
+  .ket.buruk{color:var(--merah)}
+  .jamak{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 12px;
+    max-height:170px;overflow:auto;border:1px solid var(--line);padding:6px 8px;background:#fff}
+  .unggah-baris{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:5px;font-size:12.5px}
+  .unggah-baris input[type=text],.unggah-baris input[type=url]{flex:1 1 200px;width:auto}
+  /* Formulir dan kotak impor dilipat (pemilik 2026-11-13): tabel langsung terlihat. */
+  details.formulir,details.massal{border:1px solid var(--line);border-radius:8px;background:var(--panel);margin:10px 0}
+  details.formulir>summary,details.massal>summary{cursor:pointer;padding:9px 12px;list-style:none;font-size:13.5px}
+  details.formulir>summary::-webkit-details-marker,details.massal>summary::-webkit-details-marker{display:none}
+  details.formulir>summary{font-weight:600;color:var(--aksi)}
+  details.formulir[open]>summary,details.massal[open]>summary{border-bottom:1px solid var(--line-soft)}
+  details.formulir>form,details.massal>:not(summary){padding:0 12px}
+  details.formulir>form{padding:12px}
+  .tabel-opsi{display:flex;gap:10px;align-items:center;margin:2px 0 6px;font-size:12.5px;color:var(--muted)}
+  table.t tbody tr[data-id]{cursor:pointer}
+  table.t tr.rinci td{white-space:normal;background:var(--biru-m12);padding:8px 12px}
+  table.t tr.rinci dl{display:grid;grid-template-columns:minmax(160px,max-content) 1fr;gap:3px 14px;margin:0;font-size:12.5px}
+  table.t tr.rinci dt{color:var(--muted)}table.t tr.rinci dd{margin:0}
+  .saring{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:4px 0 8px;font-size:12.5px}
+  .saring input[type=search]{flex:1 1 220px;max-width:340px;padding:5px 8px}
+  .saring label{display:flex;gap:4px;align-items:center;white-space:nowrap}
+  .saring select{padding:4px 6px;max-width:180px}
+  ul.bukti-l{margin:2px 0 4px;padding-left:18px;font-size:13px}
+  ul.bukti-l li{margin:2px 0;word-break:break-word}
+  /* Bukti per unsur butir 20/22/24 (pemilik 2026-11-10). */
+  .unsur-status{font-size:13px;background:#FAF8FD;border-left:3px solid var(--ungu);padding:8px 12px;margin:4px 0 8px}
+  .unsur-status ol{margin:4px 0;padding-left:20px;list-style:none}
+  .unsur-status li.ada{color:var(--hijau)}
+  .unsur-status li.belum{color:var(--muted)}
+  .tag-unsur{font-family:var(--mono);font-size:10px;text-transform:uppercase;background:#ECE6F5;
+    color:var(--ungu);padding:1px 6px;border-radius:2px}
+  .aksi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  button.btn{font:inherit;font-size:13px;padding:7px 14px;border:1px solid var(--biru);
+    background:var(--biru);color:#fff;cursor:pointer;border-radius:2px}
+  button.btn.ghost{background:#fff;color:var(--biru)}
+  button.btn.bahaya{background:#fff;color:var(--merah);border-color:var(--merah)}
+  button.btn.kecil{font-size:12px;padding:3px 9px}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{font-size:13px}
+  .msg.ok{color:var(--hijau)} .msg.buruk{color:var(--merah)}
+  .gulir{overflow-x:auto;margin-top:18px}
+  table.t{border-collapse:collapse;font-size:12.5px;min-width:100%}
+  table.t th,table.t td{border-bottom:1px solid var(--line-soft);padding:5px 7px;text-align:left;vertical-align:top;white-space:nowrap}
+  table.t th{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  table.t tr.sunting{background:#FFFBEF}
+  .kosong{color:var(--muted);font-size:13.5px;padding:12px 0}
+  .masuk{max-width:420px;margin:40px auto;background:#fff;border:1px solid var(--line);padding:20px}
+  .masuk input{width:100%;padding:8px 10px;margin:8px 0;font:inherit}
+</style>
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+</head>
+<body>
+
+<div class="hero" role="region" aria-label="Pembuka halaman">
+  <div class="hero-in">
+    <div class="hero-inst" data-identitas></div>
+    <h1>Data prodi</h1>
+    <div class="sub" id="hSub">Memuat&hellip;</div>
+  </div>
+</div>
+
+<main class="wrap" id="isi"></main>
+
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { buangBerkas, buangSemua, PESAN_SAMPAH, fotoPrestasiPublik, PERINGATAN_FOTO } from './hapus-berkas.js?v=2026-11-22-866c27';
+import { pasangMenu } from './menu.js?v=2026-11-22-866c27';
+import { dosenLogin } from './dosen-login.js?v=2026-11-22-866c27';
+import { aktifPada, tabBoleh, labelJabatan, labelPeran } from './koordinator.js?v=2026-11-22-866c27';
+import { unggahKePustaka, opsiPustaka, opsiJenis, labelDokumen, cariDokumen } from './pustaka-dokumen.js?v=2026-11-22-866c27';
+import { pasangRapikan } from './rapikan-berkas.js?v=2026-11-22-866c27';
+import { UNSUR, skorUnsur, pihakUnsur } from './unsur-butir.js?v=2026-11-22-866c27';
+import { OPSI_SUMBER } from './iku-otomatis.js?v=2026-11-22-866c27';
+import { denganOtomatis as otomatisDari, tsTersedia, tsAwal, htmlCapaianIKU, KET_CAPAIAN, muatTambahan, denganTambahan } from './capaian-iku.js?v=2026-11-22-866c27';
+import { KATEGORI_TEMUAN, STATUS_TEMUAN, PIHAK_TEMUAN, ringkasTemuan, htmlRingkasTemuan } from './temuan-ami.js?v=2026-11-22-866c27';
+import { bacaRekapSPM, rencanaImporSPM, tsDariTanggal, labelTS, ringkasLembar, picProdi } from './standar-spmi.js?v=2026-11-22-866c27';
+import { SHEETJS } from './nilai-cpl.js?v=2026-11-22-866c27';
+import { bacaCSV, normKur, normCpl, KOLOM_IMPOR, CONTOH_IMPOR, rencanaImpor, sebaranCPL, htmlSebaran } from './kurikulum-cpl.js?v=2026-11-22-866c27';
+import { htmlContoh, pasangContoh, JENIS_BUKTI_KS } from './manfaat-kerjasama.js?v=2026-11-22-866c27';
+import { infoJenis } from './rencana-bukti.js?v=2026-11-22-866c27';
+import { ASPEK_KEPUASAN } from './butir-manual.js?v=2026-11-22-866c27';
+import { nomorButir, htmlTautanButir } from './tautan-butir.js?v=2026-11-22-866c27';
+import { htmlSaran } from './saran-bukti.js?v=2026-11-22-866c27';
+import { tautanBerkas, privatkanLama, adalahPrivat } from './tautan-privat.js?v=2026-11-22-866c27';
+import { unggahLKD, buangLKD, bukaLKD, pendidikanTotal, pendidikanPS } from './bkd.js?v=2026-11-22-866c27';
+import { teksPelaksanaan } from './rekap-kp.js?v=2026-11-22-866c27';
+// Pelaksanaan KP per kerja sama (105, pemilik 2026-11-18): KP selesai di instansi bernama sama = bukti kegiatan.
+let KP_MITRA = new Map();
+
+/* =====================================================================
+   DATA PRODI — data kuantitatif LKPS diisi admin di situs (keputusan
+   pemilik 2026-11-03). Daftar dosen di kelola-dosen.html; Excel dipensiunkan.
+   Tabel lkps_* (supabase/instal-lengkap.sql) memakai kolom yang sama
+   dengan lembar Excel lama; bangun.py membacanya sebagai pengganti lembar,
+   jadi skor berubah setelah bangun berikutnya. Khusus admin (RLS).
+   Satu entri TABEL = satu tab. Jenis isian:
+     tahun | ta (2025/2026) | bulan | int (>= 0) | num (>= 0, opsional maks)
+     teks | pilihan | nidn (daftar dosen) | url (+ unggah bukti)
+     tanggal (YYYY-MM-DD, tampil DD/MM/YYYY) | paragraf (teks panjang, kotak bertingkat)
+     mhs (beberapa mahasiswa: baris nama + NIM; disimpan di kolom k dan
+          kolom `nim`, dipisah "; ", sama dengan isian lama)
+     cek (centang -> boolean, tampil "V"; awal = nilai baris baru)
+     dokumen (pilih dari pustaka -> id dokumen; saran = jenis yang didahulukan)
+     jamak (beberapa pilihan -> array teks; o = fungsi yang mengembalikan
+            [[nilai, label]], dipanggil saat formulir digambar)
+   Kait opsional per tab: patch (berkas SQL bila tabel belum ada), urut
+   (kolom urutan daftar; bawaan: terbaru dulu),
+   olah(nilai) sebelum simpan, cek(nilai) -> pesan galat.
+   ===================================================================== */
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+
+const SB_URL = window.SB_URL || '', SB_KEY = window.SB_KEY || '';
+if (!SB_URL || !SB_KEY || SB_URL.includes('xxxx')) {
+  $('isi').innerHTML = '<p class="kosong">config.js belum diisi.</p>';
+  throw new Error('config.js belum diisi');
+}
+const sb = createClient(SB_URL, SB_KEY);
+const UNGGAH = (() => {
+  const url = String(window.UPLOAD_URL || '').trim();
+  if (!url) return null;
+  const ext = String(window.UPLOAD_EXT || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  return { url, ext, maxMb: Number(window.UPLOAD_MAX_MB) || 0, accept: ext.map(x => '.' + x).join(',') };
+})();
+
+const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus',
+               'September', 'Oktober', 'November', 'Desember'];
+const TINGKAT_3 = [['internasional', 'Internasional'], ['nasional', 'Nasional'], ['wilayah', 'Wilayah/lokal']];
+// Tahap PPEPP, baris lembar 7b (instal-lengkap.sql).
+const TAHAP_PPEPP = [['penetapan', 'Penetapan'], ['pelaksanaan', 'Pelaksanaan'], ['evaluasi', 'Evaluasi'],
+  ['pengendalian', 'Pengendalian'], ['peningkatan', 'Peningkatan']];
+// Standar SPMI dan revisinya (instal-lengkap.sql). Daftar standar, rapat, dan temuan
+// dimuat di mulai(); pilihan berupa fungsi supaya terbaca setelah dimuat.
+const ASAL_STANDAR = [['institusi', 'Institusi (diadopsi dari universitas)'], ['prodi', 'Prodi (standar turunan prodi)']];
+const DASAR_REVISI = [['rtm', 'Keputusan RTM'], ['ami', 'Temuan AMI'], ['evaluasi_capaian', 'Evaluasi capaian IKU/IKT'],
+  ['kebijakan', 'Kebijakan atau peraturan baru'], ['lainnya', 'Lainnya']];
+let STANDAR = [], RAPAT_SPMI = [], TEMUAN_SPMI = [];
+const OPSI_STANDAR = () => STANDAR.filter(s => s.dipantau !== false)
+  .map(s => [String(s.id), `${s.kode} · ${String(s.pernyataan).slice(0, 70)}${s.aktif === false ? ' (tidak berlaku)' : ''}`]);
+const OPSI_RAPAT = () => [...RAPAT_SPMI].sort((a, b) => (b.jenis === 'rtm') - (a.jenis === 'rtm') || String(b.tanggal).localeCompare(String(a.tanggal)))
+  .map(r => [String(r.id), `${r.jenis === 'rtm' ? 'RTM · ' : ''}${String(r.tanggal).split('-').reverse().join('/')} · ${r.judul}`]);
+const OPSI_TEMUAN = () => TEMUAN_SPMI.map(t => [String(t.id), `${t.tahun_ts} · ${t.kode ? t.kode + ' · ' : ''}${String(t.uraian).slice(0, 70)}`]);
+const opsi = c => typeof c.o === 'function' ? c.o() : c.o;
+// Kondisi sarana/fasilitas (instal-lengkap.sql): kolom Terawat / Tidak Terawat lembar 5a, 5c.
+const KONDISI = [['terawat', 'Terawat'], ['tidak_terawat', 'Tidak terawat']];
+// Daftar pilihan templat LKPS (instal-lengkap.sql): lembar PS B5:B12, baris 2b.
+const STATUS_AKREDITASI = [['unggul', 'Terakreditasi Unggul'], ['a', 'Terakreditasi A'], ['baik_sekali', 'Terakreditasi Baik Sekali'],
+  ['b', 'Terakreditasi B'], ['baik', 'Terakreditasi Baik'], ['c', 'Terakreditasi C'], ['minimum', 'Terakreditasi Minimum'],
+  ['tidak_terakreditasi', 'Tidak Terakreditasi']];
+const JENIS_DANA = [['biaya_dosen', 'a. Biaya dosen (gaji, honor)'], ['biaya_tendik', 'b. Biaya tenaga kependidikan (gaji, honor)'],
+  ['operasional_pembelajaran', 'c. Operasional pembelajaran (bahan, peralatan habis pakai)'],
+  ['operasional_tidak_langsung', 'd. Operasional tidak langsung (listrik, gas, air, pemeliharaan, dll.)'],
+  ['operasional_luar_pt', 'e. Operasional pendidikan di luar PT (khusus Profesi Insinyur)'],
+  ['investasi', 'f. Investasi (SDM, sarana, prasarana)'], ['kemahasiswaan', 'Operasional kemahasiswaan'],
+  ['penelitian', 'Biaya penelitian'], ['pkm', 'Biaya PkM']];
+// Bukti kerja sama: daftar pilihan lembar 2a1 L4:L7 (instal-lengkap.sql).
+let BIDANG_KH = [];   // ref_bidang_keahlian untuk tab Topik keahlian
+const TABEL = [
+  { id: 'tracer', tabel: 'lkps_tracer_lulusan', judul: 'Tracer study', butir: '48–51',
+    ket: 'Satu baris per TAHUN LULUS, angka gabungan tanpa nama (Tabel 6.f.1, 6.f.2, 6.g.1). '
+       + 'Butir 49–51 memakai lulusan TS-2 s.d. TS-1; responden minimal 30% lulusan. Pita waktu tunggu '
+       + 'mengikuti Tabel 6.f.1 bagian Sarjana (< 3, 3–18, > 18 bulan). Skor butir 49 memakai rata-rata '
+       + 'waktu tunggu (pita diperiksa cocok atau tidak); butir 50 = kesesuaian sedang + tinggi / terlacak.',
+    label: r => `Tracer lulusan ${r.tahun_lulus || ''}`, tahun: r => r.tahun_lulus,
+    kolom: [
+      { k: 'tahun_lulus', l: 'Tahun lulus', t: 'tahun', wajib: true },
+      { k: 'jumlah_lulusan', l: 'Jumlah lulusan', t: 'int' },
+      { k: 'jumlah_terlacak', l: 'Jumlah terlacak (responden)', t: 'int' },
+      { k: 'rata_rata_waktu_tunggu_bulan', l: 'Rata-rata waktu tunggu (bulan)', t: 'num' },
+      { k: 'bekerja_sesuai_bidang', l: 'Bekerja sesuai bidang (orang)', t: 'int' },
+      { k: 'wt_kurang_3', l: 'Waktu tunggu < 3 bulan (orang)', t: 'int' },
+      { k: 'wt_3_18', l: 'Waktu tunggu 3–18 bulan (orang)', t: 'int' },
+      { k: 'wt_lebih_18', l: 'Waktu tunggu > 18 bulan (orang)', t: 'int' },
+      { k: 'kesesuaian_rendah', l: 'Kesesuaian bidang kerja rendah (orang)', t: 'int' },
+      { k: 'kesesuaian_sedang', l: 'Kesesuaian bidang kerja sedang (orang)', t: 'int' },
+      { k: 'kesesuaian_tinggi', l: 'Kesesuaian bidang kerja tinggi (orang)', t: 'int' },
+      { k: 'kerja_internasional', l: 'Tempat kerja multinasional/internasional', t: 'int' },
+      { k: 'kerja_nasional', l: 'Tempat kerja nasional/wirausaha berizin', t: 'int' },
+      { k: 'kerja_wilayah', l: 'Tempat kerja wilayah/lokal', t: 'int' },
+      { k: 'pengguna_tanggapan', l: 'Pengguna lulusan yang memberi tanggapan', t: 'int' },
+      { k: 'bukti_url', l: 'Bukti (laporan tracer)', t: 'url' },
+    ],
+    cek: r => {
+      if (r.jumlah_terlacak != null && r.jumlah_lulusan != null && r.jumlah_terlacak > r.jumlah_lulusan)
+        return 'Jumlah terlacak melebihi jumlah lulusan.';
+      const kerja = (r.kerja_internasional || 0) + (r.kerja_nasional || 0) + (r.kerja_wilayah || 0);
+      if (r.jumlah_terlacak != null && kerja > r.jumlah_terlacak)
+        return 'Jumlah menurut tingkat tempat kerja melebihi jumlah terlacak.';
+      if (r.bekerja_sesuai_bidang != null && r.jumlah_terlacak != null && r.bekerja_sesuai_bidang > r.jumlah_terlacak)
+        return 'Bekerja sesuai bidang melebihi jumlah terlacak.';
+      const jml = ks => ks.reduce((a, k) => a + (r[k] || 0), 0);
+      if (r.jumlah_terlacak != null && jml(['wt_kurang_3', 'wt_3_18', 'wt_lebih_18']) > r.jumlah_terlacak)
+        return 'Jumlah menurut waktu tunggu melebihi jumlah terlacak.';
+      if (r.jumlah_terlacak != null && jml(['kesesuaian_rendah', 'kesesuaian_sedang', 'kesesuaian_tinggi']) > r.jumlah_terlacak)
+        return 'Jumlah menurut kesesuaian bidang melebihi jumlah terlacak.';
+      return '';
+    } },
+  { id: 'kepuasan', tabel: 'lkps_kepuasan_pengguna', judul: 'Kepuasan pengguna', butir: '52',
+    ket: 'Tabel 6.g.2 LKPS: tujuh baris per TAHUN AKADEMIK, satu per aspek, persentase jawaban '
+       + 'pengguna lulusan (sangat baik + baik + cukup + kurang = 100). Skor 52 = ΣTKi / 7 dengan '
+       + 'TKi = 4a + 3b + 2c + d. Skor selalu dihitung dari baris yang ada: aspek yang belum diisi bernilai 0, '
+       + 'jadi isi ketujuh aspek agar skornya penuh (pemilik 2026-11-10).',
+    label: r => `Kepuasan ${ASPEK_KEPUASAN.find(([v]) => v === r.aspek)?.[1] || r.aspek || ''} ${r.tahun_akademik || ''}`,
+    tahun: r => r.tahun_akademik ? +String(r.tahun_akademik).slice(5) : null,
+    kolom: [
+      { k: 'tahun_akademik', l: 'Tahun akademik survei (mis. 2025/2026)', t: 'ta', wajib: true },
+      { k: 'aspek', l: 'Aspek', t: 'pilihan', wajib: true, o: ASPEK_KEPUASAN },
+      { k: 'sangat_baik', l: 'Sangat baik (%)', t: 'num', maks: 100, wajib: true },
+      { k: 'baik', l: 'Baik (%)', t: 'num', maks: 100, wajib: true },
+      { k: 'cukup', l: 'Cukup (%)', t: 'num', maks: 100, wajib: true },
+      { k: 'kurang', l: 'Kurang (%)', t: 'num', maks: 100, wajib: true },
+      { k: 'rencana_tindak_lanjut', l: 'Rencana tindak lanjut', t: 'teks', lebar: true },
+      { k: 'bukti_url', l: 'Bukti (laporan survei)', t: 'url' },
+    ],
+    cek: r => {
+      const j = ['sangat_baik', 'baik', 'cukup', 'kurang'].reduce((a, k) => a + (r[k] || 0), 0);
+      return Math.abs(j - 100) > 1 ? `Keempat persentase berjumlah ${j}, seharusnya 100.` : '';
+    } },
+  { id: 'kohort', tabel: 'lkps_kohort_lulusan', judul: 'Kohort lulusan', butir: '44–45',
+    ket: 'Meniru Tabel 6.d LKPS: satu baris per TAHUN MASUK (angkatan), mundur s.d. TS-7. '
+       + 'Masa studi (butir 44) dan lulus tepat waktu (butir 45) dihitung dari sini.',
+    label: r => `Kohort masuk ${r.tahun_masuk || ''}`, tahun: r => r.tahun_masuk,
+    kolom: [
+      { k: 'tahun_masuk', l: 'Tahun masuk', t: 'tahun', wajib: true },
+      { k: 'jumlah_masuk', l: 'Jumlah mahasiswa masuk', t: 'int' },
+      { k: 'lulus_3_5_sd_4_5', l: 'Lulus 3,5 < MS ≤ 4,5 th', t: 'int' },
+      { k: 'lulus_4_5_sd_5_5', l: 'Lulus 4,5 < MS ≤ 5,5 th', t: 'int' },
+      { k: 'lulus_5_5_sd_6_5', l: 'Lulus 5,5 < MS ≤ 6,5 th', t: 'int' },
+      { k: 'lulus_6_5_sd_8', l: 'Lulus 6,5 < MS ≤ 8 th', t: 'int' },
+      { k: 'bukti_url', l: 'Bukti (ekspor SIAKAD)', t: 'url' },
+    ],
+    cek: r => {
+      const lulus = ['lulus_3_5_sd_4_5', 'lulus_4_5_sd_5_5', 'lulus_5_5_sd_6_5', 'lulus_6_5_sd_8']
+        .reduce((a, k) => a + (r[k] || 0), 0);
+      return r.jumlah_masuk != null && lulus > r.jumlah_masuk ? 'Jumlah lulusan melebihi jumlah masuk.' : '';
+    } },
+  { id: 'kerjasama', tabel: 'lkps_kerjasama', judul: 'Kerja sama', butir: '6–7',
+    ket: 'Daftar INDUK kerja sama (MoU/PKS/IA), Tabel 2.a.1–2.a.3 LKPS: pendidikan (magang/MBKM, praktisi '
+       + 'mengajar, pertukaran), penelitian, dan PkM. Dosen menautkan karya penelitian/PkM-nya ke kerja sama '
+       + 'di sini (isian karya, "Kerja sama induk"); di LKPS kegiatan itu tampil dengan tanggal, manfaat, dan bukti '
+       + 'induknya, dan mitranya tidak terhitung ganda. Bukti: IA/MoA DAN bukti pelaksanaan (MoU saja bukan '
+       + 'bukti realisasi). Durasi dan status dihitung LKPS dari tanggal. KP/magang mahasiswa yang selesai di '
+       + 'instansi bernama sama otomatis tercatat sebagai pelaksanaan kerja sama itu (lihat Rekap KP dan magang); '
+       + 'tulis nama mitra sama persis dengan nama instansi KP.',
+    label: r => `${r.mitra || 'Kerja sama'}`, tahun: r => r.tahun_mulai,
+    kolom: [
+      { k: 'mitra', l: 'Lembaga mitra', t: 'teks', wajib: true },
+      { k: 'jenis', l: 'Jenis', t: 'pilihan', wajib: true,
+        o: [['pendidikan', 'Pendidikan'], ['penelitian', 'Penelitian'], ['pkm', 'PkM']] },
+      { k: 'tingkat', l: 'Tingkat', t: 'pilihan', wajib: true, o: TINGKAT_3 },
+      { k: 'kegiatan', l: 'Judul kegiatan kerja sama', t: 'teks', lebar: true },
+      { k: 'manfaat', l: 'Manfaat bagi program studi', t: 'paragraf', contoh: true },
+      { k: 'tanggal_mulai', l: 'Tanggal awal', t: 'tanggal' },
+      { k: 'tanggal_selesai', l: 'Tanggal akhir (kosong = masih berlaku)', t: 'tanggal' },
+      { k: 'jenis_bukti', l: 'Jenis bukti utama', t: 'pilihan', o: JENIS_BUKTI_KS },
+      { k: 'tahun_mulai', l: 'Tahun mulai (otomatis dari tanggal awal)', t: 'tahun' },
+      { k: 'tahun_selesai', l: 'Tahun selesai (otomatis dari tanggal akhir)', t: 'tahun' },
+      { k: 'tautan_bukti', l: 'Bukti (IA/MoA + pelaksanaan)', t: 'url' },
+      // Patch 83 (pemilik 2026-11-16): kerja sama tampil di halaman publik Kerja sama kecuali dicentang.
+      { k: 'sembunyikan_publik', l: 'Sembunyikan dari situs publik (kerja sama yang dirahasiakan)', t: 'cek' },
+    ],
+    // Skor (bangun.py) memakai tahun; tanggal menentukan tahunnya bila diisi.
+    olah: r => {
+      if (r.tanggal_mulai) r.tahun_mulai = +r.tanggal_mulai.slice(0, 4);
+      if (r.tanggal_selesai) r.tahun_selesai = +r.tanggal_selesai.slice(0, 4);
+    },
+    cek: r => !r.tahun_mulai ? 'Isi tanggal awal (atau tahun mulai).'
+      : r.tanggal_mulai && r.tanggal_selesai && r.tanggal_selesai < r.tanggal_mulai ? 'Tanggal akhir lebih awal dari tanggal awal.'
+      : r.tahun_selesai != null && r.tahun_selesai < r.tahun_mulai ? 'Tahun selesai lebih awal dari tahun mulai.' : '',
+    tanda: r => KP_MITRA.has(r.id) ? `<div class="ket" title="KP/magang selesai di mitra ini (Rekap KP dan magang)">KP selesai: ${
+      esc(KP_MITRA.get(r.id))}</div>` : '' },
+  { id: 'mk', tabel: 'ref_mata_kuliah', judul: 'Mata kuliah', butir: '15, 17, 19, 20',
+    patch: 'instal-lengkap.sql', urut: ['semester', 'urutan', 'kode'],
+    ket: 'Satu baris per mata kuliah kurikulum (Tabel 3.a.1). Centang basic science/matematika untuk Tabel 3.a.4 '
+       + 'dan capstone design untuk Tabel 3.a.5 (pilih MK pendukungnya). Dosen pengampu mengisi kolom "MK yang '
+       + 'diampu" Tabel 4.a. Unggah dokumen RPS sebagai bukti baris. Daftar ini juga menjadi pilihan MK pada '
+       + 'isian karya integrasi penelitian/PkM.',
+    label: r => `${r.kurikulum ? r.kurikulum + ' · ' : ''}${r.kode || ''} ${r.nama || 'Mata kuliah'}`.trim(), tahun: () => null,
+    // Butir 20: bukti per unsur hanya untuk MK capstone (pemilik 2026-11-10).
+    unsur: { butir: '20', daftar: UNSUR.capstone, aktif: () => !!$('f_capstone')?.checked,
+      mati: 'Centang "MK capstone design" untuk mengisi bukti per unsur butir 20.' },
+    kolom: [
+      { k: 'kode', l: 'Kode MK', t: 'teks', wajib: true },
+      // instal-lengkap.sql (pemilik 2026-11-13): kode unik per kurikulum; MK kurikulum lama dinonaktifkan.
+      { k: 'kurikulum', l: 'Kurikulum (mis. K26)', t: 'teks', wajib: true, patch70: true },
+      { k: 'nama', l: 'Nama mata kuliah', t: 'teks', wajib: true, lebar: true },
+      // instal-lengkap.sql (pemilik 2026-11-21): untuk halaman publik english.html.
+      { k: 'nama_en', l: 'Nama (English)', t: 'teks', lebar: true },
+      { k: 'semester', l: 'Semester', t: 'int' },
+      // instal-lengkap.sql (pemilik 2026-11-10).
+      { k: 'sifat', l: 'Sifat MK', t: 'pilihan', o: [['wajib', 'Wajib'], ['pilihan', 'Pilihan']], patch46: true },
+      // instal-lengkap.sql (pemilik 2026-11-22): peminatan MK pilihan; pilihan = kelompok keahlian dan
+      // peminatan lain di config (data.json situs). Tampil di kurikulum.html dan calon-mahasiswa.html.
+      { k: 'peminatan', l: 'Peminatan (MK pilihan)', t: 'pilihan', o: () => PEMINATAN, patch145: true },
+      { k: 'sks_kuliah', l: 'SKS kuliah/responsi/tutorial', t: 'num' },
+      { k: 'sks_seminar', l: 'SKS seminar', t: 'num' },
+      { k: 'sks_praktikum', l: 'SKS praktikum/praktik lapangan/penugasan', t: 'num' },
+      { k: 'unit_penyelenggara', l: 'Unit penyelenggara', t: 'pilihan',
+        o: [['universitas', 'Universitas'], ['fakultas', 'Fakultas'], ['prodi', 'Prodi']] },
+      { k: 'inti', l: 'MK kompetensi (inti)', t: 'cek' },
+      { k: 'rps_ada', l: 'Dokumen RPS ada', t: 'cek' },
+      // Butir 15 (instal-lengkap.sql, pemilik 2026-11-10): unsur 1/4 dihitung dari kolom ini.
+      { k: 'rps_9_komponen', l: 'RPS memuat 9 komponen (butir 15)', t: 'cek', patch45: true },
+      { k: 'basic_science', l: 'Basic science / matematika (3.a.4)', t: 'cek' },
+      { k: 'capstone', l: 'MK capstone design (3.a.5)', t: 'cek' },
+      { k: 'capstone_pendukung', l: 'MK pendukung capstone (bila MK ini capstone)', t: 'jamak',
+        kosong: 'Simpan MK lain dulu, lalu pilih di sini.',
+        // Hanya MK kurikulum yang sama dengan MK yang sedang disunting (kode bisa sama di K21 dan K26).
+        o: () => { const ini = BARIS.find(m => m.id === SUNTING);
+          return BARIS.filter(m => m.id !== SUNTING && (!ini?.kurikulum || m.kurikulum === ini.kurikulum))
+            .map(m => [m.kode, `${m.kurikulum ? m.kurikulum + ' · ' : ''}${m.kode} — ${m.nama}`]); } },
+      { k: 'capstone_cakupan', l: 'Cakupan bahasan capstone', t: 'teks', lebar: true },
+      { k: 'pengampu', l: 'Dosen pengampu', t: 'jamak', kosong: 'Daftar dosen kosong.',
+        o: () => DOSEN.map(d => [d.nidn, d.nama]) },
+      { k: 'aktif', l: 'Aktif (masih di kurikulum)', t: 'cek', awal: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+      { k: 'rps_url', l: 'Dokumen RPS', t: 'url' },
+    ],
+    // sks = jumlah ketiga bagian bila salah satunya diisi.
+    olah: r => {
+      const bag = ['sks_kuliah', 'sks_seminar', 'sks_praktikum'];
+      if (bag.some(k => r[k] != null)) r.sks = bag.reduce((a, k) => a + (r[k] || 0), 0);
+      if (!r.capstone) { r.capstone_pendukung = []; r.capstone_cakupan = null; }
+      if (r.urutan == null) r.urutan = 100;
+      if (r.kurikulum != null) r.kurikulum = String(r.kurikulum).trim().toUpperCase();
+    },
+    cek: r => r.semester != null && (r.semester < 1 || r.semester > 14) ? 'Semester 1–14.'
+      : r.kurikulum != null && !/^K\d{2}$/.test(r.kurikulum) ? 'Kurikulum: huruf K dan dua angka tahun, mis. K26.' : '' },
+  // CPL per kurikulum, peta MK-CPL, korelasi CPL (instal-lengkap.sql, pemilik 2026-11-13). Rujukan kurikulum,
+  // bukan baris LKPS: tanpa bukti baris, tidak masuk Kelengkapan. MK/CPL diperiksa terhadap REF_CPL (dimuat saat tab dibuka).
+  { id: 'cpl', tabel: 'ref_cpl', judul: 'CPL', butir: '13, 14',
+    patch: 'instal-lengkap.sql', urut: ['kurikulum', 'urutan', 'kode'], tanpaBukti: true,
+    ket: 'Capaian pembelajaran lulusan per kurikulum (mis. K21 a–l, K26 A–I), berdampingan seperti mata kuliah. '
+       + 'Kode CPL harus sama dengan kode CPL di templat nilai CPL supaya capaian dan tren lintas kurikulum tersambung. '
+       + 'Impor CPL dulu, lalu Peta MK–CPL dan Korelasi CPL.',
+    label: r => `${r.kurikulum || ''} CPL ${r.kode || ''}`.trim(), tahun: () => null,
+    kolom: [
+      { k: 'kurikulum', l: 'Kurikulum (mis. K26)', t: 'teks', wajib: true },
+      { k: 'kode', l: 'Kode CPL (mis. A)', t: 'teks', wajib: true },
+      { k: 'ranah', l: 'Ranah', t: 'teks' },
+      { k: 'rumusan', l: 'Rumusan CPL', t: 'paragraf', wajib: true },
+      { k: 'rumusan_en', l: 'Rumusan (English)', t: 'paragraf' },
+      { k: 'indikator', l: 'Indikator / sub-indikator', t: 'paragraf' },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { r.kurikulum = normKur(r.kurikulum); r.kode = normCpl(r.kode); if (r.urutan == null) r.urutan = 100; },
+    cek: r => !/^K\d{2}$/.test(r.kurikulum || '') ? 'Kurikulum: huruf K dan dua angka tahun, mis. K26.'
+      : !/^[A-Za-z0-9.-]{1,10}$/.test(r.kode || '') ? 'Kode CPL: 1–10 huruf/angka, mis. A.' : '' },
+  { id: 'mk_cpl', tabel: 'ref_mk_cpl', judul: 'Peta MK–CPL', butir: '13, 14',
+    patch: 'instal-lengkap.sql', urut: ['kurikulum', 'kode_mk', 'cpl'], tanpaBukti: true,
+    ket: 'Satu baris per pasangan mata kuliah dan CPL dalam satu kurikulum (matriks MK–CPL dokumen kurikulum). '
+       + 'Sebaran CPL dalam satu MK dibagi rata (pemilik 2026-11-13); isi bobot bila kelak tim menetapkan bobot berbeda '
+       + '(porsi = bobot / jumlah bobot CPL MK itu). MK dan CPL harus sudah ada di kurikulum yang sama.',
+    label: r => `${r.kurikulum || ''} ${r.kode_mk || ''} → CPL ${r.cpl || ''}`.trim(), tahun: () => null,
+    kolom: [
+      { k: 'kurikulum', l: 'Kurikulum (mis. K26)', t: 'teks', wajib: true },
+      { k: 'kode_mk', l: 'Kode MK', t: 'teks', wajib: true },
+      { k: 'cpl', l: 'Kode CPL', t: 'teks', wajib: true },
+      { k: 'indikator', l: 'Sub-indikator (mis. j-1, j-3)', t: 'teks', lebar: true },
+      { k: 'bobot', l: 'Bobot (kosong = dibagi rata)', t: 'num' },
+    ],
+    olah: r => { r.kurikulum = normKur(r.kurikulum); r.cpl = normCpl(r.cpl); r.kode_mk = String(r.kode_mk || '').trim(); },
+    cek: r => !/^K\d{2}$/.test(r.kurikulum || '') ? 'Kurikulum: huruf K dan dua angka tahun, mis. K26.'
+      : r.bobot != null && !(r.bobot > 0 && r.bobot <= 100) ? 'Bobot: lebih dari 0 sampai 100, atau kosong.'
+      : REF_CPL.mk && !REF_CPL.mk.some(m => m.kurikulum === r.kurikulum && m.kode === r.kode_mk) ? `MK ${r.kode_mk} tidak ada di ${r.kurikulum}.`
+      : REF_CPL.cpl && !REF_CPL.cpl.some(c => c.kurikulum === r.kurikulum && c.kode === r.cpl) ? `CPL ${r.cpl} tidak ada di ${r.kurikulum}.` : '' },
+  { id: 'korelasi_cpl', tabel: 'ref_cpl_korelasi', judul: 'Korelasi CPL', butir: '13, 14',
+    patch: 'instal-lengkap.sql', urut: ['kurikulum_tujuan', 'cpl_tujuan', 'cpl_asal'], tanpaBukti: true,
+    ket: 'Pasangan CPL kurikulum lama → kurikulum baru (banyak-ke-banyak). Setara = isi CPL sama: tren capaian di Monitoring '
+       + 'disambung. Sebagian = hanya sebagian isi beririsan: ditampilkan berdampingan sebagai pembanding. Status "usulan" '
+       + 'ditandai * di Monitoring sampai tim kurikulum menyetujuinya.',
+    label: r => `${r.kurikulum_asal || ''} ${r.cpl_asal || ''} → ${r.kurikulum_tujuan || ''} ${r.cpl_tujuan || ''}`.trim(), tahun: () => null,
+    kolom: [
+      { k: 'kurikulum_asal', l: 'Kurikulum asal (mis. K21)', t: 'teks', wajib: true },
+      { k: 'cpl_asal', l: 'CPL asal', t: 'teks', wajib: true },
+      { k: 'kurikulum_tujuan', l: 'Kurikulum tujuan (mis. K26)', t: 'teks', wajib: true },
+      { k: 'cpl_tujuan', l: 'CPL tujuan', t: 'teks', wajib: true },
+      { k: 'tingkat', l: 'Tingkat', t: 'pilihan', wajib: true, o: [['setara', 'Setara (tren disambung)'], ['sebagian', 'Sebagian (berdampingan)']] },
+      { k: 'status', l: 'Status', t: 'pilihan', wajib: true, o: [['usulan', 'Usulan'], ['disetujui', 'Disetujui tim']] },
+      { k: 'alasan', l: 'Alasan', t: 'paragraf' },
+    ],
+    olah: r => { for (const k of ['kurikulum_asal', 'kurikulum_tujuan']) r[k] = normKur(r[k]); for (const k of ['cpl_asal', 'cpl_tujuan']) r[k] = normCpl(r[k]); },
+    cek: r => r.kurikulum_asal === r.kurikulum_tujuan ? 'Kurikulum asal dan tujuan harus berbeda.'
+      : REF_CPL.cpl && !REF_CPL.cpl.some(c => c.kurikulum === r.kurikulum_asal && c.kode === r.cpl_asal) ? `CPL ${r.cpl_asal} tidak ada di ${r.kurikulum_asal}.`
+      : REF_CPL.cpl && !REF_CPL.cpl.some(c => c.kurikulum === r.kurikulum_tujuan && c.kode === r.cpl_tujuan) ? `CPL ${r.cpl_tujuan} tidak ada di ${r.kurikulum_tujuan}.` : '' },
+  // Profil lulusan per kurikulum (instal-lengkap.sql, pemilik 2026-11-16): tampil di halaman publik kurikulum.html.
+  { id: 'profil_lulusan', tabel: 'ref_profil_lulusan', judul: 'Profil lulusan', butir: '13',
+    patch: 'instal-lengkap.sql', urut: ['kurikulum', 'urutan', 'kode'], tanpaBukti: true,
+    ket: 'Profil lulusan per kurikulum (mis. PL1 Perencana infrastruktur), sesuai dokumen kurikulum. Tampil di halaman '
+       + 'publik Kurikulum di atas daftar CPL, setelah pembangunan situs berikutnya (paling lama sejam). '
+       + 'Kolom CPL terkait: kode CPL kurikulum yang sama, dipisah koma (mis. A, B, E).',
+    label: r => `${r.kurikulum || ''} ${r.kode || ''} ${r.nama || 'Profil lulusan'}`.trim(), tahun: () => null,
+    kolom: [
+      { k: 'kurikulum', l: 'Kurikulum (mis. K26)', t: 'teks', wajib: true },
+      { k: 'kode', l: 'Kode (mis. PL1)', t: 'teks', wajib: true },
+      { k: 'nama', l: 'Nama profil', t: 'teks', wajib: true, lebar: true },
+      { k: 'nama_en', l: 'Nama (English)', t: 'teks', lebar: true },
+      { k: 'deskripsi', l: 'Deskripsi', t: 'paragraf' },
+      { k: 'cpl', l: 'CPL terkait (mis. A, B, E)', t: 'teks' },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => {
+      r.kurikulum = normKur(r.kurikulum);
+      r.kode = String(r.kode || '').trim().toUpperCase();
+      r.cpl = r.cpl ? String(r.cpl).split(/[,;\s]+/).filter(Boolean).map(normCpl).join(', ') : null;
+      if (r.urutan == null) r.urutan = 100;
+    },
+    cek: r => !/^K\d{2}$/.test(r.kurikulum || '') ? 'Kurikulum: huruf K dan dua angka tahun, mis. K26.'
+      : !/^[A-Za-z0-9.-]{1,10}$/.test(r.kode || '') ? 'Kode: 1–10 huruf/angka, mis. PL1.' : '' },
+  // Testimoni alumni dan mahasiswa (instal-lengkap.sql, pemilik 2026-11-21): tampil di Untuk calon mahasiswa HANYA
+  // bila tanggal persetujuan diisi dan "Tampil" dicentang.
+  { id: 'testimoni', tabel: 'testimoni', judul: 'Testimoni', butir: 'Situs publik',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'id'], tanpaBukti: true,
+    ket: 'Kutipan alumni atau mahasiswa untuk halaman publik Untuk calon mahasiswa. Tampil HANYA bila tanggal persetujuan '
+       + 'diisi (orangnya setuju nama, pekerjaan, dan kutipannya dimuat) dan "Tampil" dicentang. Catat cara persetujuan '
+       + '(mis. surel, formulir). Bila orangnya menarik persetujuan: hilangkan centang Tampil atau hapus barisnya.',
+    label: r => `${r.nama || 'Testimoni'}${r.pekerjaan ? ' — ' + r.pekerjaan : ''}`, tahun: () => null,
+    kolom: [
+      { k: 'nama', l: 'Nama', t: 'teks', wajib: true },
+      { k: 'peran', l: 'Peran', t: 'pilihan', o: [['alumni', 'Alumni'], ['mahasiswa', 'Mahasiswa']], wajib: true },
+      { k: 'angkatan', l: 'Angkatan (tahun masuk)', t: 'int' },
+      { k: 'tahun_lulus', l: 'Tahun lulus (alumni)', t: 'int' },
+      { k: 'pekerjaan', l: 'Pekerjaan (jabatan, instansi)', t: 'teks', lebar: true },
+      { k: 'kutipan', l: 'Kutipan (20–400 huruf)', t: 'paragraf', wajib: true },
+      { k: 'persetujuan_tanggal', l: 'Tanggal persetujuan', t: 'tanggal' },
+      { k: 'persetujuan_cara', l: 'Cara persetujuan (mis. surel, formulir)', t: 'teks' },
+      { k: 'tampil', l: 'Tampil di situs', t: 'cek', awal: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; if (r.tampil == null) r.tampil = true; if (!r.peran) r.peran = 'alumni'; },
+    cek: r => String(r.kutipan || '').trim().length < 20 ? 'Kutipan paling sedikit 20 huruf.'
+      : String(r.kutipan || '').trim().length > 400 ? 'Kutipan paling banyak 400 huruf.'
+      : (r.tampil && !r.persetujuan_tanggal) ? 'Isi tanggal persetujuan sebelum menampilkan, atau hilangkan centang Tampil.' : '' },
+  // Kalender akademik (instal-lengkap.sql, pemilik 2026-11-22): tampil di Layanan mahasiswa.
+  { id: 'kalender_akademik', tabel: 'kalender_akademik', judul: 'Kalender akademik', butir: 'Situs publik',
+    patch: 'instal-lengkap.sql', urut: ['mulai', 'id'], tanpaBukti: true,
+    ket: 'Kegiatan akademik prodi untuk halaman Layanan mahasiswa, diisi sekali per semester (registrasi, perkuliahan, ujian, '
+       + 'batas pengajuan TA/KP, yudisium, libur). Situs menampilkan kegiatan yang belum lewat lebih dari 60 hari, '
+       + 'ditambah tautan ke kalender akademik resmi universitas. Tanggal selesai kosong = satu hari.',
+    label: r => `${r.semester || ''} — ${r.kegiatan || 'Kegiatan'}`, tahun: () => null,
+    kolom: [
+      { k: 'semester', l: 'Semester (mis. Ganjil 2026/2027)', t: 'teks', wajib: true },
+      { k: 'kegiatan', l: 'Kegiatan', t: 'teks', wajib: true, lebar: true },
+      { k: 'kategori', l: 'Kategori', t: 'pilihan', wajib: true, o: [['registrasi', 'Registrasi/KRS'], ['perkuliahan', 'Perkuliahan'],
+        ['ujian', 'Ujian'], ['tugas_akhir', 'Tugas akhir'], ['kerja_praktik', 'Kerja praktik'], ['yudisium', 'Yudisium/wisuda'],
+        ['libur', 'Libur'], ['lainnya', 'Lainnya']] },
+      { k: 'mulai', l: 'Tanggal mulai', t: 'tanggal', wajib: true },
+      { k: 'selesai', l: 'Tanggal selesai (kosong = satu hari)', t: 'tanggal' },
+      { k: 'catatan', l: 'Catatan (maks. 300 huruf)', t: 'teks', lebar: true },
+      { k: 'tampil', l: 'Tampil di situs', t: 'cek', awal: true },
+    ],
+    olah: r => { if (r.tampil == null) r.tampil = true; if (!r.kategori) r.kategori = 'lainnya'; },
+    cek: r => String(r.semester || '').trim().length < 3 ? 'Semester paling sedikit 3 huruf, mis. Ganjil 2026/2027.'
+      : String(r.kegiatan || '').trim().length < 3 ? 'Kegiatan paling sedikit 3 huruf.'
+      : (r.selesai && r.mulai && r.selesai < r.mulai) ? 'Tanggal selesai tidak boleh sebelum tanggal mulai.'
+      : String(r.catatan || '').length > 300 ? 'Catatan paling banyak 300 huruf.' : '' },
+  { id: 'tema', tabel: 'ref_tema_peta_jalan', judul: 'Peta jalan', butir: '22–25',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'nama'],
+    ket: 'Tema peta jalan penelitian dan PkM prodi. Dosen memilih temanya di isian karya penelitian/PkM; '
+       + 'tema mengisi LKPS 6.h.1 dan 6.i, dan kesesuaian peta jalan di 3.a.3. Unggah dokumen peta jalan '
+       + 'sebagai bukti baris.',
+    label: r => r.nama || 'Tema', tahun: () => null,
+    kolom: [
+      { k: 'nama', l: 'Nama tema', t: 'teks', wajib: true, lebar: true },
+      { k: 'jenis', l: 'Berlaku untuk', t: 'pilihan', wajib: true,
+        o: [['keduanya', 'Penelitian dan PkM'], ['penelitian', 'Penelitian'], ['pkm', 'PkM']] },
+      { k: 'keterangan', l: 'Keterangan (sub-tema, target)', t: 'teks', lebar: true },
+      { k: 'aktif', l: 'Aktif', t: 'cek', awal: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; } },
+  // Daftar keahlian baku (instal-lengkap.sql, pemilik 2026-11-12): dosen memilih topik di Profil saya;
+  // halaman publik Kepakaran dosen memetakan bidang/topik × dosen. Tanpa bukti baris.
+  { id: 'bidang_keahlian', tabel: 'ref_bidang_keahlian', judul: 'Bidang keahlian', butir: 'Peta keahlian dosen',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'kode'], tanpaBukti: true,
+    ket: 'Bidang pada daftar keahlian baku prodi. Kode 3 huruf jangan diubah setelah dipakai; nonaktifkan bidang '
+       + 'alih-alih menghapusnya (bidang yang masih punya topik tidak bisa dihapus).',
+    label: r => `${r.kode || ''} ${r.nama || 'Bidang'}`, tahun: () => null,
+    kolom: [
+      { k: 'kode', l: 'Kode (3 huruf, mis. AIR)', t: 'teks', wajib: true },
+      { k: 'nama', l: 'Nama bidang (Indonesia)', t: 'teks', wajib: true, lebar: true },
+      { k: 'nama_en', l: 'Field name (English)', t: 'teks', wajib: true, lebar: true },
+      { k: 'cakupan', l: 'Cakupan', t: 'teks', lebar: true },
+      { k: 'aktif', l: 'Aktif', t: 'cek', awal: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { r.kode = String(r.kode || '').trim().toUpperCase(); if (r.urutan == null) r.urutan = 100; } },
+  { id: 'topik_keahlian', tabel: 'ref_topik_keahlian', judul: 'Topik keahlian', butir: 'Peta keahlian dosen',
+    patch: 'instal-lengkap.sql', urut: ['bidang', 'urutan'], tanpaBukti: true,
+    ket: 'Topik pada daftar keahlian baku. Nama Indonesia dan Inggris ditulis sekali. Sinonim = istilah lain yang dicari orang; '
+       + 'padanan = kata untuk memadankan judul karya dan topik OpenAlex secara otomatis (keduanya dipisah titik koma). '
+       + 'Kode = kode bidang + 2 angka (mis. AIR09). Nonaktifkan topik alih-alih menghapusnya.',
+    label: r => `${r.kode || ''} ${r.nama || 'Topik'}`, tahun: () => null,
+    kolom: [
+      { k: 'kode', l: 'Kode (mis. AIR09)', t: 'teks', wajib: true },
+      { k: 'bidang', l: 'Bidang', t: 'pilihan', wajib: true, get o(){ return BIDANG_KH.map(b => [b.kode, `${b.kode} — ${b.nama}`]); } },
+      { k: 'nama', l: 'Nama topik (Indonesia)', t: 'teks', wajib: true, lebar: true },
+      { k: 'nama_en', l: 'Topic name (English)', t: 'teks', wajib: true, lebar: true },
+      { k: 'sinonim', l: 'Sinonim (dipisah ;)', t: 'teks', lebar: true },
+      { k: 'padanan', l: 'Padanan otomatis (dipisah ;)', t: 'teks', lebar: true },
+      { k: 'aktif', l: 'Aktif', t: 'cek', awal: true },
+      { k: 'urutan', l: 'Urutan dalam bidang', t: 'int' },
+    ],
+    olah: r => { r.kode = String(r.kode || '').trim().toUpperCase(); if (r.urutan == null) r.urutan = 100; } },
+  // Butir 22, 24: dokumen peta jalan dengan bukti per unsur (pemilik 2026-11-10).
+  { id: 'peta_dok', tabel: 'lkps_peta_jalan', judul: 'Dokumen peta jalan', butir: '22, 24',
+    patch: 'instal-lengkap.sql', urut: ['jenis', 'urutan'],
+    ket: 'Satu baris per dokumen peta jalan UPPS: penelitian (butir 22) dan PkM (butir 24). Unggah bukti '
+       + 'untuk tiap unsur matriks; skor = banyaknya unsur berurutan mulai unsur 1 yang ada buktinya. '
+       + 'Daftar tema tetap di tab Peta jalan.',
+    label: r => `Peta jalan ${r.jenis === 'pkm' ? 'PkM' : 'penelitian'}${r.judul ? ' — ' + r.judul : ''}`,
+    tahun: r => r.tahun_mulai || null,
+    unsur: { butir: r => (r?.jenis === 'pkm' ? '24' : '22'), daftar: UNSUR.peta_jalan, aktif: () => true },
+    kolom: [
+      { k: 'jenis', l: 'Peta jalan', t: 'pilihan', wajib: true,
+        o: [['penelitian', 'Penelitian (butir 22)'], ['pkm', 'PkM (butir 24)']] },
+      { k: 'judul', l: 'Judul dokumen', t: 'teks', wajib: true, lebar: true },
+      { k: 'tahun_mulai', l: 'Berlaku mulai tahun', t: 'int' },
+      { k: 'tahun_selesai', l: 'Berlaku sampai tahun (kosong = masih berlaku)', t: 'int' },
+      { k: 'keterangan', l: 'Keterangan', t: 'teks', lebar: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; },
+    cek: r => r.tahun_mulai != null && r.tahun_selesai != null && r.tahun_selesai < r.tahun_mulai
+      ? 'Tahun selesai tidak boleh sebelum tahun mulai.' : '' },
+  { id: 'vmts', tabel: 'lkps_vmts', judul: 'VMTS', butir: '1–3', patch: 'instal-lengkap.sql',
+    urut: ['jenis'],
+    ket: 'Tabel 1 LKPS: satu baris per jenis — VMTS perguruan tinggi, VMTS UPPS, dan visi keilmuan program studi '
+       + '(cukup isi kolom Visi). Pernyataan di LKPS disusun "Visi: …; Misi: …; Tujuan: …; Strategi: …". '
+       + 'Unggah SK penetapan sebagai bukti baris.',
+    label: r => ({ pt: 'VMTS PT', upps: 'VMTS UPPS', ps: 'Visi keilmuan PS' })[r.jenis] || 'VMTS', tahun: () => null,
+    kolom: [
+      { k: 'jenis', l: 'Jenis', t: 'pilihan', wajib: true,
+        o: [['pt', 'VMTS perguruan tinggi'], ['upps', 'VMTS UPPS'], ['ps', 'Visi keilmuan program studi']] },
+      { k: 'nomor_sk', l: 'Nomor SK penetapan', t: 'teks' },
+      { k: 'visi', l: 'Visi', t: 'paragraf' },
+      { k: 'misi', l: 'Misi', t: 'paragraf' },
+      { k: 'tujuan', l: 'Tujuan', t: 'paragraf' },
+      { k: 'strategi', l: 'Strategi', t: 'paragraf' },
+      { k: 'tautan', l: 'Tautan dokumen', t: 'url' },
+    ],
+    cek: r => !(r.visi || r.misi || r.tujuan || r.strategi) ? 'Isi sedikitnya satu pernyataan.' : '' },
+  { id: 'prodi_upps', tabel: 'lkps_prodi_upps', judul: 'Prodi di UPPS', butir: 'PS, 6.a',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'nama_prodi'],
+    ket: 'Tabel Daftar Program Studi di UPPS: semua prodi di fakultas/UPPS, termasuk prodi ini (centang "Prodi yang '
+       + 'diakreditasi"). Jumlah mahasiswa prodi lain juga mengisi baris tambahan Tabel 6.a; untuk prodi ini Tabel 6.a '
+       + 'memakai tab Mahasiswa per TS.',
+    label: r => r.nama_prodi || 'Prodi', tahun: () => null,
+    kolom: [
+      { k: 'jenis_program', l: 'Jenis program', t: 'pilihan', wajib: true, o: [['Diploma Tiga', 'Diploma Tiga'],
+        ['Sarjana', 'Sarjana'], ['Sarjana Terapan', 'Sarjana Terapan'], ['Magister', 'Magister'],
+        ['Magister Terapan', 'Magister Terapan'], ['Doktor', 'Doktor'], ['Doktor Terapan', 'Doktor Terapan'],
+        ['Profesi Insinyur', 'Profesi Insinyur']] },
+      { k: 'nama_prodi', l: 'Nama program studi', t: 'teks', wajib: true, lebar: true },
+      { k: 'diakreditasi', l: 'Prodi yang diakreditasi (prodi ini)', t: 'cek' },
+      { k: 'status_akreditasi', l: 'Status/peringkat akreditasi', t: 'pilihan', o: STATUS_AKREDITASI },
+      { k: 'nomor_sk', l: 'Nomor SK akreditasi', t: 'teks' },
+      { k: 'tanggal_sk', l: 'Tanggal SK', t: 'tanggal' },
+      { k: 'tanggal_kedaluwarsa', l: 'Tanggal kedaluwarsa', t: 'tanggal' },
+      { k: 'mahasiswa_ts2', l: 'Mahasiswa aktif TS-2', t: 'int' },
+      { k: 'mahasiswa_ts1', l: 'Mahasiswa aktif TS-1', t: 'int' },
+      { k: 'mahasiswa_ts', l: 'Mahasiswa aktif TS', t: 'int' },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; },
+    cek: r => r.tanggal_sk && r.tanggal_kedaluwarsa && r.tanggal_kedaluwarsa < r.tanggal_sk
+      ? 'Tanggal kedaluwarsa lebih awal dari tanggal SK.' : '' },
+  { id: 'dana', tabel: 'lkps_penggunaan_dana', judul: 'Penggunaan dana', butir: '8–11',
+    patch: 'instal-lengkap.sql', urut: ['tahun_akademik', 'jenis'],
+    ket: 'Tabel 2.b LKPS: satu baris per TAHUN AKADEMIK per jenis penggunaan, dalam rupiah, untuk UPPS dan untuk '
+       + 'program studi. Rata-rata dan jumlah dihitung LKPS.',
+    label: r => `Dana ${r.tahun_akademik || ''} ${(JENIS_DANA.find(o => o[0] === r.jenis) || [, ''])[1]}`,
+    tahun: r => r.tahun_akademik ? +String(r.tahun_akademik).slice(5) : null,
+    kolom: [
+      { k: 'tahun_akademik', l: 'Tahun akademik (mis. 2025/2026)', t: 'ta', wajib: true },
+      { k: 'jenis', l: 'Jenis penggunaan', t: 'pilihan', wajib: true, o: JENIS_DANA },
+      { k: 'dana_upps', l: 'UPPS (Rp)', t: 'num' },
+      { k: 'dana_ps', l: 'Program studi (Rp)', t: 'num' },
+    ],
+    cek: r => r.dana_upps == null && r.dana_ps == null ? 'Isi dana UPPS atau program studi.' : '' },
+  { id: 'tendik', tabel: 'lkps_tendik', judul: 'Tenaga kependidikan', butir: '29',
+    patch: 'instal-lengkap.sql', urut: ['nama'],
+    ket: 'Tabel 4.b LKPS: laboran, teknisi, dan administrator sistem yang mendukung prodi (maksimal 20 baris di LKPS). '
+       + 'Unggah sertifikat kompetensi sebagai bukti baris.',
+    label: r => r.nama || 'Tenaga kependidikan', tahun: () => null,
+    kolom: [
+      { k: 'nama', l: 'Nama', t: 'teks', wajib: true, lebar: true },
+      { k: 'jabatan', l: 'Jabatan', t: 'pilihan', o: [['laboran', 'Laboran'], ['teknisi', 'Teknisi'],
+        ['administrator_sistem', 'Administrator sistem'], ['lainnya', 'Lainnya']] },
+      { k: 'pendidikan', l: 'Pendidikan terakhir', t: 'pilihan', o: [['s3', 'S3'], ['s2', 'S2'], ['s1', 'S1'],
+        ['d4', 'D4'], ['d3', 'D3'], ['d2', 'D2'], ['d1', 'D1'], ['sma_smk', 'SMA/SMK']] },
+      { k: 'sertifikat', l: 'Sertifikat kompetensi', t: 'teks', lebar: true },
+      { k: 'unit_kerja', l: 'Unit kerja', t: 'pilihan', o: [['upps', 'UPPS'], ['prodi', 'Program studi'], ['institusi', 'Institusi']] },
+      { k: 'aktif', l: 'Aktif', t: 'cek', awal: true },
+    ] },
+  { id: 'prasarana', tabel: 'lkps_prasarana', judul: 'Prasarana & alat', butir: '38',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'prasarana', 'alat'],
+    ket: 'Tabel 5.a LKPS: satu baris = satu sarana/alat/peraga utama pada satu prasarana (ruang kelas, ruang '
+       + 'diskusi, laboratorium). Nama prasarana tetap terisi setelah Tambah baris dan muncul sebagai saran saat '
+       + 'diketik, jadi alat-alat satu laboratorium cukup diisi nama alatnya. Nama ini juga dipilih di Operasional › '
+       + 'Laboratorium untuk menampilkan daftar alat di situs.',
+    label: r => [r.prasarana, r.alat].filter(Boolean).join(' — ') || 'Prasarana', tahun: () => null,
+    kolom: [
+      { k: 'prasarana', l: 'Nama prasarana (ruang/laboratorium)', t: 'teks', wajib: true, lebar: true, saranIsi: true, ingat: true },
+      { k: 'jumlah_prasarana', l: 'Jumlah prasarana', t: 'int' },
+      { k: 'alat', l: 'Nama sarana / alat / peraga', t: 'teks', lebar: true },
+      { k: 'jumlah_standar', l: 'Jumlah alat: standar minimal', t: 'int' },
+      { k: 'jumlah_dimiliki', l: 'Jumlah alat: dimiliki UPPS', t: 'int' },
+      { k: 'kepemilikan', l: 'Kepemilikan', t: 'pilihan', o: [['sendiri', 'Sendiri'], ['sewa', 'Sewa']] },
+      { k: 'kondisi', l: 'Kondisi', t: 'pilihan', o: KONDISI },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; } },
+  { id: 'dok_k3l', tabel: 'lkps_dokumen_k3l', judul: 'Dokumen K3L', butir: '39',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'jenis_dokumen'],
+    ket: 'Tabel 5.b LKPS: dokumen K3L di UPPS (kebijakan, SOP, rencana tanggap darurat, dsb.). Unggah dokumennya '
+       + 'sebagai bukti baris.',
+    label: r => r.jenis_dokumen || 'Dokumen K3L', tahun: () => null,
+    kolom: [
+      { k: 'jenis_dokumen', l: 'Jenis dokumen', t: 'teks', wajib: true, lebar: true },
+      { k: 'jumlah', l: 'Jumlah', t: 'int' },
+      { k: 'riwayat_pengesahan', l: 'Riwayat pengesahan (nomor, tanggal, revisi)', t: 'paragraf' },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; } },
+  { id: 'fas_k3l', tabel: 'lkps_fasilitas_k3l', judul: 'Fasilitas K3L', butir: '39',
+    patch: 'instal-lengkap.sql', urut: ['urutan', 'nama_sarana'],
+    ket: 'Tabel 5.c LKPS: fasilitas K3L di UPPS (APAR, kotak P3K, jalur evakuasi, APD, dsb.).',
+    label: r => r.nama_sarana || 'Fasilitas K3L', tahun: () => null,
+    kolom: [
+      { k: 'nama_sarana', l: 'Nama sarana', t: 'teks', wajib: true },
+      { k: 'fungsi', l: 'Fungsi', t: 'teks', lebar: true },
+      { k: 'jumlah_unit', l: 'Jumlah unit', t: 'int' },
+      { k: 'kondisi', l: 'Kondisi', t: 'pilihan', o: KONDISI },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; } },
+  { id: 'target', tabel: 'lkps_target_kinerja', judul: 'Target IKU/IKT', butir: '54–56', patch: 'instal-lengkap.sql',
+    urut: ['tahun_ts', 'urutan', 'nama'],
+    ket: 'Satu baris per indikator per TS. Isi butir bila indikator itu mengukur satu butir: target dan capaiannya otomatis masuk '
+       + 'kalimat capaian butir itu di draf LED. Contoh IKU: Waktu tunggu lulusan, butir 49, satuan bulan, arah maksimal, target 6. '
+       + 'Contoh IKT: Sitasi internasional DTPS, satuan sitasi, arah minimal. Untuk IKT, isi juga keempat unsur matriks butir 54. '
+       + 'Indikator yang belum tercapai (IKU maupun IKT) diberi analisis akar masalah dan rencana perbaikan (butir 56); '
+       + 'yang belum dianalisis ditandai merah di ringkasan capaian dan di Kelengkapan.',
+    label: r => `${String(r.jenis || '').toUpperCase()} ${r.nama || ''}`, tahun: r => r.tahun_ts,
+    kolom: [
+      { k: 'jenis', l: 'Jenis', t: 'pilihan', wajib: true, o: [['iku', 'IKU'], ['ikt', 'IKT']] },
+      { k: 'bidang', l: 'Bidang', t: 'pilihan', o: [['pendidikan', 'Pendidikan'], ['penelitian', 'Penelitian'], ['pkm', 'PkM'], ['tata_kelola', 'Tata kelola'], ['lainnya', 'Lainnya']] },
+      { k: 'nama', l: 'Nama indikator', t: 'teks', wajib: true, lebar: true },
+      { k: 'butir', l: 'Butir terkait (1–60)', t: 'int' },
+      { k: 'tahun_ts', l: 'Tahun TS (tahun akhir, mis. 2026)', t: 'tahun', wajib: true },
+      { k: 'satuan', l: 'Satuan', t: 'teks' },
+      { k: 'arah', l: 'Arah target', t: 'pilihan', wajib: true, o: [['minimal', 'Minimal (capaian ≥ target)'], ['maksimal', 'Maksimal (capaian ≤ target)']] },
+      { k: 'target', l: 'Target', t: 'num' },
+      { k: 'capaian', l: 'Capaian', t: 'num' },
+      // instal-lengkap.sql (pemilik 2026-11-11): capaian dihitung dari data situs.
+      { k: 'sumber', l: 'Sumber capaian otomatis (kosong = capaian diisi manual)', t: 'pilihan', o: OPSI_SUMBER, patch48: true },
+      { k: 'tujuan_strategis', l: 'IKT: tujuan strategis yang didukung', t: 'teks', lebar: true },
+      { k: 'dampak', l: 'IKT: dampak positif dan terukur', t: 'teks', lebar: true },
+      { k: 'daya_saing', l: 'IKT: daya saing internasional', t: 'teks', lebar: true },
+      // instal-lengkap.sql (pemilik 2026-11-12): analisis untuk semua indikator yang belum tercapai.
+      { k: 'analisis', l: 'Analisis capaian (akar masalah bila belum tercapai; IKT: hasil analisis untuk perbaikan)', t: 'paragraf' },
+      { k: 'rencana_perbaikan', l: 'Rencana perbaikan (bila belum tercapai): tindakan, penanggung jawab, waktu', t: 'paragraf', patch67: true },
+      { k: 'standar_id', l: 'Standar SPMI yang diukur', t: 'pilihan', o: () => OPSI_STANDAR(), patch67: true },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; },
+    cek: r => r.butir != null && (r.butir < 1 || r.butir > 60) ? 'Butir harus 1 sampai 60.' : '' },
+  // instal-lengkap.sql (pemilik 2026-11-12): Penetapan dan Peningkatan dalam PPEPP.
+  { id: 'standar', tabel: 'spmi_standar', judul: 'Standar SPMI', butir: '53, 55', patch: 'instal-lengkap.sql',
+    urut: ['urutan', 'kode'],
+    ket: 'Satu baris per butir standar SPMI. Isi dengan Impor rekap standar SPM (berkas Excel dari SPM) di bawah; impor bisa '
+       + 'diulang untuk versi baru: teks dan target diperbarui, capaian yang sudah diisi prodi tidak berubah. Standar turunan '
+       + 'prodi sendiri ditambahkan lewat form (asal Prodi, kode mis. P.01.01). Hilangkan centang Dipantau prodi untuk butir '
+       + 'yang bukan urusan prodi. Capaian per TS diisi di halaman Siklus PPEPP (menu Akreditasi).',
+    label: r => `${r.kode || ''} ${String(r.pernyataan || '').slice(0, 60)}`.trim(), tahun: () => null,
+    kolom: [
+      { k: 'kode', l: 'Kode butir', t: 'teks', wajib: true },
+      { k: 'induk', l: 'Standar induk (mis. A Pendidikan)', t: 'teks' },
+      { k: 'sub', l: 'Sub-standar', t: 'teks', lebar: true },
+      { k: 'pernyataan', l: 'Pernyataan isi standar', t: 'paragraf', wajib: true },
+      { k: 'luaran', l: 'Jenis luaran', t: 'paragraf' },
+      { k: 'pic', l: 'PIC', t: 'teks' },
+      { k: 'referensi', l: 'Referensi', t: 'teks', lebar: true },
+      { k: 'asal', l: 'Asal', t: 'pilihan', wajib: true, o: ASAL_STANDAR },
+      { k: 'dipantau', l: 'Dipantau prodi', t: 'cek', awal: true },
+      { k: 'aktif', l: 'Masih berlaku', t: 'cek', awal: true },
+      { k: 'dokumen_id', l: 'Dokumen penetapan', t: 'dokumen', saran: ['standar_spmi', 'manual_spmi', 'kebijakan_spmi'] },
+      { k: 'berlaku_sejak', l: 'Berlaku sejak', t: 'tanggal' },
+      { k: 'urutan', l: 'Urutan tampil', t: 'int' },
+    ],
+    olah: r => { if (r.urutan == null) r.urutan = 100; if (r.kode) r.kode = r.kode.trim(); },
+    cek: r => r.kode && r.kode.length > 30 ? 'Kode butir paling panjang 30 karakter.' : '' },
+  { id: 'revisi', tabel: 'spmi_standar_revisi', judul: 'Revisi standar', butir: '55', patch: 'instal-lengkap.sql',
+    urut: ['tanggal'],
+    ket: 'Satu baris per perubahan standar: bukti tahap Peningkatan. Tulis apa yang berubah (mis. "target kelulusan tepat waktu '
+       + 'naik dari 60% ke 70%") dan dasarnya: keputusan RTM, temuan AMI, atau evaluasi capaian. Rapat dipilih dari Rapat dan '
+       + 'notulen (jenis RTM tampil lebih dulu); dokumen standar hasil revisi dipilih dari tab Dokumen.',
+    label: r => `${(STANDAR.find(s => +s.id === +r.standar_id) || {}).kode || 'Standar'} ${r.versi ? 'v' + r.versi : ''} ${r.tanggal || ''}`.trim(),
+    tahun: r => r.tanggal ? tsDariTanggal(r.tanggal) : null,
+    kolom: [
+      { k: 'standar_id', l: 'Standar', t: 'pilihan', wajib: true, o: () => OPSI_STANDAR() },
+      { k: 'tanggal', l: 'Tanggal revisi ditetapkan', t: 'tanggal', wajib: true },
+      { k: 'versi', l: 'Versi baru (mis. 2)', t: 'teks' },
+      { k: 'perubahan', l: 'Perubahan (sebelum → sesudah)', t: 'paragraf', wajib: true },
+      { k: 'dasar', l: 'Dasar revisi', t: 'pilihan', wajib: true, o: DASAR_REVISI },
+      { k: 'rapat_id', l: 'Rapat yang memutuskan', t: 'pilihan', o: () => OPSI_RAPAT() },
+      { k: 'temuan_id', l: 'Temuan AMI yang ditindaklanjuti', t: 'pilihan', o: () => OPSI_TEMUAN() },
+      { k: 'dokumen_id', l: 'Dokumen standar hasil revisi', t: 'dokumen', saran: ['standar_spmi', 'manual_spmi'] },
+    ],
+    cek: r => r.perubahan && r.perubahan.length > 4000 ? 'Perubahan paling panjang 4000 karakter.' : '' },
+  { id: 'spmi', tabel: 'lkps_spmi_ppepp', judul: 'SPMI (PPEPP)', butir: '53–57', patch: 'instal-lengkap.sql',
+    urut: ['id'],
+    ket: 'Tabel 7.b LKPS: satu baris per tahap PPEPP (Penetapan, Pelaksanaan, Evaluasi, Pengendalian, Peningkatan). '
+       + 'Keempat tautan dipilih dari tab Dokumen (pustaka), jadi tidak ada unggah ulang. Tabel 7.a (kebijakan, pedoman '
+       + 'PPEPP, standar, tata cara pendokumentasian SPMI) diambil langsung dari tab Dokumen, beserta nomor dan tanggalnya.',
+    label: r => (TAHAP_PPEPP.find(o => o[0] === r.tahap) || [, 'Tahap'])[1], tahun: () => null,
+    kolom: [
+      { k: 'tahap', l: 'Tahap PPEPP', t: 'pilihan', wajib: true, o: TAHAP_PPEPP },
+      { k: 'dokumen_id', l: 'Dokumen', t: 'dokumen', saran: ['kebijakan_spmi', 'manual_spmi', 'standar_spmi', 'sk_unit_pm', 'dokumen_iku_ikt'] },
+      { k: 'audit_dokumen_id', l: 'Laporan hasil audit', t: 'dokumen', saran: ['laporan_ami'] },
+      { k: 'rtm_dokumen_id', l: 'Laporan RTM', t: 'dokumen', saran: ['laporan_rtm'] },
+      { k: 'peningkatan_dokumen_id', l: 'Dokumen peningkatan', t: 'dokumen', saran: ['dokumen_peningkatan_mutu', 'laporan_kinerja'] },
+      { k: 'keterangan', l: 'Keterangan', t: 'teks', lebar: true },
+    ] },
+  // instal-lengkap.sql (pemilik 2026-11-11): temuan AMI dan tindak lanjut (PPEPP).
+  { id: 'temuan', tabel: 'ami_temuan', judul: 'Temuan AMI', butir: '53, 55', patch: 'instal-lengkap.sql',
+    urut: ['tahun_ts', 'kode'],
+    ket: 'Satu baris per temuan dari laporan AMI. Isi rencana tindak lanjut, penanggung jawab, dan tenggat; lalu perbarui status: '
+       + 'Terbuka → Dalam proses → Selesai (tindakan selesai, menunggu verifikasi) → Ditutup (auditor/GPM memverifikasi efektif). '
+       + 'Unggah bukti tindak lanjut pada baris ini. Temuan tampil di Monitoring dan di tautan AMI; yang lewat atau dekat tenggat '
+       + 'masuk Pengingat. Bukti tindak lanjut ikut tercantum di butir 55 draf LED; tautan Monitoring untuk AMI (Monitoring, panel admin) '
+       + 'bisa diunggah sebagai bukti butir 55 unsur 3. Contoh: siklus AMI 2026, kode T-03, standar Pembelajaran, butir 15, KTS minor, "RPS 4 MK belum '
+       + 'ditinjau tahun ini", rencana "tinjauan RPS oleh tim kurikulum", pihak Prodi, tenggat 31/01/2027.',
+    label: r => `${r.kode ? r.kode + ' ' : ''}${String(r.uraian || 'Temuan').slice(0, 60)}`, tahun: r => r.tahun_ts,
+    kolom: [
+      { k: 'siklus', l: 'Siklus audit (mis. AMI 2026)', t: 'teks' },
+      { k: 'tahun_ts', l: 'Tahun TS (tahun akhir, mis. 2026)', t: 'tahun', wajib: true },
+      { k: 'tanggal_audit', l: 'Tanggal audit', t: 'tanggal' },
+      { k: 'kode', l: 'Kode temuan (mis. T-03)', t: 'teks' },
+      { k: 'standar_id', l: 'Standar SPMI (dari tab Standar SPMI)', t: 'pilihan', o: () => OPSI_STANDAR(), patch67: true },
+      { k: 'standar', l: 'Standar SPMI (teks, bila tidak ada di daftar)', t: 'teks' },
+      { k: 'butir', l: 'Butir terkait (1–60)', t: 'int' },
+      { k: 'kategori', l: 'Kategori', t: 'pilihan', wajib: true, o: KATEGORI_TEMUAN },
+      { k: 'uraian', l: 'Uraian temuan', t: 'paragraf', wajib: true },
+      { k: 'akar_masalah', l: 'Akar masalah', t: 'paragraf' },
+      { k: 'rencana', l: 'Rencana tindak lanjut', t: 'paragraf' },
+      { k: 'pihak', l: 'Pihak penanggung jawab', t: 'pilihan', o: PIHAK_TEMUAN },
+      { k: 'pj_nama', l: 'Nama penanggung jawab', t: 'teks' },
+      { k: 'pj_email', l: 'Email penanggung jawab (untuk pengingat; kosong = email pihak)', t: 'teks' },
+      { k: 'tenggat', l: 'Tenggat tindak lanjut', t: 'tanggal' },
+      { k: 'status', l: 'Status (kosong = Terbuka)', t: 'pilihan', o: STATUS_TEMUAN },
+      { k: 'tanggal_selesai', l: 'Tanggal tindakan selesai', t: 'tanggal' },
+      { k: 'verifikasi', l: 'Hasil verifikasi efektivitas', t: 'paragraf' },
+    ],
+    olah: r => { if (!r.status) r.status = 'terbuka'; if (r.pj_email) r.pj_email = r.pj_email.trim(); },
+    cek: r => r.butir != null && (r.butir < 1 || r.butir > 60) ? 'Butir harus 1 sampai 60.'
+      : r.pj_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.pj_email) ? 'Email penanggung jawab tidak sah.'
+      : ['selesai', 'ditutup'].includes(r.status) && !r.tanggal_selesai ? 'Isi tanggal tindakan selesai untuk status Selesai atau Ditutup.'
+      : r.status === 'ditutup' && !String(r.verifikasi || '').trim() ? 'Isi hasil verifikasi efektivitas sebelum menutup temuan.' : '' },
+  { id: 'mahasiswa', tabel: 'lkps_mahasiswa_ta', judul: 'Mahasiswa per TS', butir: '40–45',
+    ket: 'Satu baris per TAHUN AKADEMIK (TS = 1 Sep s.d. 31 Agu), angka gabungan. Mahasiswa aktif = NM '
+       + '(butir 40, 43, 46); lulusan + rerata IPK = butir 42; mahasiswa asing = butir 41. Masa studi dan '
+       + 'tepat waktu tidak perlu diisi bila tab Kohort lulusan terisi.',
+    label: r => `Mahasiswa TS ${r.tahun_akademik || ''}`,
+    tahun: r => r.tahun_akademik ? +String(r.tahun_akademik).slice(5) : null,
+    kolom: [
+      { k: 'tahun_akademik', l: 'Tahun akademik (mis. 2025/2026)', t: 'ta', wajib: true },
+      { k: 'jumlah_mahasiswa_aktif', l: 'Mahasiswa aktif', t: 'int' },
+      { k: 'jumlah_lulusan', l: 'Jumlah lulusan', t: 'int' },
+      { k: 'ipk_min', l: 'IPK lulusan minimum', t: 'num', maks: 4 },
+      { k: 'rerata_ipk_lulusan', l: 'Rerata IPK lulusan', t: 'num', maks: 4 },
+      { k: 'ipk_maks', l: 'IPK lulusan maksimum', t: 'num', maks: 4 },
+      { k: 'jumlah_mahasiswa_asing_penuh', l: 'Mahasiswa asing penuh waktu', t: 'int' },
+      { k: 'jumlah_mahasiswa_asing_paruh', l: 'Mahasiswa asing paruh waktu', t: 'int' },
+      { k: 'rerata_masa_studi_tahun', l: 'Rerata masa studi (tahun, opsional)', t: 'num', maks: 15 },
+      { k: 'persen_lulus_tepat_waktu', l: 'Lulus tepat waktu (%, opsional)', t: 'num', maks: 100 },
+      { k: 'bukti_url', l: 'Bukti (rekap PDDikti/SIAKAD)', t: 'url' },
+    ],
+    // Skor butir 41 memakai jumlah_mahasiswa_asing = penuh + paruh waktu (patch 26).
+    olah: r => {
+      if (r.jumlah_mahasiswa_asing_penuh != null || r.jumlah_mahasiswa_asing_paruh != null)
+        r.jumlah_mahasiswa_asing = (r.jumlah_mahasiswa_asing_penuh || 0) + (r.jumlah_mahasiswa_asing_paruh || 0);
+    },
+    cek: r => r.jumlah_mahasiswa_asing != null && r.jumlah_mahasiswa_aktif != null
+      && r.jumlah_mahasiswa_asing > r.jumlah_mahasiswa_aktif ? 'Mahasiswa asing melebihi mahasiswa aktif.'
+      : r.ipk_min != null && r.rerata_ipk_lulusan != null && r.ipk_min > r.rerata_ipk_lulusan ? 'IPK minimum lebih besar dari rerata.'
+      : r.ipk_maks != null && r.rerata_ipk_lulusan != null && r.ipk_maks < r.rerata_ipk_lulusan ? 'IPK maksimum lebih kecil dari rerata.' : '' },
+  { id: 'bkd', tabel: 'lkps_bkd', judul: 'Beban kerja dosen', butir: '30',
+    ket: 'Satu baris per dosen per semester (Tabel 4.c), dari bagian C LKD. DTPS mengisi sendiri di Input › BKD saya '
+       + 'dan dihitung setelah diverifikasi di halaman Verifikasi; tab ini untuk dosen lain dan koreksi admin. '
+       + 'Tabel 4.c dan butir 30 memakai SKS BKD; SKS Lebih hanya dicatat. Tidak pernah dipublikasikan.',
+    // Tersimpan PS ini = total - PS lain; total hanya ada di form (pemilik 2026-11-06).
+    siapkan: r => { r.pendidikan_total = pendidikanTotal(r); },
+    olah: r => { r.sks_pendidikan = pendidikanPS(r.pendidikan_total, r.sks_ps_lain_dalam, r.sks_ps_lain_luar); delete r.pendidikan_total; },
+    cek: r => r.sks_pendidikan < 0 ? 'SKS PS lain melebihi total pendidikan.' : '',
+    privat: true, tanda: r => r.verifikasi && r.verifikasi !== 'terverifikasi' ? `<br><b>${esc(r.verifikasi)}</b>` : '',
+    label: r => `BKD ${r.nidn || ''} ${r.tahun_akademik || ''} ${r.semester || ''}`,
+    tahun: r => r.tahun_akademik ? +String(r.tahun_akademik).slice(5) : null,
+    kolom: [
+      { k: 'nidn', l: 'Dosen', t: 'nidn', wajib: true },
+      { k: 'tahun_akademik', l: 'Tahun akademik', t: 'ta', wajib: true },
+      { k: 'semester', l: 'Semester', t: 'pilihan', wajib: true, o: [['ganjil', 'Ganjil'], ['genap', 'Genap']] },
+      { k: 'status', l: 'Status', t: 'pilihan', wajib: true,
+        o: [['dtps', 'DTPS'], ['dosen_tetap', 'Dosen tetap'], ['dosen_tidak_tetap', 'Dosen tidak tetap']] },
+      { k: 'jabatan_akademik', l: 'Jabatan akademik', t: 'pilihan',
+        o: [['tenaga_pengajar', 'Tenaga pengajar'], ['asisten_ahli', 'Asisten ahli'], ['lektor', 'Lektor'],
+            ['lektor_kepala', 'Lektor kepala'], ['guru_besar', 'Guru besar']] },
+      { k: 'pendidikan_tertinggi', l: 'Pendidikan tertinggi', t: 'pilihan', o: [['s2', 'S2'], ['s3', 'S3']] },
+      { k: 'pendidikan_total', l: 'SKS pendidikan total (baris Pelaksanaan Pendidikan)', t: 'num' },
+      { k: 'sks_ps_lain_dalam', l: 'Dari total itu: PS lain, dalam PT', t: 'num' },
+      { k: 'sks_ps_lain_luar', l: 'Dari total itu: PS lain, luar PT', t: 'num' },
+      { k: 'sks_penelitian', l: 'SKS penelitian', t: 'num' },
+      { k: 'sks_pkm', l: 'SKS PkM', t: 'num' },
+      { k: 'sks_penunjang', l: 'SKS penunjang', t: 'num' },
+      { k: 'sks_lebih_pendidikan', l: 'SKS Lebih pendidikan', t: 'num' },
+      { k: 'sks_lebih_penelitian', l: 'SKS Lebih penelitian', t: 'num' },
+      { k: 'sks_lebih_pkm', l: 'SKS Lebih PkM', t: 'num' },
+      { k: 'sks_lebih_penunjang', l: 'SKS Lebih penunjang', t: 'num' },
+      { k: 'bukti_url', l: 'Bukti (BKD/SISTER)', t: 'url' },
+    ] },
+  { id: 'prestasi', tabel: 'lkps_prestasi_mahasiswa', judul: 'Prestasi mahasiswa', butir: '43',
+    ket: 'Satu baris per prestasi (Tabel 6.c.1 akademik, 6.c.2 nonakademik), 5 tahun terakhir. '
+       + 'Dosen pembimbing juga mengisi di Input › Prestasi mahasiswa; isiannya dihitung setelah diverifikasi di halaman '
+       + 'Verifikasi. Prestasi terverifikasi tampil di halaman Prestasi situs publik (instal-lengkap.sql) dengan foto '
+       + 'dari bukti berjenis Foto kegiatan; nama mahasiswa hanya bila dicentang setuju, NIM tidak pernah tampil. '
+       + 'Centang "Sembunyikan dari situs publik" untuk prestasi yang tidak ingin ditampilkan.',
+    tanda: r => r.status && r.status !== 'terverifikasi' ? `<br><b>${esc(r.status)}</b>` : '',
+    label: r => `${r.nama_kegiatan || 'Prestasi'}`, tahun: r => r.tahun,
+    kolom: [
+      { k: 'nama_kegiatan', l: 'Nama kegiatan', t: 'teks', wajib: true, lebar: true },
+      { k: 'nama_mahasiswa', l: 'Mahasiswa (nama dan NIM)', t: 'mhs', nim: 'nim' },
+      { k: 'penyelenggara', l: 'Penyelenggara', t: 'teks' },
+      { k: 'bidang', l: 'Bidang', t: 'pilihan', wajib: true, o: [['akademik', 'Akademik'], ['non_akademik', 'Nonakademik']] },
+      { k: 'tingkat', l: 'Tingkat', t: 'pilihan', wajib: true,
+        o: [['internasional', 'Internasional'], ['nasional', 'Nasional'], ['wilayah_lokal', 'Wilayah/lokal']] },
+      { k: 'capaian', l: 'Capaian (mis. Juara 2)', t: 'teks' },
+      { k: 'tahun', l: 'Tahun', t: 'tahun', wajib: true },
+      { k: 'bulan', l: 'Bulan (dianjurkan)', t: 'bulan' },
+      { k: 'pembimbing', l: 'Dosen pembimbing', t: 'jamak', kosong: 'Daftar dosen kosong.',
+        o: () => DOSEN.map(d => [d.nidn, d.nama]) },
+      { k: 'tautan_bukti', l: 'Bukti (sertifikat/piagam)', t: 'url' },
+      // Situs publik (instal-lengkap.sql, pemilik 2026-11-16).
+      { k: 'tampil_nama', l: 'Mahasiswa setuju namanya ditampilkan di situs', t: 'cek' },
+      { k: 'cerita', l: 'Cerita singkat untuk situs (maks. 600 huruf)', t: 'paragraf' },
+      { k: 'sembunyikan_publik', l: 'Sembunyikan dari situs publik', t: 'cek' },
+    ],
+    cek: r => r.cerita && r.cerita.length > 600 ? 'Cerita untuk situs paling banyak 600 huruf.' : '' },
+  // Jadwal seminar dan sidang TA (instal-lengkap.sql, pemilik 2026-11-17): pendaftaran resmi di SIUP; di sini
+  // jadwal saja (tampil di Layanan mahasiswa) dan bahan rekap/beban dosen (rekap-ta.html).
+  { id: 'jadwal_ta', tabel: 'jadwal_ta', judul: 'Jadwal seminar/sidang TA',
+    ket: 'Satu baris per seminar proposal, seminar kemajuan, atau sidang akhir. Pendaftaran resmi tetap di SIUP; di sini '
+       + 'jadwalnya saja: tampil di halaman Layanan mahasiswa (tanpa NIM; nama hanya bila dicentang setuju) dan menjadi bahan '
+       + 'Rekap TA (beban membimbing dan menguji per dosen). Berita acara/daftar hadir boleh dilampirkan sebagai bukti (privat).',
+    label: r => `${({ seminar_proposal: 'Seminar proposal', seminar_kemajuan: 'Seminar kemajuan', sidang_akhir: 'Sidang akhir' })[r.tahap] || 'TA'} ${r.nama_mahasiswa || ''}`.trim(),
+    tahun: r => r.tanggal ? +String(r.tanggal).slice(0, 4) : null,
+    kolom: [
+      { k: 'tahap', l: 'Tahap', t: 'pilihan', wajib: true,
+        o: [['seminar_proposal', 'Seminar proposal'], ['seminar_kemajuan', 'Seminar kemajuan'], ['sidang_akhir', 'Sidang akhir']] },
+      { k: 'tanggal', l: 'Tanggal', t: 'tanggal', wajib: true },
+      { k: 'jam', l: 'Jam (mis. 09.00–10.30)', t: 'teks' },
+      { k: 'ruang', l: 'Ruang', t: 'teks', ingat: true },
+      { k: 'tautan_daring', l: 'Tautan daring (bila ada)', t: 'url' },
+      { k: 'nama_mahasiswa', l: 'Mahasiswa (nama dan NIM)', t: 'mhs', nim: 'nim' },
+      { k: 'judul', l: 'Judul TA', t: 'teks', wajib: true, lebar: true },
+      // Bidang keahlian TA (instal-lengkap.sql, pemilik 2026-11-22): arsip judul TA publik per bidang.
+      { k: 'bidang', l: 'Bidang keahlian (arsip judul TA; kosong = ikut pembimbing pertama)', t: 'pilihan', o: () => PEMINATAN, patch149: true },
+      { k: 'pembimbing', l: 'Dosen pembimbing', t: 'jamak', kosong: 'Daftar dosen kosong.', o: () => DOSEN.map(d => [d.nidn, d.nama]) },
+      { k: 'penguji', l: 'Dosen penguji (prodi)', t: 'jamak', kosong: 'Daftar dosen kosong.', o: () => DOSEN.map(d => [d.nidn, d.nama]) },
+      { k: 'penguji_luar', l: 'Penguji dari luar prodi (nama, instansi)', t: 'teks' },
+      { k: 'status', l: 'Status', t: 'pilihan', wajib: true,
+        o: [['terjadwal', 'Terjadwal'], ['selesai', 'Selesai'], ['ditunda', 'Ditunda'], ['batal', 'Batal']] },
+      { k: 'hasil', l: 'Hasil (setelah selesai)', t: 'pilihan',
+        o: [['lulus', 'Lulus'], ['lulus_revisi', 'Lulus dengan revisi'], ['mengulang', 'Mengulang']] },
+      // Revisi (instal-lengkap.sql): pengingat di Tugas saya pembimbing dan halaman Pengingat.
+      { k: 'batas_revisi', l: 'Batas revisi (bila lulus dengan revisi)', t: 'tanggal' },
+      { k: 'catatan_revisi', l: 'Catatan revisi dari penguji (tampil untuk mahasiswa)', t: 'paragraf' },
+      { k: 'revisi_selesai', l: 'Revisi selesai pada (diisi pembimbing di Rekap TA, atau di sini)', t: 'tanggal' },
+      { k: 'tampil_nama', l: 'Mahasiswa setuju namanya tampil di jadwal publik', t: 'cek' },
+      { k: 'sembunyikan_publik', l: 'Sembunyikan dari jadwal publik', t: 'cek' },
+    ],
+    cek: r => !String(r.nama_mahasiswa || '').trim() ? 'Isi nama mahasiswa.' : '' },
+  { id: 'publikasi', tabel: 'lkps_publikasi_mahasiswa', judul: 'Publikasi mahasiswa', butir: '46',
+    ket: 'Publikasi MANDIRI mahasiswa tanpa dosen (Tabel 6.e.1). Publikasi bersama dosen sudah masuk lewat '
+       + 'form karya dosen. Indeksasi dipakai butir 46.',
+    label: r => `${r.judul || 'Publikasi'}`, tahun: r => r.tahun,
+    kolom: [
+      { k: 'judul', l: 'Judul', t: 'teks', wajib: true, lebar: true },
+      { k: 'nama_mahasiswa', l: 'Mahasiswa (nama dan NIM)', t: 'mhs', nim: 'nim' },
+      { k: 'jenis', l: 'Jenis', t: 'pilihan',
+        o: [['jurnal', 'Jurnal'], ['prosiding', 'Prosiding'], ['buku', 'Buku'], ['lainnya', 'Lainnya']] },
+      { k: 'tingkat', l: 'Tingkat', t: 'pilihan', o: [['internasional', 'Internasional'], ['nasional', 'Nasional'], ['wilayah', 'Wilayah']] },
+      { k: 'indeksasi', l: 'Indeksasi', t: 'pilihan',
+        o: [['scopus', 'Scopus'], ['wos', 'WoS'], ['bereputasi', 'Bereputasi lain'], ['sinta', 'SINTA'], ['tidak_terindeks', 'Tidak terindeks']] },
+      { k: 'tahun', l: 'Tahun', t: 'tahun', wajib: true },
+      { k: 'bulan', l: 'Bulan (dianjurkan)', t: 'bulan' },
+      { k: 'bukti_url', l: 'Bukti (DOI/URL)', t: 'url' },
+    ] },
+  { id: 'luaran', tabel: 'lkps_luaran_mahasiswa', judul: 'Luaran mahasiswa', butir: '47',
+    ket: 'HKI, TTG, produk, dan buku karya mahasiswa (Tabel 6.e.3). LKPS hanya menghitung baris yang bertanggal '
+       + '(tahun + bulan) dan bernomor: nomor registrasi/paten, nomor HKI, nomor sertifikat TKT, atau ISBN.',
+    label: r => `${r.judul || 'Luaran'}`, tahun: r => r.tahun,
+    kolom: [
+      { k: 'judul', l: 'Judul', t: 'teks', wajib: true, lebar: true },
+      { k: 'jenis', l: 'Jenis', t: 'pilihan', wajib: true,
+        o: [['paten', 'Paten'], ['paten_sederhana', 'Paten sederhana'], ['hak_cipta', 'Hak cipta'],
+            ['desain_industri', 'Desain industri'], ['merek', 'Merek'], ['ttg', 'TTG'], ['produk', 'Produk'],
+            ['buku_isbn', 'Buku ber-ISBN'], ['book_chapter', 'Book chapter']] },
+      { k: 'nama_mahasiswa', l: 'Mahasiswa (nama dan NIM)', t: 'mhs', nim: 'nim' },
+      { k: 'nomor', l: 'Nomor (registrasi/paten, HKI, sertifikat TKT, atau ISBN)', t: 'teks', lebar: true },
+      { k: 'status_hki', l: 'Status paten (paten/paten sederhana)', t: 'pilihan',
+        o: [['registered', 'Registered'], ['granted', 'Granted'], ['komersial', 'Komersial']] },
+      { k: 'tkt', l: 'TKT (TTG/produk)', t: 'pilihan',
+        o: Array.from({ length: 9 }, (_, i) => [String(i + 1), 'TKT ' + (i + 1)]) },
+      { k: 'tahun', l: 'Tahun', t: 'tahun', wajib: true },
+      { k: 'bulan', l: 'Bulan (wajib untuk LKPS: tanggal)', t: 'bulan' },
+      { k: 'bukti_url', l: 'Bukti (sertifikat/ISBN)', t: 'url' },
+    ] },
+];
+
+// Tab Dokumen (pustaka dokumen prodi, instal-lengkap.sql) paling depan:
+// satu berkas tersimpan sekali, dipakai sebagai bukti di banyak tempat.
+TABEL.unshift({ id: 'dokumen', judul: 'Dokumen', khusus: true, butir: 'semua',
+  ket: 'Pustaka dokumen prodi: satu dokumen tersimpan SATU kali (kunci jenis + tahun + judul) dan bisa dipakai '
+     + 'sebagai bukti di banyak tab dan butir. Mengunggah dokumen dengan kunci yang sama MENGGANTI berkasnya '
+     + '(versi lama ke _arsip Drive), tidak membuat salinan. Unggah di sini atau langsung dari bukti baris di tab lain.' });
+// Jenis dokumen yang disarankan per tab (site/rencana-bukti.js JENIS_DOKUMEN).
+const SARAN_DOK = { target: ['dokumen_iku_ikt', 'laporan_kinerja'], tracer: ['laporan_tracer', 'data_survei_mentah'], kepuasan: ['survei_pengguna', 'data_survei_mentah'], kerjasama: ['dokumen_kerjasama', 'pedoman_kerjasama'],
+  mk: ['rps', 'kurikulum'], tema: ['peta_jalan_penelitian', 'peta_jalan_pkm'], peta_dok: ['peta_jalan_penelitian', 'peta_jalan_pkm'], vmts: ['sk_vmts', 'statuta', 'renstra_pt', 'renstra_upps'],
+  prodi_upps: ['sk_akreditasi_prodi'], dana: ['laporan_keuangan', 'laporan_audit_keuangan'], tendik: ['berkas_pribadi', 'sertifikat'], prasarana: ['pedoman_sarpras'],
+  dok_k3l: ['dokumen_k3l', 'kebijakan_k3l'], fas_k3l: ['kebijakan_k3l'], spmi: ['kebijakan_spmi', 'laporan_ami', 'laporan_rtm'], temuan: ['laporan_ami', 'dokumen_peningkatan_mutu', 'laporan_rtm'], bkd: ['rekap_bkd'], prestasi: ['sertifikat'],
+  luaran: ['sertifikat'], jadwal_ta: ['daftar_hadir'], kohort: ['data_mahasiswa'], mahasiswa: ['data_mahasiswa'], publikasi: ['lainnya'] };
+TABEL.forEach(T => { T.dok = SARAN_DOK[T.id] || ['lainnya']; });
+// Kunci saran-bukti.js: publikasi dan luaran di sana milik form karya dosen.
+const saranTab = T => htmlSaran(({ publikasi: 'publikasi_mhs', luaran: 'luaran_mhs' })[T.id] || T.id);
+
+let SAYA = null, DOSEN = [], AKTIF = TABEL[0], BARIS = [], SUNTING = null;
+// Pustaka dokumen; ADA29 = lkps_bukti bisa menunjuk dokumen (patch 29).
+let DOK = [], DOK_GAGAL = '', ADA29 = true, ADA30 = true;
+// ADA43 = lkps_bukti.unsur ada (instal-lengkap.sql): bukti per unsur butir 20, 22, 24.
+let ADA43 = true;
+// ADA45 = ref_mata_kuliah.rps_9_komponen ada (instal-lengkap.sql).
+let ADA45 = true;
+// ADA46 = ref_mata_kuliah.sifat ada (instal-lengkap.sql).
+let ADA46 = true;
+// ADA145 = ref_mata_kuliah.peminatan ada (instal-lengkap.sql); PEMINATAN = [kode, nama] dari data.json situs.
+let ADA145 = true, PEMINATAN = [];
+// ADA149 = jadwal_ta.bidang ada (instal-lengkap.sql); pilihan memakai PEMINATAN yang sama.
+let ADA149 = true;
+// ADA70 = ref_mata_kuliah.kurikulum ada (instal-lengkap.sql): MK K21 dan K26 berdampingan.
+let ADA70 = true;
+// ADA48 = lkps_target_kinerja.sumber ada (instal-lengkap.sql).
+let ADA48 = true;
+pasangContoh();
+const dokPer = id => DOK.find(d => d.id === id) || null;
+// Bukti jamak per baris (tabel lkps_bukti, supabase/instal-lengkap.sql).
+// LB: baris_id -> [bukti]; ANTREAN: bukti baris BARU yang menunggu disimpan.
+let LB = new Map(), LB_GAGAL = '', ANTREAN = [];
+// Kolom tautan lama (bukti_url / tautan_bukti) tidak lagi diisi di form;
+// isinya tetap tampil sebagai "Bukti (lama)".
+// ADA67 = spmi_standar ada (instal-lengkap.sql); kolom patch67 disembunyikan bila belum.
+let ADA67 = true;
+const kolomForm = T => T.kolom.filter(c => c.t !== 'url' && !(c.patch45 && !ADA45) && !(c.patch46 && !ADA46) && !(c.patch48 && !ADA48)
+  && !(c.patch67 && !ADA67) && !(c.patch70 && !ADA70) && !(c.patch145 && !ADA145) && !(c.patch149 && !ADA149));
+const kolomLama = T => (T.kolom.find(c => c.t === 'url') || {}).k;
+
+// Pilihan standar, rapat, dan temuan untuk tab SPMI (instal-lengkap.sql).
+// Dimuat ulang setelah tab Standar atau Temuan disimpan supaya pilihannya mutakhir.
+async function muatDaftarSPMI(){
+  const [st, rp, tm] = await Promise.all([
+    sb.from('spmi_standar').select('id,kode,pernyataan,aktif,dipantau,asal,lembar,induk,sub,luaran,pic,referensi').order('urutan').order('kode'),
+    sb.from('rapat').select('id,judul,jenis,tanggal').order('tanggal', { ascending: false }).limit(300),
+    sb.from('ami_temuan').select('id,kode,uraian,tahun_ts').order('tahun_ts', { ascending: false }).order('kode')]);
+  ADA67 = !st.error;
+  STANDAR = st.data || [];
+  RAPAT_SPMI = rp.error ? [] : rp.data || [];
+  TEMUAN_SPMI = tm.error ? [] : tm.data || [];
+}
+
+async function mulai(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return layarMasuk();
+  const { data: saya } = await dosenLogin(sb, session, 'id,nama,email,peran,dtps,kategori');
+  if (!saya) { $('hSub').textContent = 'Tidak terdaftar'; $('isi').innerHTML = '<p class="kosong">Email belum terdaftar.</p>'; return; }
+  SAYA = saya;
+  pasangMenu(sb);
+  // Koordinator (instal-lengkap.sql): tab bidangnya saja (koordinator TA: Jadwal TA; pembina: prestasi, publikasi, luaran).
+  if (saya.peran !== 'admin') {
+    const r = await sb.from('koordinator').select('jabatan,mulai,selesai').eq('dosen_id', saya.id);
+    saya.koordinator = r.error ? [] : aktifPada(r.data).map(k => k.jabatan);
+    const izin = tabBoleh(saya);
+    if (!izin.size) {
+      $('hSub').textContent = `Masuk sebagai ${saya.nama}`;
+      $('isi').innerHTML = '<p class="kosong">Halaman ini khusus admin prodi dan koordinator bidangnya.</p>';
+      return;
+    }
+    TABEL.splice(0, TABEL.length, ...TABEL.filter(t => izin.has(t.id)));
+    AKTIF = TABEL[0];
+    $('hSub').textContent = `Masuk sebagai ${saya.nama} (${saya.koordinator.map(labelJabatan).join(', ')})`;
+  } else $('hSub').textContent = `Masuk sebagai ${saya.nama} (${labelPeran(saya)})`;
+  // Pilihan dosen (BKD, pembimbing): tanpa admin/asesor yang bukan DTPS
+  // (admin staf/tendik bukan dosen).
+  const { data: ds } = await sb.from('dosen').select('nidn,nama,peran,dtps').order('nama');
+  DOSEN = (ds || []).filter(d => d.nidn && (d.dtps || ['dosen', 'pimpinan'].includes(d.peran)));
+  ADA29 = !(await sb.from('lkps_bukti').select('dokumen_id').limit(1)).error;
+  ADA30 = !(await sb.from('dokumen').select('nomor,tanggal').limit(1)).error;   // instal-lengkap.sql
+  ADA43 = !(await sb.from('lkps_bukti').select('unsur').limit(1)).error;
+  ADA45 = !(await sb.from('ref_mata_kuliah').select('rps_9_komponen').limit(1)).error;
+  ADA46 = !(await sb.from('ref_mata_kuliah').select('sifat').limit(1)).error;
+  ADA70 = !(await sb.from('ref_mata_kuliah').select('kurikulum').limit(1)).error;
+  ADA145 = !(await sb.from('ref_mata_kuliah').select('peminatan').limit(1)).error;
+  ADA149 = !(await sb.from('jadwal_ta').select('bidang').limit(1)).error;
+  if (ADA145 || ADA149) PEMINATAN = await fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    .then(d => [...(d.situs?.kelompok_keahlian || []), ...(d.situs?.peminatan_lain || [])].map(x => [x.kode, x.nama]));
+  ADA48 = !(await sb.from('lkps_target_kinerja').select('sumber').limit(1)).error;
+  await muatDaftarSPMI();
+  // Pilihan bidang untuk tab Topik keahlian (instal-lengkap.sql); kosong bila patch belum ada.
+  BIDANG_KH = (await sb.from('ref_bidang_keahlian').select('kode,nama').order('urutan')).data || [];
+  await muatPustaka();
+  const awal = new URLSearchParams(location.search).get('tab');
+  AKTIF = TABEL.find(t => t.id === awal) || TABEL[0];
+  $('isi').innerHTML = `
+    <div class="info">Data di halaman ini dipakai untuk skor, rincian, dan LKPS. Perubahan
+      tampil di halaman skor setelah data dibangun ulang.</div>
+    <nav class="grup-tab" id="grup"></nav>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="b" id="panel"></div>`;
+  // Sekali saja: panel tetap ada antar tab, isinya yang diganti.
+  $('panel').addEventListener('click', klikPanel);
+  $('panel').addEventListener('change', e => { if (e.target.closest('[data-jenis-bukti]')) klikPanel(e); });   // jenis bukti prestasi
+  $('grup').onclick = e => {
+    const b = e.target.closest('[data-grup]');
+    if (!b) return;
+    pilihTab(TABEL.find(t => grupTab(t) === b.dataset.grup));
+  };
+  $('tabs').onclick = e => {
+    const b = e.target.closest('[data-tab]');
+    if (b) pilihTab(TABEL.find(t => t.id === b.dataset.tab));
+  };
+  pilihTab(AKTIF);
+}
+
+// Jenis bukti prestasi (lkps_bukti_jenis_check, patch 38).
+const JENIS_BUKTI_PRESTASI = [['sertifikat', 'Sertifikat/piagam'], ['foto', 'Foto kegiatan (tampil di situs)'],
+  ['surat_tugas', 'SK/surat tugas'], ['lainnya', 'Lainnya']];
+// Blok bukti formulir: unggah langsung + pustaka (tautkan / unggah ke pustaka) + tautan luar.
+function blokBukti(T){
+  const pustaka = ADA29 ? `
+        <div class="unggah-baris"><select id="bk_pustaka">${opsiPustaka(DOK, T.dok)}</select>
+          <button type="button" class="btn ghost kecil" data-tautkan="1">Tautkan dari pustaka</button></div>
+        ${UNGGAH ? `<details class="unggah-dok"><summary>Unggah dokumen resmi baru ke pustaka (SK, pedoman, laporan; bisa dipakai baris lain)</summary>
+          <div class="unggah-baris"><select id="bk_jenis">${opsiJenis(T.dok, T.dok[0])}</select>
+            <input type="number" id="bk_tahun" min="1990" max="2100" placeholder="Tahun dokumen">
+            <input type="text" id="bk_dj" maxlength="120" placeholder="Judul/nomor dokumen"></div>
+          <div class="unggah-baris"><input type="file" id="bk_pustaka_berkas" accept="${esc(UNGGAH.accept)}" multiple>
+            <button type="button" class="btn ghost kecil" data-unggah-ke-pustaka="1">Unggah ke pustaka</button></div>
+          <p class="ket" id="bk_ket"></p></details>` : ''}`
+    : '';
+  // Unggah langsung untuk baris ini (pemilik 2026-11-17: tadinya hanya lewat pustaka, terlipat). Prestasi memilih
+  // jenis bukti: lkps_bukti.jenis 'foto' tampil di halaman Prestasi (halaman_publik.prestasi_publik).
+  const langsung = UNGGAH ? `<div class="unggah-baris">${T.tabel === 'lkps_prestasi_mahasiswa'
+      ? `<select id="bk_jb" aria-label="Jenis bukti"><option value="" selected>Pilih jenis bukti…</option>${
+          JENIS_BUKTI_PRESTASI.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>` : ''}
+        <input type="file" id="bk_berkas" accept="${esc(UNGGAH.accept)}" multiple>
+        <button type="button" class="btn kecil" data-unggah="1">Unggah berkas bukti</button></div>` : '';
+  return `<div class="fld lebar"><label>Bukti baris ini (boleh lebih dari satu)</label>
+        ${blokUnsur(T)}<ul class="bukti-l" id="bukti-l"></ul>${langsung}${pustaka}
+        <div class="unggah-baris"><input type="text" id="bk_judul" placeholder="Judul tautan luar (mis. DOI artikel)">
+          <input type="url" id="bk_url" placeholder="https://…">
+          <button type="button" class="btn ghost kecil" data-tautan="1">Tambah tautan luar</button></div></div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Ringkasan capaian IKU/IKT (pemilik 2026-11-11): dari baris tab ini.
+//  Aturan dan tabel di capaian-iku.js (dipakai juga Monitoring).
+// ---------------------------------------------------------------------
+// data.json publik untuk capaian otomatis (iku-otomatis.js), dimuat sekali.
+let D_PUBLIK, D_PUBLIK_JANJI = null;
+function dataPublik(){
+  if (D_PUBLIK !== undefined) return D_PUBLIK;
+  if (!D_PUBLIK_JANJI) D_PUBLIK_JANJI = fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : null)
+    .catch(() => null).then(d => { D_PUBLIK = d; if (AKTIF?.id === 'target') gambarCapaianIKU($('ci_ts')?.value); });
+  return null;
+}
+// Kurikulum dan rekap EDOM untuk sumber sks_basic_science/edom_rata (2026-11-13), dimuat sekali.
+let TAMBAHAN = null, TAMBAHAN_JANJI = null;
+function dataCapaian(){
+  if (!TAMBAHAN_JANJI) TAMBAHAN_JANJI = muatTambahan(sb).catch(() => null)
+    .then(x => { TAMBAHAN = x; if (AKTIF?.id === 'target') gambarCapaianIKU($('ci_ts')?.value); });
+  return denganTambahan(dataPublik(), TAMBAHAN);
+}
+// Baris dengan capaian otomatis bila bersumber (capaian tersimpan tidak diubah).
+const denganOtomatis = r => otomatisDari(r, dataCapaian());
+function gambarCapaianIKU(ts){
+  const box = $('capaian-iku');
+  if (!box) return;
+  const tsAda = tsTersedia(BARIS);
+  if (!tsAda.length) { box.innerHTML = ''; return; }
+  const pilih = tsAda.includes(+ts) ? +ts : tsAwal(tsAda);
+  const kini = BARIS.filter(r => +r.tahun_ts === pilih).map(denganOtomatis);
+  box.innerHTML = `<details class="massal" open><summary><b>Capaian IKU/IKT</b> — TS
+      <select id="ci_ts">${tsAda.map(t => `<option value="${t}"${t === pilih ? ' selected' : ''}>${t - 1}/${t}</option>`).join('')}</select></summary>
+    ${htmlCapaianIKU(BARIS, dataCapaian(), pilih)}
+    <p class="ket">${KET_CAPAIAN}</p>
+    ${kini.some(r => r._oto && +r._oto.nilai !== +(BARIS.find(b => b.id === r.id) || {}).capaian)
+      ? `<div class="aksi"><button type="button" class="btn ghost kecil" id="ci_salin">Salin capaian otomatis ke kolom capaian
+          (untuk draf LED)</button><span class="msg" id="ci_msg"></span></div>` : ''}</details>`;
+  $('ci_ts').onchange = e => gambarCapaianIKU(e.target.value);
+  if ($('ci_salin')) $('ci_salin').onclick = async () => {
+    const xs = kini.filter(r => r._oto && +r._oto.nilai !== +(BARIS.find(b => b.id === r.id) || {}).capaian);
+    for (const r of xs) {
+      const { error } = await sb.from('lkps_target_kinerja').update({ capaian: r._oto.nilai, oleh: SAYA.email,
+        diperbarui: new Date().toISOString() }).eq('id', r.id);
+      if (error) { $('ci_msg').className = 'msg buruk'; $('ci_msg').textContent = 'Gagal: ' + error.message; return; }
+    }
+    await muatBaris();
+  };
+}
+
+// ---------------------------------------------------------------------
+//  Impor rekap standar SPM (.xlsx; pemilik 2026-11-12, instal-lengkap.sql).
+//  Butir dicocokkan menurut kode: teks diperbarui, centang Dipantau/Masih berlaku
+//  tidak diubah; target per TS di-upsert ke spmi_capaian tanpa menyentuh capaian.
+//  Butir lama yang hilang dari berkas tidak dihapus, hanya dilaporkan.
+// ---------------------------------------------------------------------
+// Pantauan per lembar (pemilik 2026-11-12): centang Dipantau prodi untuk semua butir satu lembar
+// sekaligus. Butir tidak dihapus; capaian yang sudah diisi tetap ada.
+function gambarPantauLembar(){
+  const box = $('pantau-lembar');
+  if (!box) return;
+  const xs = ringkasLembar(BARIS);
+  if (!xs.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<details class="massal" open><summary><b>Pantauan per lembar</b> (butir yang ikut di Siklus PPEPP)</summary>
+    <p class="ket">Lembar yang bukan urusan prodi (mis. Perpustakaan, Akreditasi Unggul Institusi): klik <b>Jangan pantau</b>. <b>Hanya PIC prodi</b>
+      memantau butir yang penanggung jawabnya Dekan atau Kaprodi dan melepas butir ber-PIC rektorat (WR, Rektor, unit), mis. untuk IKU PT.
+      Butirnya tetap tersimpan dan bisa dipantau lagi; per butir tetap bisa diatur lewat Ubah.</p>
+    <div class="gulir"><table class="t"><thead><tr><th>Lembar</th><th>Dipantau</th><th>PIC Dekan/Kaprodi</th><th></th></tr></thead><tbody>${xs.map((x, i) => `<tr>
+      <td>${esc(x.lembar)}</td><td>${x.dipantau} dari ${x.total}</td><td>${x.picProdi}</td>
+      <td><button type="button" class="btn ghost kecil" data-pantau="${i}" data-nilai="1"${x.dipantau === x.total ? ' disabled' : ''}>Pantau semua</button>
+        <button type="button" class="btn ghost kecil" data-pantau="${i}" data-nilai="prodi"${x.hanyaProdi || !x.picProdi ? ' disabled' : ''}>Hanya PIC prodi</button>
+        <button type="button" class="btn ghost kecil" data-pantau="${i}" data-nilai="0"${x.dipantau === 0 ? ' disabled' : ''}>Jangan pantau</button></td></tr>`).join('')}
+    </tbody></table></div><span class="msg" id="pantau_msg"></span></details>`;
+  box.querySelectorAll('[data-pantau]').forEach(b => { b.onclick = () => aturPantau(xs[+b.dataset.pantau].lembar,
+    b.dataset.nilai === 'prodi' ? 'prodi' : b.dataset.nilai === '1'); });
+}
+// nilai: true (pantau semua), false (lepas semua), 'prodi' (hanya butir ber-PIC Dekan/Kaprodi; pemilik 2026-11-13).
+async function aturPantau(lembar, nilai){
+  const msg = (cls, s) => { const m = $('pantau_msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = s; };
+  const mau = r => nilai === 'prodi' ? picProdi(r) : nilai;
+  const ubah = BARIS.filter(r => ringkasLembar([r])[0].lembar === lembar && (r.dipantau !== false) !== mau(r));
+  if (!ubah.length) return;
+  $('pantau-lembar').querySelectorAll('button').forEach(b => { b.disabled = true; });
+  msg('', `Menyimpan ${ubah.length} butir…`);
+  for (const v of [true, false]) {
+    const ids = ubah.filter(r => mau(r) === v).map(r => r.id);
+    for (let i = 0; i < ids.length; i += 150) {
+      const { error } = await sb.from('spmi_standar').update({ dipantau: v, oleh: SAYA.email, diperbarui: new Date().toISOString() })
+        .in('id', ids.slice(i, i + 150));
+      if (error) { msg('buruk', 'Gagal: ' + error.message); gambarPantauLembar(); return; }
+    }
+  }
+  await muatBaris();
+  const masih = BARIS.filter(r => ringkasLembar([r])[0].lembar === lembar && r.dipantau !== false).length;
+  msg('ok', nilai === 'prodi' ? `${lembar}: kini ${masih} butir ber-PIC Dekan/Kaprodi yang dipantau (${ubah.length} butir diubah).`
+    : `${lembar}: ${ubah.length} butir ${nilai ? 'dipantau' : 'tidak dipantau lagi'}.`);
+}
+
+let REKAP_SPM = null, XLSX_SPM = null;
+function gambarImporStandar(){
+  const box = $('impor-standar');
+  if (!box) return;
+  box.innerHTML = `<details class="massal" open><summary><b>Impor rekap standar SPM</b> (berkas Excel dari SPM, mis. "Draft Rekap Standar")</summary>
+    <p class="ket">Satu lembar per standar; baris berkode (mis. A.01.02a) menjadi butir, baris tanpa kode di bawahnya menjadi rincian
+      butir itu (mis. target per jenjang). Kolom target 2026/2027 dan seterusnya menjadi target TS. Situs ini untuk LAM Teknik:
+      lembar akreditasi LAM lain tidak ditawarkan.</p>
+    <div class="unggah-baris"><input type="file" id="spm_xlsx" accept=".xlsx"></div>
+    <div id="spm_pratinjau"></div></details>`;
+  $('spm_xlsx').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const pv = $('spm_pratinjau');
+    pv.innerHTML = '<p class="ket">Membaca berkas…</p>';
+    try {
+      XLSX_SPM = XLSX_SPM || await import(SHEETJS);
+      const wb = XLSX_SPM.read(await f.arrayBuffer(), { type: 'array' });
+      const buku = Object.fromEntries(wb.SheetNames.map(n => [n, XLSX_SPM.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: null })]));
+      REKAP_SPM = bacaRekapSPM(buku);
+      gambarLembarSPM();
+    } catch (err) { REKAP_SPM = null; pv.innerHTML = `<p class="msg buruk">Berkas tidak terbaca: ${esc(err.message)}</p>`; }
+  };
+}
+function gambarLembarSPM(){
+  const pv = $('spm_pratinjau');
+  const tampil = (REKAP_SPM?.lembar || []).filter(l => l.jenis !== 'lain');
+  if (!tampil.length) { pv.innerHTML = '<p class="msg buruk">Tidak ada lembar berisi kolom "Butir Standar".</p>'; return; }
+  const lain = REKAP_SPM.lembar.filter(l => l.jenis === 'lain').map(l => l.nama);
+  pv.innerHTML = `<p class="ket"><b>Pilih lembar yang diimpor:</b></p>
+    <div class="jamak">${tampil.map((l, i) => `<label class="cek"><input type="checkbox" data-lembar="${i}"${l.jenis === 'bawaan' ? ' checked' : ''}>
+      ${esc(l.nama)} (${l.butir.length} butir)</label>`).join('')}</div>
+    ${lain.length ? `<p class="ket">Tidak ditawarkan (akreditasi LAM lain): ${esc(lain.join(', '))}.</p>` : ''}
+    <div id="spm_rencana"></div>`;
+  pv.querySelectorAll('[data-lembar]').forEach(x => { x.onchange = () => rencanaSPM(tampil); });
+  rencanaSPM(tampil);
+}
+let RENCANA_SPM = null;
+function rencanaSPM(tampil){
+  const butir = [...$('spm_pratinjau').querySelectorAll('[data-lembar]:checked')].flatMap(x => tampil[+x.dataset.lembar].butir);
+  const r = RENCANA_SPM = rencanaImporSPM(butir, BARIS);
+  const ts = [...new Set(butir.flatMap(b => Object.keys(b.target)))].sort();
+  $('spm_rencana').innerHTML = `<p class="ket"><b>${r.baru.length}</b> butir baru · <b>${r.ubah.length}</b> berubah · <b>${r.sama.length}</b> sama ·
+      <b>${r.target}</b> target per TS (${ts.map(t => labelTS(+t)).join(', ') || '—'})${r.ganda.length ? ` · <b>${r.ganda.length}</b> kode ganda dilewati: ${esc(r.ganda.join(', '))}` : ''}</p>
+    ${r.hilang.length ? `<p class="ket">${r.hilang.length} butir lama dari lembar ini tidak ada di berkas (tidak dihapus; hilangkan centang Masih berlaku bila memang dicabut):
+      ${esc(r.hilang.map(x => x.kode).join(', '))}</p>` : ''}
+    <div class="aksi"><button type="button" class="btn" id="spm_simpan"${butir.length ? '' : ' disabled'}>Simpan ${r.baru.length + r.ubah.length} butir dan ${r.target} target</button>
+      <span class="msg" id="spm_msg"></span></div>`;
+  $('spm_simpan').onclick = simpanImporSPM;
+}
+async function simpanImporSPM(){
+  const msg = (cls, s) => { const m = $('spm_msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = s; };
+  const r = RENCANA_SPM;
+  if (!r) return;
+  $('spm_simpan').disabled = true;
+  const jejak = { oleh: SAYA.email, diperbarui: new Date().toISOString() };
+  const semua = [...r.baru, ...r.ubah, ...r.sama];
+  const urutan = new Map(semua.map((b, i) => [b.kode, i + 1]));
+  const teks = b => ({ kode: b.kode, induk: b.induk, sub: b.sub, lembar: b.lembar, pernyataan: b.pernyataan, luaran: b.luaran,
+    pic: b.pic, referensi: b.referensi, urutan: urutan.get(b.kode), ...jejak });
+  const potong = (xs, n) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
+  try {
+    msg('', 'Menyimpan butir…');
+    for (const xs of potong(r.baru.map(b => ({ ...teks(b), asal: 'institusi', dipantau: true, aktif: true })), 100)) {
+      const { error } = await sb.from('spmi_standar').insert(xs);
+      if (error) throw error;
+    }
+    for (const xs of potong([...r.ubah, ...r.sama].map(teks), 100)) {
+      const { error } = await sb.from('spmi_standar').upsert(xs, { onConflict: 'kode' });
+      if (error) throw error;
+    }
+    const ids = new Map();
+    for (const ks of potong(semua.map(b => b.kode), 150)) {
+      const { data, error } = await sb.from('spmi_standar').select('id,kode').in('kode', ks);
+      if (error) throw error;
+      (data || []).forEach(x => ids.set(x.kode, x.id));
+    }
+    msg('', 'Menyimpan target per TS…');
+    const tg = semua.flatMap(b => Object.entries(b.target).filter(() => ids.has(b.kode))
+      .map(([ts, target]) => ({ standar_id: ids.get(b.kode), tahun_ts: +ts, target, ...jejak })));
+    for (const xs of potong(tg, 200)) {
+      const { error } = await sb.from('spmi_capaian').upsert(xs, { onConflict: 'standar_id,tahun_ts' });
+      if (error) throw error;
+    }
+    await muatBaris();
+    msg('ok', `${r.baru.length} butir baru, ${r.ubah.length} diperbarui, ${tg.length} target tersimpan. Capaian diisi di halaman Siklus PPEPP.`);
+  } catch (err) {
+    $('spm_simpan').disabled = false;
+    msg('buruk', 'Gagal: ' + err.message + '. Bagian yang sudah tersimpan tetap ada; simpan lagi untuk melanjutkan.');
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Impor CSV IKU/IKT (pemilik 2026-11-11). Baris dicocokkan menurut jenis +
+//  nama indikator + tahun TS: yang sudah ada diperbarui hanya pada sel yang
+//  terisi, yang belum ada ditambahkan.
+// ---------------------------------------------------------------------
+const KOLOM_CSV_IKU = [
+  ['jenis', 'iku atau ikt'],
+  ['bidang', 'pendidikan, penelitian, pkm, tata_kelola, atau lainnya'],
+  ['nama', 'nama indikator; tulis persis sama setiap tahun supaya tren antar-TS terbaca'],
+  ['butir', 'nomor butir matriks (1–60) yang diukur indikator ini; boleh kosong'],
+  ['tahun_ts', 'tahun akhir TS, mis. 2026 untuk 2025/2026'],
+  ['satuan', 'mis. %, judul, orang, tahun, kegiatan'],
+  ['arah', 'minimal (capaian harus ≥ target) atau maksimal (capaian harus ≤ target, mis. masa studi)'],
+  ['target', 'angka target; desimal boleh koma'],
+  ['capaian', 'angka capaian; kosongkan bila belum ada'],
+  ['tujuan_strategis', 'khusus IKT: tujuan strategis/renstra yang didukung'],
+  ['dampak', 'khusus IKT: dampak positif dan terukurnya'],
+  ['daya_saing', 'khusus IKT: bukti daya saing internasional'],
+  ['analisis', 'analisis capaian; untuk yang belum tercapai: akar masalah'],
+  ['urutan', 'urutan tampil (angka kecil di atas)'],
+  // 2026-11-13: sumber capaian otomatis (patch 48) dan butir standar SPMI yang diukur (patch 67).
+  ['sumber', 'kode sumber capaian otomatis, mis. tracer_wt_rata; kosong = capaian diisi manual (daftar kode di form Ubah)'],
+  ['standar', 'kode butir standar SPMI yang diukur, mis. O.02.15b (tab Standar SPMI); boleh kosong']];
+const CONTOH_CSV_IKU = [
+  ['iku', 'pendidikan', 'Rata-rata waktu tunggu lulusan', '49', '2026', 'bulan', 'maksimal', '6', '', '', '', '', '', '1', 'tracer_wt_rata', ''],
+  ['iku', 'penelitian', 'Publikasi bereputasi per DTPS', '33', '2026', 'judul per dosen', 'minimal', '1', '0,5', '', '', '', '', '2', '', ''],
+  ['iku', 'pendidikan', 'Rata-rata masa studi lulusan', '44', '2026', 'tahun', 'maksimal', '4,5', '4,8', '', '', '', '', '3', '', ''],
+  ['ikt', 'pkm', 'PkM yang mendukung SDGs', '54', '2026', 'kegiatan', 'minimal', '5', '', 'Renstra prodi sasaran 3: PkM berdampak',
+   'Jumlah desa mitra yang memakai hasil PkM', 'Kolaborasi dengan mitra luar negeri', '', '1', '', '']];
+const BIDANG_IKU = ['pendidikan', 'penelitian', 'pkm', 'tata_kelola', 'lainnya'];
+const kunciIKU = r => `${r.jenis}|${String(r.nama || '').trim().toLowerCase()}|${r.tahun_ts}`;
+function barisIKU(kepala, sel){
+  const ambil = k => { const i = kepala.indexOf(k); return i < 0 ? '' : String(sel[i] ?? '').trim(); };
+  const isi = {}, galat = [];
+  const jenis = ambil('jenis').toLowerCase();
+  if (jenis === 'iku' || jenis === 'ikt') isi.jenis = jenis; else galat.push('jenis: iku/ikt');
+  const nama = ambil('nama');
+  if (nama) isi.nama = nama; else galat.push('nama kosong');
+  const ts = ambil('tahun_ts');
+  if (/^\d{4}$/.test(ts) && +ts >= 2000 && +ts <= 2100) isi.tahun_ts = +ts; else galat.push('tahun_ts: 4 angka, mis. 2026');
+  const bidang = ambil('bidang').toLowerCase().replace(/\s+/g, '_');
+  if (bidang) { if (BIDANG_IKU.includes(bidang)) isi.bidang = bidang; else galat.push('bidang: ' + BIDANG_IKU.join('/')); }
+  const arah = ambil('arah').toLowerCase();
+  if (arah) { if (/^min/.test(arah)) isi.arah = 'minimal'; else if (/^maks|^max/.test(arah)) isi.arah = 'maksimal'; else galat.push('arah: minimal/maksimal'); }
+  for (const k of ['butir', 'target', 'capaian', 'urutan']) {
+    const v = ambil(k).replace(',', '.');
+    if (v === '') continue;
+    if (!Number.isFinite(+v)) { galat.push(`${k} bukan angka`); continue; }
+    isi[k] = ['butir', 'urutan'].includes(k) ? Math.round(+v) : +v;
+  }
+  if (isi.butir != null && (isi.butir < 1 || isi.butir > 60)) galat.push('butir 1–60');
+  for (const k of ['satuan', 'tujuan_strategis', 'dampak', 'daya_saing', 'analisis']) { const v = ambil(k); if (v) isi[k] = v; }
+  const sumber = ambil('sumber');
+  if (sumber) { if (OPSI_SUMBER.some(([id]) => id === sumber)) isi.sumber = sumber; else galat.push(`sumber "${sumber}" tidak dikenal`); }
+  const standar = ambil('standar');
+  if (standar) { const s = STANDAR.find(x => String(x.kode).toLowerCase() === standar.toLowerCase());
+    if (s) isi.standar_id = s.id; else galat.push(`standar "${standar}" tidak ada di tab Standar SPMI`); }
+  return { isi, galat };
+}
+let IMPOR_IKU = null;
+function gambarImporIKU(){
+  const box = $('impor-iku');
+  if (!box) return;
+  box.innerHTML = `<details class="massal"><summary><b>Impor CSV IKU/IKT</b> (banyak indikator sekaligus)</summary>
+    <p class="ket">Satu baris = satu indikator untuk satu TS. Baris dengan jenis, nama, dan tahun_ts yang sama dengan baris
+      yang sudah ada akan memperbarui baris itu (hanya sel yang terisi); selain itu ditambahkan. Pemisah titik koma atau koma.</p>
+    <div class="gulir"><table class="t"><thead><tr><th>Kolom</th><th>Maksud</th></tr></thead><tbody>${
+      KOLOM_CSV_IKU.map(([k, m]) => `<tr><td><code>${k}</code>${['jenis', 'nama', 'tahun_ts'].includes(k) ? ' *' : ''}</td><td>${esc(m)}</td></tr>`).join('')
+    }</tbody></table></div>
+    <div class="unggah-baris"><button type="button" class="btn ghost kecil" id="iku_templat">Unduh templat CSV (dengan contoh)</button>
+      <input type="file" id="iku_csv" accept=".csv,text/csv"></div>
+    <div id="iku_pratinjau"></div></details>`;
+  $('iku_templat').onclick = () => {
+    const teks = String.fromCharCode(0xFEFF) + [KOLOM_CSV_IKU.map(([k]) => k), ...CONTOH_CSV_IKU]
+      .map(r => r.map(v => /[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v).join(';')).join(String.fromCharCode(13, 10)) + String.fromCharCode(13, 10);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([teks], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'templat-iku-ikt.csv';
+    a.click();
+  };
+  $('iku_csv').onchange = async e => {
+    const f = e.target.files[0];
+    if (f) pratinjauImporIKU(await f.text());
+  };
+}
+function pratinjauImporIKU(teks){
+  const rows = bacaCSV(teks);
+  const kepala = (rows[0] || []).map(s => s.trim().toLowerCase());
+  const pv = $('iku_pratinjau');
+  if (!['jenis', 'nama', 'tahun_ts'].every(k => kepala.includes(k))) {
+    IMPOR_IKU = null;
+    pv.innerHTML = '<p class="msg buruk">Baris pertama harus judul kolom dan memuat <code>jenis</code>, <code>nama</code>, <code>tahun_ts</code>.</p>';
+    return;
+  }
+  const lama = new Map(BARIS.map(r => [kunciIKU(r), r]));
+  const dilihat = new Set();
+  const hasil = rows.slice(1).map((sel, i) => {
+    const r = barisIKU(kepala, sel), k = kunciIKU(r.isi);
+    if (!r.galat.length && dilihat.has(k)) r.galat.push('indikator ganda di CSV');
+    dilihat.add(k);
+    return { ...r, baris: i + 2, id: lama.get(k)?.id || null };
+  });
+  const sah = hasil.filter(r => !r.galat.length), salah = hasil.filter(r => r.galat.length);
+  IMPOR_IKU = sah;
+  pv.innerHTML = `<p class="ket"><b>${sah.filter(r => !r.id).length}</b> indikator baru · <b>${sah.filter(r => r.id).length}</b>
+      diperbarui · <b>${salah.length}</b> baris bermasalah (dilewati)</p>
+    ${salah.length ? `<ul class="bukti-l">${salah.map(r => `<li>Baris ${r.baris}: ${esc(r.galat.join('; '))}</li>`).join('')}</ul>` : ''}
+    <div class="aksi"><button type="button" class="btn" id="iku_simpan"${sah.length ? '' : ' disabled'}>Simpan ${sah.length} indikator</button>
+      <span class="msg" id="iku_msg"></span></div>`;
+  $('iku_simpan').onclick = simpanImporIKU;
+}
+async function simpanImporIKU(){
+  const msg = (cls, s) => { const m = $('iku_msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = s; };
+  if (!IMPOR_IKU?.length) return;
+  $('iku_simpan').disabled = true;
+  const jejak = { oleh: SAYA.email, diperbarui: new Date().toISOString() };
+  let n = 0;
+  for (const r of IMPOR_IKU.filter(x => x.id)) {
+    const { error } = await sb.from('lkps_target_kinerja').update({ ...r.isi, ...jejak }).eq('id', r.id);
+    if (error) { $('iku_simpan').disabled = false; return msg('buruk', `Gagal setelah ${n}: ${error.message}`); }
+    n++;
+  }
+  const kel = new Map();
+  for (const r of IMPOR_IKU.filter(x => !x.id)) {
+    const isi = { arah: 'minimal', urutan: 100, ...r.isi, ...jejak };
+    const kunci = Object.keys(isi).sort().join(',');
+    if (!kel.has(kunci)) kel.set(kunci, []);
+    kel.get(kunci).push(isi);
+  }
+  for (const xs of kel.values()) {
+    const { error } = await sb.from('lkps_target_kinerja').insert(xs, { defaultToNull: false });
+    if (error) { $('iku_simpan').disabled = false; return msg('buruk', `Gagal setelah ${n}: ${error.message}`); }
+    n += xs.length;
+  }
+  IMPOR_IKU = null;
+  await muatBaris();
+  msg('ok', `${n} indikator tersimpan. Ringkasan capaian di atas sudah diperbarui.`);
+}
+
+// ---------------------------------------------------------------------
+//  Impor CSV mata kuliah (pemilik 2026-11-10): MK baru ditambahkan, MK yang
+//  kodenya sudah ada diperbarui hanya pada kolom yang terisi di CSV. RPS,
+//  bukti, dan pengampu diisi sesudahnya lewat formulir.
+// ---------------------------------------------------------------------
+const KOLOM_CSV_MK = ['kurikulum', 'kode', 'nama', 'semester', 'sks_kuliah', 'sks_seminar', 'sks_praktikum', 'sifat',
+  'unit_penyelenggara', 'inti', 'basic_science', 'capstone', 'aktif'];
+const CONTOH_CSV_MK = [
+  ['K26', 'SI1101', 'Kalkulus I', '1', '3', '0', '0', 'wajib', 'universitas', 'tidak', 'ya', 'tidak', 'ya'],
+  ['K26', 'SI4201', 'Perancangan Terintegrasi', '7', '2', '0', '2', 'wajib', 'prodi', 'ya', 'tidak', 'ya', 'ya'],
+  ['K26', 'SI4305', 'Rekayasa Pantai', '7', '2', '0', '0', 'pilihan', 'prodi', 'tidak', 'tidak', 'tidak', 'ya']];
+// bacaCSV: kurikulum-cpl.js (CSV ';' atau ',' dengan tanda kutip).
+// Baris CSV -> {kode, isi, galat}; sel kosong tidak menimpa (kolomnya dilewati).
+function barisMK(kepala, sel, lama){
+  const ambil = k => { const i = kepala.indexOf(k); return i < 0 ? '' : String(sel[i] ?? '').trim(); };
+  const isi = {}, galat = [];
+  const kode = ambil('kode');
+  if (!kode) return { kode, isi, galat: ['kode kosong'] };
+  isi.kode = kode;
+  // Kurikulum (70-patch): wajib; MK dicocokkan per kurikulum + kode.
+  if (ADA70) {
+    const kur = ambil('kurikulum').toUpperCase();
+    if (!kur) galat.push('kurikulum kosong (mis. K26)');
+    else if (!/^K\d{2}$/.test(kur)) galat.push('kurikulum: huruf K dan dua angka, mis. K26');
+    else isi.kurikulum = kur;
+  }
+  const nama = ambil('nama');
+  if (nama) isi.nama = nama; else if (!lama) galat.push('nama kosong (MK baru)');
+  for (const k of ['semester', 'sks_kuliah', 'sks_seminar', 'sks_praktikum']) {
+    const v = ambil(k).replace(',', '.');
+    if (v === '') continue;
+    if (!Number.isFinite(+v) || +v < 0) galat.push(`${k} bukan angka`);
+    else isi[k] = k === 'semester' ? Math.round(+v) : +v;
+  }
+  if (isi.semester != null && (isi.semester < 1 || isi.semester > 14)) galat.push('semester 1–14');
+  const sifat = ambil('sifat').toLowerCase();
+  if (sifat) { if (/^w/.test(sifat)) isi.sifat = 'wajib'; else if (/^p/.test(sifat)) isi.sifat = 'pilihan'; else galat.push('sifat: wajib/pilihan'); }
+  const unit = ambil('unit_penyelenggara').toLowerCase();
+  if (unit) { if (['universitas', 'fakultas', 'prodi'].includes(unit)) isi.unit_penyelenggara = unit; else galat.push('unit: universitas/fakultas/prodi'); }
+  for (const k of ['inti', 'basic_science', 'capstone', 'aktif']) {
+    const v = ambil(k).toLowerCase();
+    if (v === '') continue;
+    if (/^(ya|y|v|1|true|benar|x)$/.test(v)) isi[k] = true;
+    else if (/^(tidak|t|n|0|false|salah|-)$/.test(v)) isi[k] = false;
+    else galat.push(`${k}: ya/tidak`);
+  }
+  const bag = ['sks_kuliah', 'sks_seminar', 'sks_praktikum'];
+  if (bag.some(k => k in isi)) isi.sks = bag.reduce((a, k) => a + (+(k in isi ? isi[k] : lama?.[k]) || 0), 0);
+  return { kode, isi, galat };
+}
+let IMPOR_MK = null;
+function gambarImporMK(){
+  const box = $('impor-mk');
+  if (!box) return;
+  box.innerHTML = `<details class="massal"><summary><b>Impor CSV mata kuliah</b> (daftar MK sekaligus; data dan bukti
+      dilengkapi sesudahnya)</summary>
+    <p class="ket">Kolom: ${KOLOM_CSV_MK.map(k => `<code>${k}</code>`).join(', ')}. Hanya ${ADA70 ? '<code>kurikulum</code> (mis. K26), ' : ''}<code>kode</code> dan (untuk MK baru)
+      <code>nama</code> yang wajib; MK dicocokkan per ${ADA70 ? 'kurikulum + kode' : 'kode'}. Sel kosong tidak mengubah data yang sudah ada. Pemisah titik koma atau koma; desimal boleh koma.
+      Nilai ya/tidak untuk inti, basic_science, capstone, aktif; sifat wajib/pilihan${ADA46 ? '' : ' (perlu supabase/instal-lengkap.sql)'}.</p>
+    <div class="unggah-baris"><button type="button" class="btn ghost kecil" id="mk_templat">Unduh templat CSV</button>
+      <input type="file" id="mk_csv" accept=".csv,text/csv"></div>
+    <div id="mk_pratinjau"></div></details>`;
+  $('mk_templat').onclick = () => {
+    const teks = '\uFEFF' + [KOLOM_CSV_MK, ...CONTOH_CSV_MK].map(r => r.join(';')).join('\r\n') + '\r\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([teks], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'templat-mata-kuliah.csv';
+    a.click();
+  };
+  $('mk_csv').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    pratinjauImporMK(await f.text());
+  };
+}
+function pratinjauImporMK(teks){
+  const rows = bacaCSV(teks);
+  const kepala = (rows[0] || []).map(s => s.trim().toLowerCase());
+  const pv = $('mk_pratinjau');
+  if (!kepala.includes('kode')) { IMPOR_MK = null; pv.innerHTML = '<p class="msg buruk">Baris pertama harus judul kolom dan memuat <code>kode</code>.</p>'; return; }
+  const asing = kepala.filter(k => k && !KOLOM_CSV_MK.includes(k));
+  // Kunci = kurikulum + kode (70-patch); sebelum patch 70 kode saja.
+  const kunciMK = (kur, kode) => `${ADA70 ? String(kur || '').trim().toUpperCase() : ''}|${String(kode || '').trim().toLowerCase()}`;
+  const lama = new Map(BARIS.map(r => [kunciMK(r.kurikulum, r.kode), r]));
+  const dilihat = new Set();
+  const hasil = rows.slice(1).map((sel, i) => {
+    const k = kunciMK(sel[kepala.indexOf('kurikulum')], sel[kepala.indexOf('kode')]);
+    const r = barisMK(kepala, sel, lama.get(k));
+    if (r.kode && dilihat.has(k)) r.galat.push(ADA70 ? 'kurikulum + kode ganda di CSV' : 'kode ganda di CSV');
+    dilihat.add(k);
+    if (!ADA46) delete r.isi.sifat;
+    return { ...r, baris: i + 2, baru: !lama.has(k) };
+  });
+  const sah = hasil.filter(r => !r.galat.length), salah = hasil.filter(r => r.galat.length);
+  IMPOR_MK = sah;
+  pv.innerHTML = `<p class="ket"><b>${sah.filter(r => r.baru).length}</b> MK baru · <b>${sah.filter(r => !r.baru).length}</b>
+      diperbarui · <b>${salah.length}</b> baris bermasalah (dilewati)${asing.length ? ` · kolom tak dikenal diabaikan: ${esc(asing.join(', '))}` : ''}</p>
+    ${salah.length ? `<ul class="bukti-l">${salah.map(r => `<li>Baris ${r.baris}${r.kode ? ` (${esc(r.kode)})` : ''}: ${esc(r.galat.join('; '))}</li>`).join('')}</ul>` : ''}
+    <div class="aksi"><button type="button" class="btn" id="mk_simpan"${sah.length ? '' : ' disabled'}>Simpan ${sah.length} MK</button>
+      <span class="msg" id="mk_msg"></span></div>`;
+  $('mk_simpan').onclick = simpanImporMK;
+}
+async function simpanImporMK(){
+  const msg = (cls, s) => { const m = $('mk_msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = s; };
+  if (!IMPOR_MK?.length) return;
+  $('mk_simpan').disabled = true;
+  // Satu kelompok per susunan kolom, supaya kolom yang tidak diisi tidak ikut tertimpa.
+  const kel = new Map();
+  for (const r of IMPOR_MK) {
+    const isi = { ...r.isi, oleh: SAYA.email, diperbarui: new Date().toISOString() };
+    const kunci = Object.keys(isi).sort().join(',');
+    if (!kel.has(kunci)) kel.set(kunci, []);
+    kel.get(kunci).push(isi);
+  }
+  let n = 0;
+  for (const xs of kel.values()) {
+    const { error } = await sb.from('ref_mata_kuliah').upsert(xs, { onConflict: ADA70 ? 'kurikulum,kode' : 'kode', defaultToNull: false });
+    if (error) { $('mk_simpan').disabled = false; return msg('buruk', `Gagal setelah ${n} MK: ${error.message}`); }
+    n += xs.length;
+  }
+  IMPOR_MK = null;
+  await muatBaris();
+  msg('ok', `${n} MK tersimpan. Lengkapi RPS, bukti, dan pengampu lewat tombol Ubah pada tiap baris.`);
+}
+
+// ---------------------------------------------------------------------
+//  CPL per kurikulum, peta MK-CPL, korelasi (pemilik 2026-11-13; instal-lengkap.sql).
+//  Impor CSV per tab; aturan baris di kurikulum-cpl.js (rencanaImpor). Peta: tiap MK di CSV
+//  dianggap lengkap, pasangan lama MK itu yang tidak ada di CSV dihapus (setelah konfirmasi).
+// ---------------------------------------------------------------------
+const JENIS_CPL = { cpl: 'cpl', mk_cpl: 'peta', korelasi_cpl: 'korelasi' };
+const KONFLIK_CPL = { cpl: 'kurikulum,kode', peta: 'kurikulum,kode_mk,cpl',
+  korelasi: 'kurikulum_asal,cpl_asal,kurikulum_tujuan,cpl_tujuan' };
+const NAMA_CPL = { cpl: 'CPL', peta: 'pasangan MK–CPL', korelasi: 'korelasi' };
+let REF_CPL = {}, IMPOR_CPL = null;
+async function muatRefCPL(){
+  const [mk, cpl, peta, kor] = await Promise.all([
+    sb.from('ref_mata_kuliah').select('id,kurikulum,kode,nama,sks,sifat,aktif'),
+    sb.from('ref_cpl').select('id,kurikulum,kode,rumusan,urutan'),
+    sb.from('ref_mk_cpl').select('id,kurikulum,kode_mk,cpl,indikator,bobot'),
+    sb.from('ref_cpl_korelasi').select('id,kurikulum_asal,cpl_asal,kurikulum_tujuan,cpl_tujuan,tingkat,status')]);
+  REF_CPL = { mk: mk.error ? null : mk.data || [], cpl: cpl.error ? null : cpl.data || [],
+    peta: peta.error ? [] : peta.data || [], korelasi: kor.error ? [] : kor.data || [] };
+}
+function gambarKurikulumCPL(T){
+  const jenis = JENIS_CPL[T.id];
+  if (jenis === 'peta' && $('sebaran-cpl')) {
+    $('sebaran-cpl').innerHTML = `<details class="massal" open><summary><b>Sebaran CPL dalam MK</b> (banyak MK dan SKS setara per CPL)</summary>
+      ${htmlSebaran(sebaranCPL(REF_CPL.mk || [], REF_CPL.cpl || [], REF_CPL.peta))}</details>`;
+  }
+  const box = $('impor-cpl');
+  if (!box || box.innerHTML) return;
+  const kolom = KOLOM_IMPOR[jenis];
+  box.innerHTML = `<details class="massal"><summary><b>Impor CSV ${NAMA_CPL[jenis]}</b> (banyak baris sekaligus)</summary>
+    <p class="ket">Kolom: ${kolom.map(k => `<code>${k}</code>`).join(', ')}. ${jenis === 'cpl'
+      ? 'Wajib <code>kurikulum</code>, <code>kode</code>, dan (untuk CPL baru) <code>rumusan</code>. Sel kosong tidak mengubah data yang ada.'
+      : jenis === 'peta' ? `Wajib <code>kurikulum</code>, <code>kode_mk</code>, <code>cpl</code>; bentuk matriks juga diterima
+        (kolom <code>kurikulum</code>, <code>kode</code>, lalu <code>CPL A</code>, <code>CPL B</code>, …; sel berisi v atau sub-indikator).
+        Tiap MK di CSV dianggap lengkap: pasangan lama MK itu yang tidak ada di CSV dihapus. <code>bobot</code> kosong = dibagi rata.`
+      : 'Wajib kelima kolom pertama; <code>tingkat</code> setara/sebagian, <code>status</code> usulan/disetujui (kosong = usulan untuk baris baru).'}
+      Pemisah titik koma atau koma. Kode MK berawalan 0: simpan dari Excel sebagai CSV UTF-8 dengan kolom kode berformat teks.</p>
+    <div class="unggah-baris"><button type="button" class="btn ghost kecil" id="cpl_templat">Unduh templat CSV</button>
+      <input type="file" id="cpl_csv" accept=".csv,text/csv"></div>
+    <div id="cpl_pratinjau"></div></details>`;
+  $('cpl_templat').onclick = () => {
+    const sel = v => /[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    const teks = '﻿' + [kolom, ...CONTOH_IMPOR[jenis]].map(r => r.map(sel).join(';')).join('\r\n') + '\r\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([teks], { type: 'text/csv;charset=utf-8' }));
+    a.download = `templat-${T.id.replace(/_/g, '-')}.csv`;
+    a.click();
+  };
+  $('cpl_csv').onchange = async e => { const f = e.target.files[0]; if (f) pratinjauImporCPL(jenis, await f.text()); e.target.value = ''; };
+}
+function pratinjauImporCPL(jenis, teks){
+  const pv = $('cpl_pratinjau');
+  if (!REF_CPL.mk || !REF_CPL.cpl) { pv.innerHTML = '<p class="msg buruk">Daftar MK/CPL belum terbaca. Jalankan supabase/instal-lengkap.sql.</p>'; return; }
+  const r = rencanaImpor(jenis, bacaCSV(teks), REF_CPL);
+  if (r.galat) { IMPOR_CPL = null; pv.innerHTML = `<p class="msg buruk">${esc(r.galat)}</p>`; return; }
+  IMPOR_CPL = { jenis, ...r };
+  pv.innerHTML = `<p class="ket"><b>${r.sah.filter(x => x.baru).length}</b> baru · <b>${r.sah.filter(x => !x.baru).length}</b> diperbarui${
+      jenis === 'peta' ? ` · <b>${r.hapus.length}</b> pasangan lama dihapus` : ''} · <b>${r.salah.length}</b> baris bermasalah (dilewati)${
+      r.asing.length ? ` · kolom tak dikenal diabaikan: ${esc(r.asing.join(', '))}` : ''}</p>
+    ${r.salah.length ? `<ul class="bukti-l">${r.salah.slice(0, 60).map(x => `<li>Baris ${x.baris} (${esc(x.label)}): ${esc(x.galat.join('; '))}</li>`).join('')}${
+      r.salah.length > 60 ? `<li>… dan ${r.salah.length - 60} lagi</li>` : ''}</ul>` : ''}
+    <div class="aksi"><button type="button" class="btn" id="cpl_simpan"${r.sah.length || r.hapus.length ? '' : ' disabled'}>Simpan ${r.sah.length} baris</button>
+      <span class="msg" id="cpl_msg"></span></div>`;
+  $('cpl_simpan').onclick = simpanImporCPL;
+}
+async function simpanImporCPL(){
+  const msg = (cls, s) => { const m = $('cpl_msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = s; };
+  const I = IMPOR_CPL;
+  if (!I) return;
+  if (I.hapus.length && !confirm(`${I.hapus.length} pasangan MK–CPL lama tidak ada di CSV dan akan dihapus. Lanjutkan?`)) return;
+  $('cpl_simpan').disabled = true;
+  const tabel = { cpl: 'ref_cpl', peta: 'ref_mk_cpl', korelasi: 'ref_cpl_korelasi' }[I.jenis];
+  // Satu kelompok per susunan kolom, supaya kolom yang tidak diisi tidak tertimpa.
+  const kel = new Map();
+  for (const x of I.sah) {
+    const isi = { ...x.isi, oleh: SAYA.email, diperbarui: new Date().toISOString() };
+    const k = Object.keys(isi).sort().join(',');
+    if (!kel.has(k)) kel.set(k, []);
+    kel.get(k).push(isi);
+  }
+  let n = 0;
+  for (const xs of kel.values()) {
+    const { error } = await sb.from(tabel).upsert(xs, { onConflict: KONFLIK_CPL[I.jenis], defaultToNull: false });
+    if (error) { $('cpl_simpan').disabled = false; return msg('buruk', `Gagal setelah ${n} baris: ${error.message}`); }
+    n += xs.length;
+  }
+  if (I.hapus.length) {
+    const { error } = await sb.from(tabel).delete().in('id', I.hapus);
+    if (error) return msg('buruk', `${n} baris tersimpan, tetapi penghapusan pasangan lama gagal: ${error.message}`);
+  }
+  IMPOR_CPL = null;
+  await muatBaris();
+  msg('ok', `${n} baris tersimpan${I.hapus.length ? `, ${I.hapus.length} pasangan lama dihapus` : ''}.`);
+}
+
+// ---------------------------------------------------------------------
+//  Kepuasan pengguna sekali isi (pemilik 2026-11-10): tujuh aspek satu
+//  tahun akademik dalam satu tabel; baris lama diperbarui, yang belum ada
+//  ditambahkan (unique tahun_akademik, aspek; instal-lengkap.sql).
+// ---------------------------------------------------------------------
+const KOLOM_PERSEN = ['sangat_baik', 'baik', 'cukup', 'kurang'];
+const taKini = () => { const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`; };
+function gambarMassalKepuasan(ta){
+  const box = $('massal');
+  if (!box) return;
+  const tas = [...new Set(BARIS.map(r => r.tahun_akademik).filter(Boolean))].sort().reverse();
+  const awal = ta || tas[0] || taKini();
+  const per = new Map(BARIS.filter(r => r.tahun_akademik === awal).map(r => [r.aspek, r]));
+  const bukti = [...per.values()].find(r => r.bukti_url)?.bukti_url || '';
+  box.innerHTML = `<details class="massal" open><summary><b>Isi sekaligus: tujuh aspek satu tahun akademik</b>
+      (${per.size} dari 7 aspek ${esc(awal)} sudah ada)</summary>
+    <div class="unggah-baris"><label>Tahun akademik survei <input id="m_ta" value="${esc(awal)}" placeholder="2025/2026"
+      list="m_ta_ada"></label><datalist id="m_ta_ada">${tas.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <button type="button" class="btn ghost kecil" id="m_muat">Tampilkan</button></div>
+    <div class="gulir"><table class="t"><thead><tr><th>Aspek</th><th>Sangat baik %</th><th>Baik %</th><th>Cukup %</th>
+      <th>Kurang %</th><th>Jumlah</th><th>Rencana tindak lanjut</th></tr></thead><tbody>
+    ${ASPEK_KEPUASAN.map(([a, l]) => { const r = per.get(a) || {}; return `<tr data-aspek="${a}"><td>${esc(l)}</td>
+      ${KOLOM_PERSEN.map(k => `<td><input type="number" min="0" max="100" step="0.01" data-k="${k}"
+        value="${r[k] ?? ''}" style="width:78px"></td>`).join('')}
+      <td data-jml>—</td><td><input data-k="rencana_tindak_lanjut" value="${esc(r.rencana_tindak_lanjut || '')}"></td></tr>`; }).join('')}
+    </tbody></table></div>
+    <div class="unggah-baris"><label>Tautan laporan survei (dipakai ketujuh baris)
+      <input type="url" id="m_bukti" value="${esc(bukti)}" placeholder="https://…" style="min-width:320px"></label></div>
+    <p class="ket">Kosongkan keempat persentase untuk aspek yang belum ada datanya (dihitung 0 di butir 52).
+      Tiap baris yang diisi harus berjumlah 100.</p>
+    <div class="aksi"><button type="button" class="btn" id="m_simpan">Simpan tujuh aspek</button>
+      <span class="msg" id="m_msg"></span></div></details>`;
+  const hitung = () => box.querySelectorAll('tr[data-aspek]').forEach(tr => {
+    const v = KOLOM_PERSEN.map(k => tr.querySelector(`[data-k="${k}"]`).value.trim());
+    const sel = tr.querySelector('[data-jml]');
+    if (v.every(x => x === '')) { sel.textContent = '—'; sel.style.color = ''; return; }
+    const j = v.reduce((a, x) => a + (+x || 0), 0);
+    sel.textContent = String(Math.round(j * 100) / 100);
+    sel.style.color = Math.abs(j - 100) > 1 ? 'var(--merah)' : 'var(--hijau)';
+  });
+  box.oninput = hitung;
+  hitung();
+  $('m_muat').onclick = () => gambarMassalKepuasan($('m_ta').value.trim());
+  $('m_simpan').onclick = simpanMassalKepuasan;
+}
+async function simpanMassalKepuasan(){
+  // Formulir digambar ulang setelah simpan: elemen pesan dicari setiap kali.
+  const tulisM = (cls, s) => { const msg = $('m_msg'); msg.className = 'msg' + (cls ? ' ' + cls : ''); msg.textContent = s; };
+  const ta = $('m_ta').value.trim(), bukti = $('m_bukti').value.trim();
+  const m = ta.match(/^(\d{4})\/(\d{4})$/);
+  if (!m || +m[2] !== +m[1] + 1) return tulisM('buruk', 'Tahun akademik ditulis seperti 2025/2026.');
+  if (bukti && !/^https?:\/\/\S+$/i.test(bukti)) return tulisM('buruk', 'Tautan laporan survei tidak sah.');
+  const baris = [], salah = [];
+  $('massal').querySelectorAll('tr[data-aspek]').forEach(tr => {
+    const v = Object.fromEntries(KOLOM_PERSEN.map(k => [k, tr.querySelector(`[data-k="${k}"]`).value.trim()]));
+    const nama = tr.cells[0].textContent;
+    if (Object.values(v).every(x => x === '')) return;
+    if (Object.values(v).some(x => x === '')) return salah.push(`${nama}: isi keempat persentase`);
+    const j = KOLOM_PERSEN.reduce((a, k) => a + +v[k], 0);
+    if (Math.abs(j - 100) > 1) return salah.push(`${nama}: berjumlah ${j}`);
+    baris.push({ tahun_akademik: ta, aspek: tr.dataset.aspek, ...Object.fromEntries(KOLOM_PERSEN.map(k => [k, +v[k]])),
+      rencana_tindak_lanjut: tr.querySelector('[data-k="rencana_tindak_lanjut"]').value.trim() || null,
+      bukti_url: bukti || null, oleh: SAYA.email, diperbarui: new Date().toISOString() });
+  });
+  if (salah.length) return tulisM('buruk', 'Periksa: ' + salah.join('; ') + '.');
+  if (!baris.length) return tulisM('buruk', 'Belum ada aspek yang diisi.');
+  $('m_simpan').disabled = true;
+  const { error } = await sb.from('lkps_kepuasan_pengguna').upsert(baris, { onConflict: 'tahun_akademik,aspek' });
+  $('m_simpan').disabled = false;
+  if (error) return tulisM('buruk', 'Gagal menyimpan: ' + error.message);
+  await muatBaris();
+  gambarMassalKepuasan(ta);
+  tulisM('ok', `${baris.length} aspek ${ta} tersimpan.` + (baris.length < 7 ? ` ${7 - baris.length} aspek belum diisi (dihitung 0).` : ''));
+}
+
+// Bukti per unsur butir 20/22/24 (unsur-butir.js): pilih unsur sebelum menautkan,
+// mengunggah, atau menambah tautan; ringkasan unsur terpenuhi di #unsur-status.
+function blokUnsur(T){
+  if (!T.unsur || !ADA43) return '';
+  return `<div id="unsur-blok"><div class="unsur-status" id="unsur-status"></div>
+    <div class="unggah-baris" id="unsur-pilih"><select id="bk_unsur">
+      <option value="">Bukti umum (bukan unsur penilaian)</option>
+      ${T.unsur.daftar.map((u, i) => `<option value="${i + 1}">Unsur ${i + 1}: ${esc(u)}</option>`).join('')}
+    </select></div><p class="ket" id="unsur-mati" hidden></p></div>`;
+}
+const unsurDipilih = () => (AKTIF.unsur && ADA43 && AKTIF.unsur.aktif() && +$('bk_unsur')?.value) || null;
+
+// LKD privat (Code.gs kind 'bkd'), bukan bukti baris biasa yang punya tautan publik.
+const blokLKD = () => `<div class="fld lebar"><label for="lkd_berkas">PDF LKD (privat)</label>
+  <input type="file" id="lkd_berkas" accept=".pdf"><small>Tanpa tautan publik; dibuka lewat tombol di daftar.
+  Berkas baru menggantikan tautan lama saat baris disimpan.</small></div>`;
+
+// Isian awal unggah ke pustaka untuk baris r: tahun baris, judul = label baris.
+function setelUnggah(r){
+  if (!$('bk_jenis')) return;
+  const T = AKTIF;
+  const judul = r ? T.label(r).slice(0, 120) : '';
+  // Baris tanpa tahun (MK, VMTS, peta jalan): ikut tahun dokumen pustaka yang
+  // sama jenis + judulnya, supaya unggah ulang MENGGANTI, bukan versi baru.
+  const ada = !(r && T.tahun(r)) && DOK.filter(d => d.jenis === $('bk_jenis').value && (d.judul || '') === judul)
+    .sort((a, b) => b.tahun - a.tahun)[0];
+  $('bk_tahun').value = (r && T.tahun(r)) || ada?.tahun || new Date().getFullYear();
+  $('bk_dj').value = judul;
+  ketUnggah();
+}
+function ketUnggah(){
+  const j = infoJenis($('bk_jenis').value);
+  $('bk_dj').hidden = j.tunggal;
+  const ada = cariDokumen(DOK, j.id, $('bk_tahun').value, $('bk_dj').value);
+  $('bk_ket').className = 'ket' + (ada ? ' buruk' : '');
+  $('bk_ket').textContent = ada
+    ? `Sudah ada di pustaka: ${labelDokumen(ada)}. Unggahan akan MENGGANTI berkas itu (tidak membuat salinan); `
+      + 'bila berkasnya sama, cukup pilih dari pustaka di atas.'
+    : `Akan disimpan sebagai: ${j.nama}${j.tunggal ? '' : ' — (judul)'} tahun ${$('bk_tahun').value || '…'}.`;
+}
+
+// Kelompok tab (pemilik 2026-11-04): baris atas kelompok, baris bawah tab di
+// kelompok terpilih. Urutan kelompok = urutan tampil.
+const GRUP_TAB = [
+  ['Dokumen', ['dokumen']],
+  // Susunan 2026-11-13 (pemilik): kurikulum/CPL terpisah dari penelitian; keahlian ke Dosen & SDM.
+  ['Dosen & SDM', ['bkd', 'tendik', 'bidang_keahlian', 'topik_keahlian']],
+  ['Kurikulum & CPL', ['mk', 'cpl', 'mk_cpl', 'korelasi_cpl', 'profil_lulusan']],
+  ['Penelitian & kerja sama', ['tema', 'peta_dok', 'kerjasama']],
+  ['Mahasiswa & lulusan', ['mahasiswa', 'jadwal_ta', 'kohort', 'prestasi', 'publikasi', 'luaran', 'tracer', 'kepuasan', 'testimoni']],
+  ['Institusi & keuangan', ['vmts', 'prodi_upps', 'dana']],
+  ['Sarana & K3L', ['prasarana', 'dok_k3l', 'fas_k3l']],
+  ['SPMI', ['standar', 'revisi', 'spmi', 'target', 'temuan']],
+];
+const grupTab = T => (GRUP_TAB.find(([, ids]) => ids.includes(T.id)) || ['Lainnya'])[0];
+
+function pilihTab(T){
+  AKTIF = T || TABEL[0];
+  history.replaceState(null, '', '?tab=' + AKTIF.id);
+  const g = grupTab(AKTIF);
+  const grup = [...GRUP_TAB.map(([n]) => n), 'Lainnya'].filter(n => TABEL.some(t => grupTab(t) === n));   // koordinator: grup bidangnya saja
+  $('grup').innerHTML = grup.map(n => `<button data-grup="${esc(n)}" aria-selected="${n === g}">${esc(n)}</button>`).join('');
+  const urut = (GRUP_TAB.find(([n]) => n === g) || [, []])[1];
+  const isi = TABEL.filter(t => grupTab(t) === g)
+    .sort((a, b) => (urut.indexOf(a.id) + 1 || 99) - (urut.indexOf(b.id) + 1 || 99));
+  $('tabs').innerHTML = isi.length > 1 ? isi.map(t =>
+    `<button data-tab="${t.id}" aria-selected="${t === AKTIF}">${esc(t.judul)}</button>`).join('') : '';
+  $('tabs').hidden = isi.length < 2;
+  bukaTab();
+}
+
+async function bukaTab(){
+  SUNTING = null;
+  const T = AKTIF;
+  if (T.khusus) return bukaPustaka();
+  $('panel').innerHTML = `<p class="ket">${nomorButir(T.butir).length
+    ? `<b>${htmlTautanButir(nomorButir(T.butir), null, 'Dipakai di')}.</b>` : `<b>${esc(T.butir)}.</b>`} ${esc(T.ket)}</p>${saranTab(T)}
+    ${T.id === 'kepuasan' ? '<div id="massal"></div>' : ''}${T.id === 'mk' ? '<div id="impor-mk"></div>' : ''}${JENIS_CPL[T.id] ? `${T.id === 'mk_cpl' ? '<div id="sebaran-cpl"></div>' : ''}<div id="impor-cpl"></div>` : ''}${T.id === 'target' ? '<div id="capaian-iku"></div><div id="impor-iku"></div>' : ''}${T.id === 'temuan' ? '<div id="ringkas-temuan"></div>' : ''}${T.id === 'standar' ? '<div id="pantau-lembar"></div><div id="impor-standar"></div>' : ''}
+    <details class="formulir" id="formLipat"><summary id="formJudul">＋ Tambah baris</summary>
+    <form id="form" novalidate><div class="grid">${kolomForm(T).map(isian).join('')}
+      ${T.tanpaBukti ? '' : T.privat ? blokLKD() : blokBukti(T)}</div>
+      <div class="aksi"><button type="submit" class="btn" id="simpan">Tambah baris</button>
+        <button type="button" class="btn ghost" id="batal">Tutup</button>
+        <span class="msg" id="msg"></span></div></form></details>
+    <div class="gulir" id="daftar"><p class="kosong">Memuat…</p></div>`;
+  $('form').onsubmit = e => { e.preventDefault(); simpan(); };
+  $('batal').onclick = () => { isiForm(null); $('formLipat').open = false; };
+  // Centang capstone / jenis peta jalan mengubah slot unsur.
+  $('form').addEventListener('change', e => { if (['f_capstone', 'f_jenis'].includes(e.target.id)) gambarBukti(); });
+  if ($('bk_jenis')) ['bk_jenis', 'bk_tahun', 'bk_dj'].forEach(i => { $(i).oninput = ketUnggah; });
+  setelUnggah(null);
+  ANTREAN = [];
+  await muatBaris();
+  gambarBukti();
+}
+
+// Isi kotak pilihan jamak dengan pilihan terkini dan nilai terpilih.
+function isiJamak(c, terpilih){
+  const box = $('f_' + c.k);
+  if (!box) return;
+  const pilih = new Set(terpilih || []);
+  const o = c.o();
+  box.innerHTML = o.length ? o.map(([v, l]) => `<label class="cek"><input type="checkbox" value="${esc(v)}"${
+    pilih.has(v) ? ' checked' : ''}>${esc(l)}</label>`).join('') : `<span class="kosong">${esc(c.kosong || 'Belum ada pilihan.')}</span>`;
+}
+
+// Mahasiswa jamak: pecah "A; B" menjadi baris nama + NIM, dan sebaliknya.
+const pecahMhs = v => String(v ?? '').split(';').map(s => s.trim());
+const barisMhs = (nama = '', nim = '') => `<div class="mhs-baris"><input data-mhs="nama" placeholder="Nama mahasiswa"
+  value="${esc(nama)}"><input data-mhs="nim" placeholder="NIM" value="${esc(nim)}">
+  <button type="button" class="btn ghost kecil" data-hapus-mhs="1" title="Hapus mahasiswa ini">×</button></div>`;
+function isiMhs(c, r){
+  const box = $('f_' + c.k);
+  const nama = pecahMhs(r?.[c.k]), nim = pecahMhs(r?.[c.nim]);
+  const n = Math.max(nama.filter(Boolean).length, nim.filter(Boolean).length, 1);
+  box.innerHTML = Array.from({ length: n }, (_, i) => barisMhs(nama[i] || '', nim[i] || '')).join('');
+}
+
+function isian(c){
+  const id = 'f_' + c.k, wj = c.wajib ? ' <span class="wj">*</span>' : '';
+  if (c.t === 'mhs')
+    return `<div class="fld lebar"><label>${esc(c.l)}${wj}</label><div class="mhs-daftar" id="${id}">${barisMhs()}</div>
+      <button type="button" class="btn ghost kecil" data-tambah-mhs="${c.k}">+ Tambah mahasiswa</button></div>`;
+  if (c.t === 'dokumen')
+    return `<div class="fld lebar"><label for="${id}">${esc(c.l)}${wj}</label><select id="${id}">${opsiPustaka(DOK, c.saran || [])}</select>
+      <small>Dipilih dari tab Dokumen (pustaka); unggah dokumennya di sana bila belum ada.</small></div>`;
+  if (c.t === 'paragraf')
+    return `<div class="fld lebar"><label for="${id}">${esc(c.l)}${wj}</label><textarea id="${id}" rows="3"></textarea>${c.contoh ? htmlContoh(id) : ''}</div>`;
+  if (c.t === 'cek')
+    return `<div class="fld"><label class="cek" style="margin-top:20px"><input type="checkbox" id="${id}"${c.awal ? ' checked' : ''}>${esc(c.l)}</label></div>`;
+  if (c.t === 'jamak')
+    return `<div class="fld lebar"><label>${esc(c.l)}${wj}</label><div class="jamak" id="${id}"></div></div>`;
+  let el;
+  if (c.t === 'pilihan' || c.t === 'bulan' || c.t === 'nidn') {
+    const o = c.t === 'bulan' ? BULAN.map((b, i) => [String(i + 1), b])
+            : c.t === 'nidn' ? DOSEN.map(d => [d.nidn, `${d.nama} (${d.nidn})`]) : opsi(c);
+    el = `<select id="${id}"><option value="">—</option>${o.map(([v, l]) =>
+      `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`;
+  } else if (c.t === 'url') {
+    el = `<input type="url" id="${id}" placeholder="https://…">
+      ${UNGGAH ? `<div class="unggah-baris"><input type="file" id="${id}_berkas" accept="${esc(UNGGAH.accept)}">
+        <button type="button" class="btn ghost kecil" data-unggah="${c.k}">Unggah</button></div>` : ''}`;
+  } else {
+    const jenis = ['int', 'num', 'tahun'].includes(c.t) ? 'number' : c.t === 'tanggal' ? 'date' : 'text';
+    const atr = c.t === 'num' ? ' step="any" min="0"' : c.t === 'int' ? ' step="1" min="0"'
+              : c.t === 'tahun' ? ' step="1" min="1990" max="2100"' : '';
+    // saranIsi (pemilik 2026-11-16): saran dari nilai yang sudah ada di tab ini, supaya ejaannya sama.
+    el = `<input type="${jenis}" id="${id}"${atr}${c.t === 'ta' ? ' placeholder="2025/2026"' : ''}${c.saranIsi ? ` list="dl_${c.k}" autocomplete="off"` : ''}>`
+       + (c.saranIsi ? `<datalist id="dl_${c.k}"></datalist>` : '');
+  }
+  return `<div class="fld${c.lebar || c.t === 'url' ? ' lebar' : ''}"><label for="${id}">${esc(c.l)}${wj}</label>${el}</div>`;
+}
+
+// Baca dan periksa isian; hasil {nilai, galat}. Aturan = batasan SQL patch 16.
+function bacaForm(){
+  const nilai = {}, galat = [];
+  for (const c of kolomForm(AKTIF)) {
+    const el = $('f_' + c.k);
+    if (c.t === 'cek') { nilai[c.k] = el.checked; continue; }
+    if (c.t === 'dokumen') { nilai[c.k] = el.value ? +el.value : null; continue; }
+    if (c.t === 'mhs') {
+      const rows = [...el.querySelectorAll('.mhs-baris')].map(b => ({
+        nama: b.querySelector('[data-mhs=nama]').value.trim(), nim: b.querySelector('[data-mhs=nim]').value.trim() }))
+        .filter(x => x.nama || x.nim);
+      if (rows.some(x => x.nama.includes(';') || x.nim.includes(';'))) { galat.push(`${c.l}: satu orang per baris, tanpa titik koma`); continue; }
+      if (c.wajib && !rows.length) { galat.push(`${c.l}: wajib diisi`); continue; }
+      nilai[c.k] = rows.length ? rows.map(x => x.nama).join('; ') : null;
+      nilai[c.nim] = rows.some(x => x.nim) ? rows.map(x => x.nim).join('; ') : null;
+      continue;
+    }
+    if (c.t === 'jamak') { nilai[c.k] = [...el.querySelectorAll('input:checked')].map(x => x.value); continue; }
+    const v = el.value.trim();
+    el.classList.remove('salah');
+    const salah = p => { galat.push(`${c.l}: ${p}`); el.classList.add('salah'); };
+    if (!v) { if (c.wajib) salah('wajib diisi'); nilai[c.k] = null; continue; }
+    if (c.t === 'tahun' || c.t === 'int' || c.t === 'bulan') {
+      const n = Number(v);
+      if (!Number.isInteger(n)) { salah('harus bilangan bulat'); continue; }
+      if (c.t === 'tahun' && (n < 1990 || n > 2100)) { salah('tahun 1990–2100'); continue; }
+      if (c.t === 'int' && n < 0) { salah('tidak boleh negatif'); continue; }
+      nilai[c.k] = n;
+    } else if (c.t === 'num') {
+      const n = Number(v.replace(',', '.'));
+      if (!Number.isFinite(n) || n < 0) { salah('angka ≥ 0 (desimal memakai titik)'); continue; }
+      if (c.maks != null && n > c.maks) { salah(`maksimal ${c.maks}`); continue; }
+      nilai[c.k] = n;
+    } else if (c.t === 'tanggal') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || +v.slice(0, 4) < 1990 || +v.slice(0, 4) > 2100) { salah('tanggal 1990–2100'); continue; }
+      nilai[c.k] = v;
+    } else if (c.t === 'ta') {
+      const m = v.match(/^(\d{4})\/(\d{4})$/);
+      if (!m || +m[2] !== +m[1] + 1) { salah('tulis seperti 2025/2026'); continue; }
+      nilai[c.k] = v;
+    } else if (c.t === 'url') {
+      if (!/^https?:\/\/\S+$/i.test(v)) { salah('tautan https://…'); continue; }
+      nilai[c.k] = v;
+    } else nilai[c.k] = v;
+  }
+  if (!galat.length && AKTIF.olah) AKTIF.olah(nilai);
+  if (!galat.length && AKTIF.cek) { const g = AKTIF.cek(nilai); if (g) galat.push(g); }
+  return { nilai, galat };
+}
+
+function isiForm(r){
+  SUNTING = r ? r.id : null;
+  ANTREAN = [];
+  kolomForm(AKTIF).forEach(c => {
+    const el = $('f_' + c.k);
+    if (c.t === 'cek') { el.checked = r ? r[c.k] === true : !!c.awal; return; }
+    if (c.t === 'mhs') { isiMhs(c, r); return; }
+    if (c.t === 'jamak') { isiJamak(c, r ? r[c.k] : []); return; }
+    el.value = r && r[c.k] != null ? String(r[c.k]) : '';
+    el.classList.remove('salah');
+  });
+  $('simpan').textContent = r ? 'Simpan perubahan' : 'Tambah baris';
+  $('batal').textContent = r ? 'Batal ubah' : 'Tutup';
+  $('formJudul').textContent = r ? `Ubah: ${AKTIF.label ? AKTIF.label(r) : 'baris terpilih'}` : '＋ Tambah baris';
+  if (r) $('formLipat').open = true;
+  tulis('', r ? 'Mengubah baris terpilih.' : '');
+  setelUnggah(r);
+  document.querySelectorAll('#daftar tr').forEach(tr => tr.classList.toggle('sunting', !!r && tr.dataset.id === String(r.id)));
+  gambarBukti();
+  if (r) $('formLipat').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const tulis = (cls, t) => { const m = $('msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.textContent = t; };
+
+async function muatBaris(){
+  const T = AKTIF;
+  let q = sb.from(T.tabel).select('*');
+  for (const k of (T.urut || [])) q = q.order(k, { ascending: true, nullsFirst: false });
+  const { data, error } = await q.order('id', { ascending: !!T.urut });
+  const box = $('daftar');
+  if (T !== AKTIF) return;
+  if (error) {
+    box.innerHTML = `<p class="kosong">Tabel <code>${esc(T.tabel)}</code> belum bisa dibaca (${esc(error.message)}).
+      Jalankan <code>supabase/${esc(T.patch || 'instal-lengkap.sql')}</code>.</p>`;
+    $('simpan').disabled = true;
+    return;
+  }
+  BARIS = data || [];
+  if (T.siapkan) BARIS.forEach(T.siapkan);
+  if (T.id === 'kerjasama') {   // 105: belum dijalankan -> tanpa keterangan KP
+    const { data: kp } = await sb.rpc('kp_pelaksanaan_mitra');
+    KP_MITRA = teksPelaksanaan(kp || []);
+    if (T !== AKTIF) return;
+  }
+  if (T.id === 'kepuasan') gambarMassalKepuasan($('m_ta')?.value.trim());
+  if (T.id === 'mk' && $('impor-mk') && !$('impor-mk').innerHTML) gambarImporMK();
+  if (JENIS_CPL[T.id]) { await muatRefCPL(); if (T !== AKTIF) return; gambarKurikulumCPL(T); }
+  if (T.id === 'target') gambarCapaianIKU($('ci_ts')?.value);
+  if (T.id === 'target' && $('impor-iku') && !$('impor-iku').innerHTML) gambarImporIKU();
+  if (T.id === 'temuan' && $('ringkas-temuan')) $('ringkas-temuan').innerHTML = htmlRingkasTemuan(ringkasTemuan(BARIS));
+  if (T.id === 'standar' || T.id === 'temuan') await muatDaftarSPMI();
+  if (T.id === 'standar' && $('impor-standar') && !$('impor-standar').innerHTML) gambarImporStandar();
+  if (T.id === 'standar') gambarPantauLembar();
+  // Saran isian (saranIsi): nilai berbeda yang sudah tersimpan di kolom itu.
+  kolomForm(T).filter(c => c.saranIsi).forEach(c => {
+    const dl = $('dl_' + c.k);
+    if (dl) dl.innerHTML = [...new Set(BARIS.map(r => String(r[c.k] ?? '').trim()).filter(Boolean))].sort()
+      .map(v => `<option value="${esc(v)}">`).join('');
+  });
+  // Pilihan jamak bisa bergantung pada baris tab ini (mis. MK pendukung).
+  kolomForm(T).filter(c => c.t === 'jamak').forEach(c => {
+    const r = SUNTING ? BARIS.find(x => x.id === SUNTING) : null;
+    isiJamak(c, r ? r[c.k] : [...($('f_' + c.k)?.querySelectorAll('input:checked') || [])].map(x => x.value));
+  });
+  const lb = await sb.from('lkps_bukti').select((ADA29 ? 'id,baris_id,judul,url,dokumen_id' : 'id,baris_id,judul,url')
+      + (ADA43 ? ',unsur' : '') + ',jenis')   // jenis: patch 38 (foto prestasi tampil di situs)
+    .eq('tabel', T.tabel).order('id');
+  LB_GAGAL = lb.error ? lb.error.message : '';
+  LB = new Map();
+  (lb.data || []).forEach(x => { if (!LB.has(x.baris_id)) LB.set(x.baris_id, []); LB.get(x.baris_id).push(x); });
+  if (!BARIS.length) {
+    box.innerHTML = '<p class="kosong">Belum ada baris. Isi formulir di atas untuk menambah.</p>';
+    if ($('formLipat')) $('formLipat').open = true;
+    return;
+  }
+  const tampil = (c, v) => c.t === 'cek' ? (v === true ? 'V' : '—')
+    : c.t === 'dokumen' ? (dokPer(v) ? `<a href="${esc(dokPer(v).url)}" target="_blank" rel="noopener nofollow">${esc(labelDokumen(dokPer(v)))}</a>` : '—')
+    : c.t === 'mhs' ? (v ? esc(pecahMhs(v).filter(Boolean).join('; ')) : '—')
+    : c.t === 'jamak' ? (v && v.length ? esc(v.map(x => (c.o().find(o => o[0] === x) || [x, x])[1]).join('; ')) : '—')
+    : v == null || v === '' ? '—'
+    : c.t === 'tanggal' ? esc(String(v).slice(0, 10).split('-').reverse().join('/'))
+    : c.t === 'paragraf' ? esc(String(v).length > 90 ? String(v).slice(0, 88) + '…' : v)
+    : c.t === 'url' ? `<a href="${esc(v)}" target="_blank" rel="noopener nofollow">buka</a>`
+    : c.t === 'bulan' ? esc(BULAN[v - 1] || v)
+    : c.t === 'nidn' ? esc((DOSEN.find(d => d.nidn === v) || {}).nama || v)
+    : c.t === 'pilihan' ? esc((opsi(c).find(o => o[0] === String(v)) || [v, v])[1]) : esc(v);
+  const semua = kolomForm(T), cols = kolomTampil(T), sisa = semua.length - cols.length;
+  const st = SARING[T.id] ||= { q: '', k: {} };
+  box.innerHTML = `${sisa > 0 || st.semua ? `<div class="tabel-opsi"><button type="button" class="btn ghost kecil" data-semua>${
+      st.semua ? 'Kolom ringkas' : `Semua kolom (+${sisa})`}</button><span>Klik baris untuk melihat semua isinya.</span></div>` : ''}
+    <table class="t"><thead><tr>${cols.map(c => `<th>${esc(c.l)}</th>`).join('')}
+      <th>Bukti</th><th>Diperbarui</th><th></th></tr></thead><tbody>${BARIS.map(r => `<tr data-id="${r.id}">
+      ${cols.map(c => `<td>${tampil(c, r[c.k])}</td>`).join('')}
+      <td>${T.privat ? (r.bukti_url ? `<button type="button" class="btn ghost kecil" data-lkd="${esc(r.bukti_url)}">Buka LKD</button>` : '—')
+        : buktiBaris(r).map(x => `<a href="${esc(x.url)}" target="_blank" rel="noopener nofollow"
+        title="${esc(x.judul)}">${esc(x.judul.length > 24 ? x.judul.slice(0, 22) + '…' : x.judul)}</a>`).join('<br>') || '—'}</td>
+      <td>${esc(String(r.diperbarui || '').slice(0, 10))}${T.tanda ? T.tanda(r) : ''}</td>
+      <td><button type="button" class="btn ghost kecil" data-ubah="${r.id}">Ubah</button>
+          <button type="button" class="btn bahaya kecil" data-hapus="${r.id}">Hapus</button></td></tr>`).join('')}
+    </tbody></table>`;
+  // Rincian baris (semua kolom) saat baris diklik; tombol dan tautan tetap bekerja seperti biasa.
+  box.querySelector('[data-semua]')?.addEventListener('click', () => { st.semua = !st.semua; muatBaris(); });
+  box.querySelector('tbody').addEventListener('click', e => {
+    if (e.target.closest('button, a, input, select, label')) return;
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    if (tr.nextElementSibling?.classList.contains('rinci')) { tr.nextElementSibling.remove(); return; }
+    const r = BARIS.find(x => String(x.id) === tr.dataset.id);
+    const d = document.createElement('tr');
+    d.className = 'rinci';
+    d.innerHTML = `<td colspan="${cols.length + 3}"><dl>${semua.map(c => `<dt>${esc(c.l)}</dt><dd>${tampil(c, r[c.k])}</dd>`).join('')}</dl></td>`;
+    tr.after(d);
+  });
+  pasangSaring(T, box, cols);
+}
+
+// Kolom yang tampil di tabel (pemilik 2026-11-13: tabel ringkas, tanpa gulir ke samping). Tab yang tidak
+// disebut menampilkan semua kolomnya; "Semua kolom" menampilkan semuanya untuk tab itu.
+const RINGKAS = {
+  tracer: ['tahun_lulus', 'jumlah_lulusan', 'jumlah_terlacak', 'rata_rata_waktu_tunggu_bulan', 'bekerja_sesuai_bidang', 'pengguna_tanggapan'],
+  kepuasan: ['tahun_akademik', 'aspek', 'sangat_baik', 'baik', 'cukup', 'kurang'],
+  kerjasama: ['mitra', 'jenis', 'tingkat', 'kegiatan', 'tahun_mulai', 'tahun_selesai'],
+  mk: ['kurikulum', 'kode', 'nama', 'semester', 'sifat', 'pengampu', 'aktif'],
+  cpl: ['kurikulum', 'kode', 'ranah', 'rumusan'],
+  profil_lulusan: ['kurikulum', 'kode', 'nama', 'cpl'],
+  korelasi_cpl: ['kurikulum_asal', 'cpl_asal', 'kurikulum_tujuan', 'cpl_tujuan', 'tingkat', 'status'],
+  topik_keahlian: ['kode', 'bidang', 'nama', 'aktif'],
+  vmts: ['jenis', 'nomor_sk', 'visi'],
+  prodi_upps: ['jenis_program', 'nama_prodi', 'status_akreditasi', 'tanggal_kedaluwarsa', 'mahasiswa_ts'],
+  prasarana: ['prasarana', 'alat', 'jumlah_dimiliki', 'kepemilikan', 'kondisi'],
+  target: ['jenis', 'nama', 'tahun_ts', 'target', 'capaian', 'satuan'],
+  standar: ['kode', 'pernyataan', 'pic', 'dipantau', 'aktif'],
+  revisi: ['standar_id', 'tanggal', 'versi', 'perubahan', 'dasar'],
+  temuan: ['tahun_ts', 'kode', 'kategori', 'uraian', 'pj_nama', 'tenggat', 'status'],
+  mahasiswa: ['tahun_akademik', 'jumlah_mahasiswa_aktif', 'jumlah_lulusan', 'rerata_ipk_lulusan', 'rerata_masa_studi_tahun', 'persen_lulus_tepat_waktu'],
+  bkd: ['nidn', 'tahun_akademik', 'semester', 'jabatan_akademik', 'pendidikan_total', 'sks_penelitian', 'sks_pkm'],
+  prestasi: ['nama_kegiatan', 'nama_mahasiswa', 'bidang', 'tingkat', 'capaian', 'tahun'],
+  publikasi: ['judul', 'nama_mahasiswa', 'jenis', 'tingkat', 'tahun'],
+  luaran: ['judul', 'jenis', 'nama_mahasiswa', 'status_hki', 'tahun'],
+};
+function kolomTampil(T){
+  const semua = kolomForm(T), pilih = RINGKAS[T.id];
+  if (!pilih || SARING[T.id]?.semua) return semua;
+  const xs = semua.filter(c => pilih.includes(c.k));
+  return xs.length ? xs : semua;
+}
+
+// Penyaring tabel (pemilik 2026-11-13): kotak cari + saringan per kolom yang pilihannya sedikit
+// (pilihan, centang, kurikulum, semester, tahun, jenis, status). Pilihan bertahan per tab saat tabel
+// digambar ulang; baris disembunyikan, data tidak berubah.
+const SARING = {};
+const KOLOM_SARING = c => ['pilihan', 'cek'].includes(c.t)
+  || ['kurikulum', 'semester', 'tahun_ts', 'tahun_akademik', 'tahun', 'jenis', 'bidang', 'status', 'sifat'].includes(c.k);
+function pasangSaring(T, box, cols = kolomForm(T)){
+  const tb = box.querySelector('tbody');
+  if (!tb || tb.rows.length < 2) return;
+  const st = SARING[T.id] ||= { q: '', k: {} };
+  const teks = (tr, i) => (tr.cells[i]?.textContent || '').trim();
+  const pilihan = cols.map((c, i) => ({ c, i })).filter(({ c }) => KOLOM_SARING(c))
+    .map(({ c, i }) => ({ c, i, v: [...new Set([...tb.querySelectorAll('tr[data-id]')].map(tr => teks(tr, i)))]
+      .sort((a, b) => a.localeCompare(b, 'id', { numeric: true })) }))
+    .filter(x => x.v.length > 1 && x.v.length <= 30);
+  const bar = document.createElement('div');
+  bar.className = 'saring';
+  bar.innerHTML = `<input type="search" data-q placeholder="Cari di tabel…" value="${esc(st.q)}" aria-label="Cari di tabel">
+    ${pilihan.map(p => `<label>${esc(p.c.l.replace(/\s*\(.*\)$/, ''))} <select data-k="${p.i}"><option value="">semua</option>${
+      p.v.map(v => `<option${st.k[p.i] === v ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`).join('')}
+    <span class="ket" data-n></span>`;
+  box.prepend(bar);
+  const terap = () => {
+    const q = st.q.trim().toLowerCase(); let n = 0;
+    tb.querySelectorAll('tr.rinci').forEach(x => x.remove());
+    for (const tr of tb.querySelectorAll('tr[data-id]')) {
+      const ok = (!q || tr.textContent.toLowerCase().includes(q))
+        && Object.entries(st.k).every(([i, v]) => !v || teks(tr, +i) === v);
+      tr.hidden = !ok; if (ok) n++;
+    }
+    bar.querySelector('[data-n]').textContent = `${n} dari ${tb.querySelectorAll('tr[data-id]').length} baris`;
+  };
+  bar.oninput = e => {
+    if (e.target.matches('[data-q]')) st.q = e.target.value;
+    if (e.target.matches('[data-k]')) st.k[e.target.dataset.k] = e.target.value;
+    terap();
+  };
+  terap();
+}
+
+async function simpan(){
+  const { nilai, galat } = bacaForm();
+  if (galat.length) return tulis('buruk', galat.join(' · '));
+  const isi = { ...nilai, oleh: SAYA.email, diperbarui: new Date().toISOString() };
+  $('simpan').disabled = true;
+  const lkd = AKTIF.privat ? $('lkd_berkas')?.files[0] : null;
+  if (lkd) {
+    tulis('', 'Mengunggah LKD…');
+    try { isi.bukti_url = await unggahLKD(sb, lkd, nilai.tahun_akademik, nilai.semester, (DOSEN.find(d => d.nidn === nilai.nidn) || {}).nama); }
+    catch (err) { $('simpan').disabled = false; return tulis('buruk', err.message || String(err)); }
+  }
+  const q = SUNTING ? sb.from(AKTIF.tabel).update(isi).eq('id', SUNTING)
+                    : sb.from(AKTIF.tabel).insert(isi).select('id').single();
+  const { data: hasil, error } = await q;
+  $('simpan').disabled = false;
+  // LKD (pemilik 2026-11-11): unggahan gagal dipakai dibuang; LKD lama yang diganti dibuang.
+  if (lkd && isi.bukti_url) {
+    const lama = SUNTING ? BARIS.find(x => x.id === SUNTING)?.bukti_url : null;
+    if (error) await buangLKD(sb, isi.bukti_url);
+    else if (lama && lama !== isi.bukti_url) await buangLKD(sb, lama);
+  }
+  let catatan = '';
+  if (!error && !SUNTING && ANTREAN.length) {
+    const { error: eB } = await sb.from('lkps_bukti').insert(ANTREAN.map(b => barisBukti(b, hasil.id)));
+    if (eB) catatan = ' Bukti gagal dicatat (' + eB.message + '); ubah baris lalu tambahkan lagi.';
+  }
+  if (error) return tulis('buruk', /duplicate|unique/i.test(error.message)
+    ? 'Baris dengan kunci yang sama sudah ada (mis. tahun yang sama). Ubah baris itu saja.'
+    : 'Gagal menyimpan: ' + error.message);
+  const ubah = !!SUNTING;
+  // Kolom ingat (pemilik 2026-11-16): tetap terisi setelah Tambah baris, mis. nama prasarana untuk alat berikutnya.
+  const ingat = ubah ? [] : kolomForm(AKTIF).filter(c => c.ingat).map(c => [c.k, $('f_' + c.k).value]);
+  isiForm(null);
+  ingat.forEach(([k, v]) => { $('f_' + k).value = v; });
+  tulis(catatan ? 'buruk' : 'ok', (ubah ? 'Perubahan tersimpan.' : 'Baris ditambahkan.')
+    + (ingat.some(([, v]) => v) ? ' ' + kolomForm(AKTIF).filter(c => c.ingat).map(c => c.l).join(', ') + ' tetap terisi untuk baris berikutnya.' : '')
+    + catatan);
+  await muatBaris();
+}
+
+async function klikPanel(e){
+  const lk = e.target.closest('[data-lkd]');
+  if (lk) return bukaLKD(sb, lk.dataset.lkd);
+  const tm = e.target.closest('[data-tambah-mhs]');
+  if (tm) { $('f_' + tm.dataset.tambahMhs).insertAdjacentHTML('beforeend', barisMhs()); return; }
+  const hm = e.target.closest('[data-hapus-mhs]');
+  if (hm) {
+    const box = hm.closest('.mhs-daftar');
+    hm.closest('.mhs-baris').remove();
+    if (!box.querySelector('.mhs-baris')) box.insertAdjacentHTML('beforeend', barisMhs());
+    return;
+  }
+  const u = e.target.closest('[data-ubah]');
+  if (u) return isiForm(BARIS.find(r => r.id === +u.dataset.ubah));
+  const h = e.target.closest('[data-hapus]');
+  if (h) {
+    const r = BARIS.find(x => x.id === +h.dataset.hapus);
+    // Dokumen pustaka tidak dibuang (bisa dipakai di tempat lain); hanya tautannya.
+    const urls = buktiBaris(r || {}).filter(x => !x.pustaka).map(x => x.url);
+    const adaFoto = (LB.get(r?.id) || []).some(x => fotoPrestasiPublik(AKTIF.tabel, r, x));   // 2026-11-21
+    if (!r || !confirm((adaFoto ? PERINGATAN_FOTO.replace('foto ini', 'foto prestasi ini') + '\n\n' : '') + `Hapus baris "${AKTIF.label(r)}"?` +
+      (urls.length ? ` ${urls.length} berkas buktinya ikut dihapus. ${PESAN_SAMPAH}` : '') +
+      ' Dokumen pustaka yang ditautkan tetap tersimpan di tab Dokumen.')) return;
+    try { await buangSemua(sb, urls); }
+    catch (err) { return tulis('buruk', 'Gagal membuang berkas bukti: ' + (err.message || err)); }
+    const { error } = await sb.from(AKTIF.tabel).delete().eq('id', r.id);
+    if (error) return tulis('buruk', 'Gagal menghapus: ' + error.message);
+    await sb.from('lkps_bukti').delete().eq('tabel', AKTIF.tabel).eq('baris_id', r.id);
+    if (SUNTING === r.id) isiForm(null);
+    tulis('ok', 'Baris dihapus.');
+    return muatBaris();
+  }
+  const g = e.target.closest('[data-unggah]');
+  if (g) return unggah(g);
+  const gp = e.target.closest('[data-unggah-ke-pustaka]');
+  if (gp) return unggahPustaka(gp);
+  const tk = e.target.closest('[data-tautkan]');
+  if (tk) {
+    const id = +$('bk_pustaka').value;
+    if (!id) return tulis('buruk', 'Pilih dokumen dari pustaka dulu.');
+    return tambahBukti([{ dokumen_id: id }]);
+  }
+  const lp = e.target.closest('[data-lepas-bukti]');
+  if (lp) {
+    const foto = fotoPrestasiPublik(AKTIF.tabel, BARIS.find(x => x.id === SUNTING), (LB.get(SUNTING) || []).find(x => x.id === +lp.dataset.lepasBukti));
+    if (!confirm((foto ? PERINGATAN_FOTO + '\n\n' : '') + 'Lepas dokumen ini dari baris? Dokumennya tetap ada di pustaka.')) return;
+    const { error } = await sb.from('lkps_bukti').delete().eq('id', +lp.dataset.lepasBukti);
+    if (error) return tulis('buruk', 'Gagal: ' + error.message);
+    await muatBaris(); gambarBukti(); return;
+  }
+  const pu = e.target.closest('[data-unggah-pustaka]');
+  if (pu) return unggahPustakaTab(pu);
+  const hd = e.target.closest('[data-hapus-dok]');
+  if (hd) return hapusDokumen(+hd.dataset.hapusDok);
+  const ud = e.target.closest('[data-ubah-dok]');
+  if (ud) return ubahNomorDokumen(+ud.dataset.ubahDok);
+  const md = e.target.closest('[data-mhs-dok]');
+  if (md) return tampilUntukMahasiswa(md);
+  const tl = e.target.closest('[data-tautan]');
+  if (tl) {
+    const url = $('bk_url').value.trim(), judul = $('bk_judul').value.trim();
+    if (!/^https?:\/\/\S+$/i.test(url)) return tulis('buruk', 'Isi tautan bukti https://… yang sah.');
+    await tambahBukti([{ judul: judul || 'Tautan bukti', url }]);
+    $('bk_url').value = ''; $('bk_judul').value = '';
+    return;
+  }
+  const ha = e.target.closest('[data-hapus-antrean]');
+  if (ha) { ANTREAN.splice(+ha.dataset.hapusAntrean, 1); return gambarBukti(); }
+  const jb = e.target.closest('[data-jenis-bukti]');
+  if (jb && e.type === 'change') {
+    const lama = (LB.get(SUNTING) || []).find(x => x.id === +jb.dataset.jenisBukti);
+    if (jb.value !== 'foto' && fotoPrestasiPublik(AKTIF.tabel, BARIS.find(x => x.id === SUNTING), lama)
+        && !confirm(PERINGATAN_FOTO + '\n\nGanti jenis bukti ini?')) { jb.value = 'foto'; return; }
+    const { error } = await sb.from('lkps_bukti').update({ jenis: jb.value || null }).eq('id', +jb.dataset.jenisBukti);
+    if (error) return tulis('buruk', 'Gagal mengganti jenis bukti: ' + error.message);
+    tulis('ok', jb.value === 'foto' ? 'Tersimpan sebagai foto kegiatan; tampil di halaman Prestasi paling lambat sejam lagi.' : 'Jenis bukti tersimpan.');
+    await muatBaris(); gambarBukti(); return;
+  }
+  const hb = e.target.closest('[data-hapus-bukti]');
+  if (hb) {
+    const foto = fotoPrestasiPublik(AKTIF.tabel, BARIS.find(x => x.id === SUNTING), (LB.get(SUNTING) || []).find(x => x.id === +hb.dataset.hapusBukti));
+    if (!confirm((foto ? PERINGATAN_FOTO + '\n\n' : '') + 'Hapus bukti ini dari baris? ' + PESAN_SAMPAH)) return;
+    try { await buangBerkas(sb, hb.dataset.url); }
+    catch (err) { return tulis('buruk', 'Gagal membuang berkas: ' + (err.message || err)); }
+    const { error } = await sb.from('lkps_bukti').delete().eq('id', +hb.dataset.hapusBukti);
+    if (error) return tulis('buruk', 'Gagal: ' + error.message);
+    await muatBaris(); gambarBukti();
+  }
+}
+
+// Semua bukti satu baris: kolom tautan lama + lkps_bukti.
+function buktiBaris(r){
+  const lama = r[kolomLama(AKTIF)];
+  const pustaka = x => x.dokumen_id ? { ...x, pustaka: true, url: dokPer(x.dokumen_id)?.url || '',
+    judul: labelDokumen(dokPer(x.dokumen_id)) || 'Dokumen pustaka' } : x;
+  return [...(lama ? [{ judul: 'Bukti (lama)', url: lama }] : []), ...(LB.get(r.id) || []).map(pustaka)];
+}
+// Baris lkps_bukti dari satu bukti (tautan pustaka atau tautan luar).
+const barisBukti = (b, barisId) => ({ ...(b.dokumen_id
+  ? { tabel: AKTIF.tabel, baris_id: barisId, dokumen_id: b.dokumen_id, judul: '', oleh: SAYA.email }
+  : { tabel: AKTIF.tabel, baris_id: barisId, judul: b.judul, url: b.url, oleh: SAYA.email, ...(b.jenis ? { jenis: b.jenis } : {}) }),
+  ...(b.unsur ? { unsur: b.unsur } : {}) });
+
+// Bukti di form: baris yang diubah (tersimpan) atau baris baru (antrean).
+function gambarBukti(){
+  const ul = $('bukti-l');
+  if (!ul) return;
+  if (LB_GAGAL) { ul.innerHTML = `<li class="kosong">Tabel lkps_bukti belum bisa dibaca (${esc(LB_GAGAL)}).
+    Jalankan supabase/instal-lengkap.sql.</li>`; return; }
+  const r = SUNTING ? BARIS.find(x => x.id === SUNTING) : null;
+  const xs = r ? buktiBaris(r).map(x => ({ ...x, hapus: !x.id ? ''
+                   : x.pustaka ? `data-lepas-bukti="${x.id}"` : `data-hapus-bukti="${x.id}" data-url="${esc(x.url)}"` }))
+               : ANTREAN.map((x, i) => ({ ...x, ...(x.dokumen_id ? { pustaka: true, url: dokPer(x.dokumen_id)?.url || '',
+                   judul: labelDokumen(dokPer(x.dokumen_id)) } : {}), hapus: `data-hapus-antrean="${i}"` }));
+  gambarUnsur(xs);
+  ul.innerHTML = xs.length ? xs.map(x => `<li>${x.unsur ? `<span class="tag-unsur">unsur ${x.unsur}</span> ` : ''}${
+    x.pustaka ? '<span class="tag-pustaka">pustaka</span> ' : ''}${
+    AKTIF.tabel === 'lkps_prestasi_mahasiswa' && x.id && !x.pustaka
+      ? `<select class="jenis-bukti" data-jenis-bukti="${x.id}" aria-label="Jenis bukti">${JENIS_BUKTI_PRESTASI.map(([k, l]) =>
+          `<option value="${k}"${k === (x.jenis || '') ? ' selected' : ''}>${esc(l.replace(/ \(.*\)$/, ''))}</option>`).join('')}${
+          x.jenis ? '' : '<option value="" selected>(jenis belum dipilih)</option>'}</select> `
+      : x.jenis ? `<span class="tag-pustaka">${esc((JENIS_BUKTI_PRESTASI.find(j => j[0] === x.jenis) || [, x.jenis])[1].replace(/ \(.*\)$/, ''))}</span> ` : ''}<a href="${esc(x.url)}"
+    target="_blank" rel="noopener nofollow">${esc(x.judul)}</a>
+    ${x.hapus ? `<button type="button" class="btn bahaya kecil" ${x.hapus} title="${x.pustaka ? 'Lepas dari baris' : 'Hapus'}">×</button>` : ''}</li>`).join('')
+    : `<li class="kosong">${r ? 'Belum ada bukti.' : 'Belum ada bukti; yang diunggah akan tersimpan bersama baris ini.'}</li>`;
+}
+
+// Ringkasan unsur: mana yang sudah ada buktinya dan skor butir dari baris ini.
+function gambarUnsur(xs){
+  const box = $('unsur-status');
+  if (!box) return;
+  const T = AKTIF, aktif = T.unsur.aktif();
+  $('unsur-pilih').hidden = !aktif;
+  $('unsur-mati').hidden = aktif || !T.unsur.mati;
+  $('unsur-mati').textContent = T.unsur.mati || '';
+  if (!aktif) { box.innerHTML = ''; return; }
+  const ada = new Set(xs.map(x => +x.unsur).filter(Boolean));
+  const no = typeof T.unsur.butir === 'function' ? T.unsur.butir({ jenis: $('f_jenis')?.value }) : T.unsur.butir;
+  box.innerHTML = `<b>Unsur butir ${esc(no)}</b>${no === '20' ? ' — khusus MK capstone; MK lain tidak memakai unsur ini' : ''}
+    (skor dari baris ini: ${skorUnsur(ada)} dari 4)<ol>${
+    T.unsur.daftar.map((u, i) => `<li class="${ada.has(i + 1) ? 'ada' : 'belum'}">${
+      ada.has(i + 1) ? '✓' : '—'} ${esc(u)} <small>· ${esc(pihakUnsur(no, i + 1))}</small></li>`).join('')}</ol>
+    <small>Skor = banyaknya unsur berurutan mulai unsur 1 yang ada buktinya.</small>`;
+}
+
+async function tambahBukti(items){
+  // Dokumen pustaka yang sudah tertaut ke baris ini (untuk unsur yang sama) tidak ditautkan dua kali.
+  const u = unsurDipilih();
+  items = items.map(b => ({ ...b, unsur: u }));
+  const kunci = x => `${x.dokumen_id}|${x.unsur || ''}`;
+  const sudah = new Set((SUNTING ? LB.get(SUNTING) || [] : ANTREAN).filter(x => x.dokumen_id).map(kunci));
+  const baru = items.filter(b => !b.dokumen_id || !sudah.has(kunci(b)));
+  if (!baru.length) return tulis('buruk', 'Dokumen itu sudah menjadi bukti baris ini.');
+  items = baru;
+  if (!SUNTING) { ANTREAN.push(...items); gambarBukti(); return tulis('ok', `${items.length} bukti siap; tersimpan saat baris disimpan.`); }
+  const { error } = await sb.from('lkps_bukti').insert(items.map(b => barisBukti(b, SUNTING)));
+  if (error) return tulis('buruk', 'Bukti gagal dicatat: ' + error.message);
+  await muatBaris(); gambarBukti();
+  tulis('ok', `${items.length} bukti ditambahkan.`);
+}
+
+const keB64 = f => new Promise((ok, gagal) => {
+  const r = new FileReader();
+  r.onload = () => ok(String(r.result).split(',')[1] || '');
+  r.onerror = () => gagal(new Error('Berkas tidak bisa dibaca: ' + f.name));
+  r.readAsDataURL(f);
+});
+
+// Bukti baris -> Drive data-lkps/dokumen/<tabel>/<tahun>/<label>/ (Apps
+// Script kind 'dokumen', mode 'tambah'). Beberapa berkas sekaligus; tiap
+// berkas menjadi satu bukti (lkps_bukti).
+async function unggah(tombol){
+  const semua = [...($('bk_berkas').files || [])];
+  if (!semua.length) return tulis('buruk', 'Pilih berkas bukti dulu.');
+  // Prestasi: jenis wajib dipilih (pemilik 2026-11-18: foto tersimpan sebagai sertifikat bawaan, tidak tampil).
+  if ($('bk_jb') && !$('bk_jb').value) return tulis('buruk', 'Pilih jenis bukti dulu. Pilih "Foto kegiatan" agar foto tampil di halaman Prestasi.');
+  const ditolak = semua.filter(f => {
+    const e = ((f.name.match(/\.([^.]+)$/) || [])[1] || '').toLowerCase();
+    return !UNGGAH.ext.includes(e) || (UNGGAH.maxMb && f.size > UNGGAH.maxMb * 1024 * 1024);
+  });
+  if (ditolak.length) return tulis('buruk', `Ditolak: ${ditolak.map(f => f.name).join(', ')}. ` +
+    `Diterima: ${UNGGAH.ext.join(', ')}, maksimal ${UNGGAH.maxMb} MB.`);
+  const r = SUNTING ? BARIS.find(x => x.id === SUNTING) : bacaForm().nilai;
+  const tahun = AKTIF.tahun(r || {}) || new Date().getFullYear();
+  tombol.disabled = true;
+  const items = [], gagal = [];
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Sesi masuk habis. Muat ulang halaman.');
+    for (let i = 0; i < semua.length; i++) {
+      const f = semua[i];
+      tulis('', `Mengunggah ${i + 1} dari ${semua.length}: ${f.name}…`);
+      try {
+        const res = await fetch(UNGGAH.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: session.access_token, kind: 'dokumen', jenis: AKTIF.tabel,
+            tahun: String(tahun), judul: AKTIF.label(r || {}).slice(0, 80), mode: 'tambah',
+            filename: f.name, data: await keB64(f) }) });
+        const out = await res.json();
+        if (!out.ok) throw new Error(out.error || 'Unggah gagal.');
+        items.push({ judul: f.name, url: tautanBerkas(out), ...($('bk_jb') ? { jenis: $('bk_jb').value } : {}) });
+      } catch (err) {
+        gagal.push(`${f.name}: ${err.message || err}`);
+        if (/Sesi (login|masuk)/.test(err.message || '')) break;
+      }
+    }
+    $('bk_berkas').value = '';
+    if (items.length) await tambahBukti(items);
+    if (gagal.length) tulis('buruk', `${items.length} dari ${semua.length} terunggah. Gagal: ${gagal.join('; ')}`);
+  } catch (err) {
+    tulis('buruk', err.message || String(err));
+  } finally {
+    tombol.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Pustaka dokumen (instal-lengkap.sql)
+// ---------------------------------------------------------------------
+async function muatPustaka(){
+  const { data, error } = await sb.from('dokumen').select('*').order('jenis').order('tahun', { ascending: false });
+  DOK_GAGAL = error ? error.message : '';
+  DOK = data || [];
+}
+
+// Pesan hasil unggahKePustaka; `_ada` = berkas yang sama sudah tersimpan (instal-lengkap.sql).
+const pesanPustaka = (d, akhir) => d._ada === 'pustaka'
+  ? `Berkas yang sama sudah ada di pustaka sebagai ${labelDokumen(d)}; tidak diunggah ulang${akhir ? ', dokumen itu ' + akhir : ''}.`
+  : d._ada === 'bukti'
+  ? `Berkas yang sama sudah tersimpan sebagai bukti lain; ${labelDokumen(d)} dicatat di pustaka dengan berkas itu, tanpa unggah ulang${akhir ? ', lalu ' + akhir : ''}.`
+  : `${labelDokumen(d)} tersimpan di pustaka${akhir ? ' dan ' + akhir : ''}.`;
+
+// Unggah dari bukti baris: berkas masuk pustaka (kunci sama = mengganti), lalu ditautkan.
+async function unggahPustaka(tombol){
+  const berkas = [...($('bk_pustaka_berkas').files || [])];
+  tombol.disabled = true;
+  try {
+    const d = await unggahKePustaka(sb, UNGGAH, { jenis: $('bk_jenis').value, tahun: $('bk_tahun').value,
+      judul: $('bk_dj').value, berkas, oleh: SAYA.email, progres: s => tulis('', s) });
+    await muatPustaka();
+    $('bk_pustaka_berkas').value = '';
+    $('bk_pustaka').innerHTML = opsiPustaka(DOK, AKTIF.dok);
+    ketUnggah();
+    await tambahBukti([{ dokumen_id: d.id }]);
+    tulis('ok', pesanPustaka(d, 'ditautkan ke baris ini'));
+  } catch (err) {
+    tulis('buruk', err.message || String(err));
+  } finally {
+    tombol.disabled = false;
+  }
+}
+
+// Tab Dokumen: unggah ke pustaka + daftar dokumen dan tempat pemakaiannya.
+async function bukaPustaka(){
+  const T = AKTIF;
+  $('panel').innerHTML = `<p class="ket">${esc(T.ket)}</p>${saranTab(T)}
+    ${DOK_GAGAL ? `<p class="kosong">Tabel <code>dokumen</code> belum bisa dibaca (${esc(DOK_GAGAL)}).
+      Jalankan supabase/instal-lengkap.sql.</p>` : ''}
+    ${UNGGAH && !DOK_GAGAL ? `<div class="grid">
+      <div class="fld"><label for="pk_jenis">Jenis dokumen (bertanda privat: tanpa tautan publik)</label><select id="pk_jenis">${opsiJenis([], '')}</select></div>
+      <div class="fld"><label for="pk_tahun">Tahun dokumen</label><input type="number" id="pk_tahun" min="1990" max="2100"
+        value="${new Date().getFullYear()}"></div>
+      <div class="fld" id="pk_judul_w"><label for="pk_judul">Judul (jenis banyak)</label><input type="text" id="pk_judul" maxlength="120"></div>
+      ${ADA30 ? `<div class="fld"><label for="pk_nomor">Nomor dokumen (opsional)</label><input type="text" id="pk_nomor" maxlength="120"></div>
+      <div class="fld"><label for="pk_tanggal">Tanggal dokumen (opsional)</label><input type="date" id="pk_tanggal"></div>` : ''}
+      <div class="fld lebar"><label>Berkas</label><div class="unggah-baris"><input type="file" id="pk_berkas" accept="${esc(UNGGAH.accept)}" multiple>
+        <button type="button" class="btn" data-unggah-pustaka="1">Unggah ke pustaka</button></div>
+        <p class="ket" id="pk_ket"></p></div></div>` : ''}
+    <div class="aksi"><span class="msg" id="msg"></span></div>
+    <div class="gulir" id="daftar"><p class="kosong">Memuat…</p></div>
+    <p class="ket">Pengumuman teks, tanya-jawab, dan kotak masuk pertanyaan/masukan mahasiswa ada di
+      <a href="kelola-layanan-mahasiswa.html">Layanan mahasiswa (kelola)</a>.</p>
+    <h3 class="sub-h">Privatkan berkas lama</h3>
+    <p class="ket">Berkas jenis privat yang terlanjur punya tautan publik dipindah ke folder privat, tautan publiknya dicabut,
+      dan catatannya menuju halaman kata sandi.</p>
+    <div class="aksi"><button type="button" class="btn ghost" id="privatkan">Privatkan berkas lama</button>
+      <span class="msg" id="privatkan_msg"></span></div>
+    <h3 class="sub-h">Rapikan berkas lama</h3><div id="rapikan"></div>`;
+  $('privatkan').onclick = async e => {
+    const m = $('privatkan_msg');
+    e.target.disabled = true;
+    try {
+      const n = await privatkanLama(sb, t => { m.className = 'msg'; m.textContent = t; });
+      m.className = 'msg'; m.textContent = n ? `${n} berkas dipindah ke penyimpanan privat.` : 'Tidak ada berkas yang perlu dipindah.';
+      await muatPustaka(); await gambarPustaka();
+    } catch (err) { m.className = 'msg buruk'; m.textContent = err.message || String(err); }
+    e.target.disabled = false;
+  };
+  pasangRapikan(sb, $('rapikan'), { tabel: TABEL, saran: SARAN_DOK, oleh: SAYA.email,
+    selesai: async () => { await muatPustaka(); await gambarPustaka(); } });
+  if ($('pk_jenis')) {
+    const ket = () => {
+      const j = infoJenis($('pk_jenis').value);
+      $('pk_judul_w').hidden = j.tunggal;
+      const ada = cariDokumen(DOK, j.id, $('pk_tahun').value, $('pk_judul').value);
+      $('pk_ket').className = 'ket' + (ada ? ' buruk' : '');
+      $('pk_ket').textContent = ada ? `Sudah ada: ${labelDokumen(ada)}. Unggahan akan MENGGANTI berkasnya (versi lama ke _arsip).`
+        : (j.contoh ? `Contoh judul: ${j.contoh}.` : '');
+    };
+    ['pk_jenis', 'pk_tahun', 'pk_judul'].forEach(i => { $(i).oninput = ket; });
+    ket();
+  }
+  await gambarPustaka();
+}
+
+// Pemakaian dokumen: baris Data prodi (lkps_bukti) dan butir (butir_bukti).
+async function gambarPustaka(){
+  const box = $('daftar');
+  if (!box || DOK_GAGAL) { if (box) box.innerHTML = ''; return; }
+  const [lb, bb, pp] = await Promise.all([
+    ADA29 ? sb.from('lkps_bukti').select('dokumen_id,tabel') : { data: [] },
+    sb.from('butir_bukti').select('dokumen_id,butir'),
+    // Tautan tahap PPEPP ke pustaka (instal-lengkap.sql); tabel belum ada -> kosong.
+    sb.from('lkps_spmi_ppepp').select('dokumen_id,audit_dokumen_id,rtm_dokumen_id,peningkatan_dokumen_id')]);
+  const judulTab = Object.fromEntries(TABEL.map(x => [x.tabel, x.judul]));
+  const pakai = new Map();
+  (lb.data || []).filter(x => x.dokumen_id).forEach(x => { if (!pakai.has(x.dokumen_id)) pakai.set(x.dokumen_id, []); pakai.get(x.dokumen_id).push(judulTab[x.tabel] || x.tabel); });
+  (pp.error ? [] : pp.data || []).forEach(x => ['dokumen_id', 'audit_dokumen_id', 'rtm_dokumen_id', 'peningkatan_dokumen_id']
+    .forEach(k => { if (!x[k]) return; if (!pakai.has(x[k])) pakai.set(x[k], []); pakai.get(x[k]).push('SPMI (PPEPP)'); }));
+  (bb.data || []).filter(x => x.dokumen_id).forEach(x => { if (!pakai.has(x.dokumen_id)) pakai.set(x.dokumen_id, []); pakai.get(x.dokumen_id).push('butir ' + x.butir); });
+  if (!DOK.length) { box.innerHTML = '<p class="kosong">Belum ada dokumen di pustaka.</p>'; return; }
+  const ringkas = xs => Object.entries(xs.reduce((a, s) => (a[s] = (a[s] || 0) + 1, a), {}))
+    .map(([s, n]) => n > 1 ? `${s} (${n})` : s).join(', ');
+  // Kolom "Mahasiswa" (instal-lengkap.sql): tampil di halaman publik layanan-mahasiswa.html.
+  const ADA76 = 'untuk_mahasiswa' in DOK[0];
+  const selMhs = d => adalahPrivat(d.url)
+    ? '<td title="Berkas privat tidak bisa ditampilkan untuk mahasiswa">—</td>'
+    : `<td><input type="checkbox" data-mhs-dok="${esc(d.id)}" ${d.untuk_mahasiswa ? 'checked' : ''}
+        title="Tampil di halaman berkas mahasiswa" aria-label="Tampil untuk mahasiswa"></td>`;
+  box.innerHTML = (ADA76 ? `<p class="ket">Centang <b>Mahasiswa</b> untuk menampilkan dokumen di halaman publik
+      <a href="layanan-mahasiswa.html" target="_blank" rel="noopener">Berkas mahasiswa</a> (tanpa masuk akun). Berkas privat tidak bisa ditampilkan;
+      dokumen yang lewat masa berlakunya hilang sendiri dari halaman itu.</p>` : '')
+    + `<table class="t"><thead><tr><th>Jenis</th><th>Tahun</th><th>Judul</th>${ADA30 ? '<th>Nomor</th><th>Tanggal</th>' : ''}<th>Dipakai di</th>
+      <th>Berkas</th><th>Diperbarui</th>${ADA76 ? '<th>Mahasiswa</th>' : ''}<th></th></tr></thead><tbody>${DOK.map(d => `<tr>
+      <td>${esc(infoJenis(d.jenis).nama)}</td><td>${esc(d.tahun)}</td><td>${esc(d.judul || '—')}</td>
+      ${ADA30 ? `<td>${esc(d.nomor || '—')}</td><td>${esc(d.tanggal ? String(d.tanggal).split('-').reverse().join('/') : '—')}${d.berlaku_sampai
+        ? `<br><small class="ket">berlaku s.d. ${esc(String(d.berlaku_sampai).split('-').reverse().join('/'))}</small>` : ''}</td>` : ''}
+      <td>${esc(ringkas(pakai.get(d.id) || []) || '—')}</td>
+      <td><a href="${esc(d.url)}" target="_blank" rel="noopener nofollow">buka</a></td>
+      <td>${esc(String(d.diperbarui || '').slice(0, 10))}</td>
+      ${ADA76 ? selMhs(d) : ''}
+      <td>${ADA30 ? `<button type="button" class="btn ghost kecil" data-ubah-dok="${esc(d.id)}">Nomor/tanggal</button> ` : ''}<button type="button" class="btn bahaya kecil" data-hapus-dok="${esc(d.id)}" data-pakai="${(pakai.get(d.id) || []).length}">Hapus</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function unggahPustakaTab(tombol){
+  const berkas = [...($('pk_berkas').files || [])];
+  tombol.disabled = true;
+  try {
+    const d = await unggahKePustaka(sb, UNGGAH, { jenis: $('pk_jenis').value, tahun: $('pk_tahun').value,
+      judul: $('pk_judul').value, berkas, oleh: SAYA.email, progres: s => tulis('', s),
+      nomor: $('pk_nomor')?.value, tanggal: $('pk_tanggal')?.value });
+    await muatPustaka();
+    $('pk_berkas').value = '';
+    tulis('ok', pesanPustaka(d, ''));
+    await gambarPustaka();
+  } catch (err) {
+    tulis('buruk', err.message || String(err));
+  } finally {
+    tombol.disabled = false;
+  }
+}
+
+// Nomor dan tanggal dokumen pustaka tanpa unggah ulang (LKPS 7.a, instal-lengkap.sql).
+async function ubahNomorDokumen(id){
+  const d = dokPer(id);
+  if (!d) return;
+  const nomor = prompt(`Nomor dokumen ${labelDokumen(d)} (kosongkan bila tidak ada):`, d.nomor || '');
+  if (nomor === null) return;
+  const tgl = prompt('Tanggal dokumen, format YYYY-MM-DD (kosongkan bila tidak ada):', d.tanggal || '');
+  if (tgl === null) return;
+  if (tgl.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(tgl.trim())) return tulis('buruk', 'Tanggal ditulis YYYY-MM-DD, mis. 2024-03-15.');
+  // Masa berlaku (instal-lengkap.sql): ditanyakan bila kolomnya sudah ada.
+  const adaBerlaku = 'berlaku_sampai' in d;
+  const berlaku = adaBerlaku ? prompt('Berlaku sampai, format YYYY-MM-DD (kosongkan bila tidak berbatas waktu):', d.berlaku_sampai || '') : '';
+  if (berlaku === null) return;
+  if (berlaku.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(berlaku.trim())) return tulis('buruk', 'Tanggal berlaku ditulis YYYY-MM-DD, mis. 2027-03-15.');
+  const isi = { nomor: nomor.trim() || null, tanggal: tgl.trim() || null, ...(adaBerlaku ? { berlaku_sampai: berlaku.trim() || null } : {}) };
+  const { error } = await sb.from('dokumen').update(isi).eq('id', id);
+  if (error) return tulis('buruk', 'Gagal menyimpan: ' + (/berlaku_check/.test(error.message)
+    ? 'tanggal berlaku tidak boleh sebelum tanggal dokumen.' : error.message));
+  await muatPustaka();
+  tulis('ok', adaBerlaku ? 'Nomor, tanggal, dan masa berlaku dokumen tersimpan.' : 'Nomor dan tanggal dokumen tersimpan.');
+  await gambarPustaka();
+}
+
+// Tampil/sembunyikan dokumen di halaman publik layanan-mahasiswa.html (instal-lengkap.sql).
+async function tampilUntukMahasiswa(cek){
+  const d = dokPer(+cek.dataset.mhsDok);
+  if (!d) return;
+  const nilai = cek.checked;
+  cek.disabled = true;
+  const { error } = await sb.from('dokumen').update({ untuk_mahasiswa: nilai }).eq('id', d.id);
+  cek.disabled = false;
+  if (error) { cek.checked = !nilai; return tulis('buruk', 'Gagal: ' + error.message); }
+  d.untuk_mahasiswa = nilai;
+  tulis('ok', `${labelDokumen(d)} ${nilai ? 'tampil' : 'tidak lagi tampil'} di halaman Berkas mahasiswa.`);
+}
+
+async function hapusDokumen(id){
+  const d = dokPer(id);
+  const n = +(document.querySelector(`[data-hapus-dok="${id}"]`)?.dataset.pakai || 0);
+  if (!d || !confirm(`Hapus ${labelDokumen(d)} dari pustaka?` +
+    (n ? ` Dokumen ini dipakai sebagai bukti di ${n} tempat; tautan buktinya ikut hilang.` : '') + ` ${PESAN_SAMPAH}`)) return;
+  try { await buangBerkas(sb, d.url); }
+  catch (err) { return tulis('buruk', 'Gagal membuang berkas: ' + (err.message || err)); }
+  const { error } = await sb.from('dokumen').delete().eq('id', id);
+  if (error) return tulis('buruk', 'Gagal menghapus: ' + error.message);
+  await muatPustaka();
+  tulis('ok', 'Dokumen dihapus dari pustaka.');
+  await gambarPustaka();
+}
+
+function layarMasuk(){
+  $('hSub').textContent = 'Perlu masuk';
+  $('isi').innerHTML = `<div class="masuk"><p>Masukkan email kampus Anda — tautan masuk dikirim tanpa kata sandi.</p>
+    <input id="em" type="email" placeholder="nama@kampus.ac.id" autocomplete="email">
+    <button class="btn" id="kirim">Kirim tautan masuk</button><p class="ket" id="pesan"></p></div>`;
+  $('kirim').onclick = async () => {
+    const em = $('em').value.trim();
+    if (!em) return;
+    const { error } = await sb.auth.signInWithOtp({ email: em, options: { emailRedirectTo: location.href } });
+    $('pesan').textContent = error ? 'Gagal: ' + error.message : 'Tautan masuk sudah dikirim. Periksa email Anda.';
+  };
+}
+
+sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_IN' && !SAYA) mulai(); });
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>

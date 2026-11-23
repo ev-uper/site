@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>CPMK dan penilaian — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+  .wrap{max-width:1240px;margin:0 auto;padding:18px 20px 80px}
+  .kosong, .ket{color:var(--muted)}
+  .ket{font-size:13px}
+  .kartu{background:var(--panel);border:1px solid var(--line);padding:14px 18px;margin-bottom:16px}
+  .kartu h2{font-size:17px;margin:0 0 6px;color:var(--biru)}
+  .kartu h3{font-size:14.5px;margin:14px 0 6px}
+  .alat{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .b{font:12.5px/1.4 var(--sans);padding:5px 12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .b:hover{border-color:var(--biru);color:var(--biru)}
+  .b.utama{background:var(--biru);color:#fff;border-color:var(--biru)}
+  .b.awas{color:var(--merah)}
+  .b:disabled{opacity:.5;cursor:default}
+  select, input, textarea{font:inherit;font-size:14px;padding:4px 6px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+  textarea{width:100%;min-height:44px;resize:vertical}
+  input.angka{width:64px;text-align:right;font-family:var(--mono);font-size:13px;padding:3px 4px}
+  .gulir{overflow-x:auto}
+  table.ds{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.ds th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:bottom}
+  table.ds td{padding:6px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  /* Hitung bobot otomatis (pemilik 2026-11-19) */
+  .seg{display:inline-flex}.seg .b{border-radius:0}.seg .b.aktif{background:var(--ink);color:#fff}
+  table.mx.oto label.sel{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  table.mx.oto tr.target th,table.mx.oto tr.target td{background:var(--line-soft)}
+  table.mx.oto .simpang{color:var(--merah);font-weight:600}
+  /* Saringan bertombol, boleh banyak pilihan (pemilik 2026-11-19) */
+  .saringan{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin:6px 0 10px}
+  .grup-saring{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .grup-saring .lbl{font-size:12px;color:var(--muted);margin-right:2px}
+  button.tg{font:inherit;font-size:12.5px;padding:2px 9px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer}
+  button.tg.aktif{background:var(--ink);color:#fff;border-color:var(--ink)}
+  button.tg.hapus{border-style:dashed;color:var(--muted)}
+  /* Daftar MK dua kolom: Ganjil | Genap (pemilik 2026-11-19, sama dengan rps.html) */
+  .dua-kolom{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  @media (max-width:900px){.dua-kolom{grid-template-columns:1fr}}
+  h3.judul-kolom{margin:14px 0 2px;font-size:15px;border-bottom:3px solid var(--merah);padding-bottom:4px}
+  table.daftar-mk.ringkas{margin-bottom:6px}
+  table.daftar-mk.ringkas td:first-child{width:62px}
+  .alat.saring{flex-wrap:wrap;gap:8px 12px}
+  table.ringkas-smt{width:auto;margin:6px 0 4px}
+  table.ringkas-smt th,table.ringkas-smt td{text-align:center;padding:4px 10px}
+  table.ringkas-smt tbody th{text-align:left}
+  h3.judul-kolom .ket{font-weight:400;font-size:13px}
+  /* Susunan daftar MK per semester (pemilik 2026-11-19, sama dengan rps.html) */
+  table.daftar-mk tr.grup th{padding:14px 8px 5px;font-size:13px;letter-spacing:0;text-transform:none;color:var(--ink);
+    border-bottom:2px solid var(--line);background:none}
+  table.daftar-mk tr.grup th .ket{font-weight:400}
+  .chip.jenis-mkpt,.chip.jenis-mku{color:var(--muted)}
+  .chip.jenis-mkp{border-style:dashed}
+  table.mx td, table.mx th{text-align:center;white-space:nowrap}
+  table.mx td:first-child, table.mx th:first-child{text-align:left}
+  table.mx tfoot td{font-family:var(--mono);font-size:12.5px;border-top:1px solid var(--line);color:var(--muted)}
+  .kode{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .chip{display:inline-block;font-size:11.5px;padding:1px 7px;border:1px solid var(--line);white-space:nowrap}
+  .st-lengkap{color:var(--hijau);border-color:var(--hijau)} .st-belum{color:#8A5A00;border-color:#8A5A00} .st-kosong{color:var(--muted)}
+  .msg{font-size:13px;margin-left:8px} .msg.buruk{color:var(--merah)} .msg.ok{color:var(--hijau)}
+  .cpmk{border-left:3px solid var(--biru);padding:6px 0 6px 12px;margin:10px 0}
+  .cpmk-kepala{display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:start}
+  .sub{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:start;margin:6px 0 0 18px}
+  .periksa{border:1px solid var(--line);padding:8px 12px;margin:10px 0;font-size:13.5px}
+  .periksa.ok{border-color:var(--hijau);color:var(--hijau)} .periksa.belum{border-color:#8A5A00}
+  .periksa ul{margin:4px 0 0;padding-left:18px;color:var(--ink)}
+  .cpl{font-size:13.5px;margin:4px 0} .cpl .ind{color:var(--muted);margin-left:18px;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 14px;margin:6px 0}
+  .grid label{display:flex;flex-direction:column;font-size:12.5px;gap:2px}
+  .pilih-dosen{columns:3 220px;font-size:13.5px} .pilih-dosen label{display:block}
+  @media(max-width:700px){.wrap{padding-left:16px;padding-right:16px}.cpmk-kepala,.sub{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hero" role="region" aria-label="Pembuka halaman"><div class="hero-in">
+  <div class="hero-inst" data-identitas></div>
+  <h1>CPMK dan penilaian</h1>
+  <div class="sub" id="hSub">Memuat…</div>
+</div></div>
+<main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// CPMK dan RPS per mata kuliah (instal-lengkap.sql, pemilik 2026-11-17, OBE tahap O2).
+// Koordinator MK/pengampu (ref_mata_kuliah.pengampu), pengampu kelas semester terakhir (cpl_kelas), GKM, dan admin
+// mengisi CPMK, Sub-CPMK, butir asesmen, bobot, dan RPS. Templat nilai CPL per kelas diisi dari struktur ini
+// di peramban (templat-cpl.js + JSZip), jadi dosen tinggal mengisi NIM dan nilai.
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { gerbang } from './menu.js?v=2026-11-22-866c27';
+import { bolehMutu } from './koordinator.js?v=2026-11-22-866c27';
+import { bawaanHanyaSaya, ingatHanyaSaya, pesanKosongSaya } from './mk-saya.js?v=2026-11-22-866c27';
+import { semesterKini } from './evaluasi-pembelajaran.js?v=2026-11-22-866c27';
+import { periksaStruktur, isiTemplat, namaBerkasTemplat } from './templat-cpl.js?v=2026-11-22-866c27';
+import { cplMK, strukturKosong, tambahCpmk, hapusCpmk, tambahSub, hapusSub, tambahAsesmen, hapusAsesmen, gantiNamaAsesmen,
+  aturBobot, jumlahBobot, dataTemplat, statusStruktur,
+  hitungAwal, hitungOtomatis, MODE_HITUNG, PRIORITAS, PEMBULATAN } from './cpmk.js?v=2026-11-22-866c27';
+// RPS K26 (111): CPL per Sub-CPMK dan jenis asesmen (kolom Rencana Asesmen Sumatif) disimpan di struktur yang sama.
+import { JENIS_ASESMEN, jenisAsesmen, JENIS_MK, susunanMK, jenisMK, bagiParitas, saringMK, ringkasSemester, htmlRingkasSemester, htmlSaringan, ubahSaringan, KELOMPOK_ASESMEN, kelompokAsesmen, periksaKomposisi,
+  JENIS_KULIAH, jenisKuliah } from './rps.js?v=2026-11-22-866c27';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sb = createClient(window.SB_URL, window.SB_KEY);
+const baca = q => q.then(r => r.error ? [] : (r.data || []), () => []);
+const tulis = (id, kelas, teks) => { const e = $(id); if (e) { e.className = 'msg ' + kelas; e.textContent = teks; } };
+const kunci = (kur, kode) => `${kur}|${kode}`;
+const LABEL_ST = { lengkap: 'lengkap', belum: 'belum lengkap', kosong: 'belum diisi' };
+
+let SAYA = null, KELOLA = false, MK = [], REF_CPL = [], PETA = [], STR = new Map(), BOLEH = new Set(), DOSEN = [], KELAS = [];
+let KUR = '', F = { cari: '', saya: false, semester: [], jenis: [], sifat: [], status: [] }, PILIH = null, D = null, CI = null, KOTOR = false;
+const URL_AWAL = new URLSearchParams(location.search);
+
+addEventListener('beforeunload', e => { if (KOTOR) { e.preventDefault(); e.returnValue = ''; } });
+
+async function muat(){
+  const [mk, cpl, peta, str, boleh, dosen, kelas, rpsSt] = await Promise.all([
+    baca(sb.from('ref_mata_kuliah').select('kurikulum,kode,nama,sks,sks_kuliah,sks_praktikum,semester,sifat,capstone,aktif,pengampu,rps_url,rps_ada,rps_9_komponen')
+      .order('kurikulum').order('semester').order('kode')),
+    baca(sb.from('ref_cpl').select('kurikulum,kode,rumusan,indikator,urutan')),
+    baca(sb.from('ref_mk_cpl').select('kurikulum,kode_mk,cpl,indikator')),
+    baca(sb.from('mk_struktur').select('kurikulum,kode_mk,data,oleh,diperbarui')),
+    baca(sb.rpc('mk_boleh_saya')),
+    baca(sb.from('dosen').select('id,nama,nidn,peran,aktif').order('nama')),
+    baca(sb.from('cpl_kelas').select('id,tahun_akademik,semester,kode_mk,nama_mk,kelas,dosen_email').order('tahun_akademik', { ascending: false })),
+    baca(sb.from('mk_rps').select('kurikulum,kode_mk,status,revisi,identitas:data->identitas'))]);
+  MK = mk; REF_CPL = cpl; PETA = peta; DOSEN = dosen.filter(d => d.aktif !== false && d.nidn && d.peran !== 'asesor'); KELAS = kelas;
+  STR = new Map(str.map(s => [kunci(s.kurikulum, s.kode_mk), s]));
+  RPS_ST = new Map(rpsSt.map(r => [kunci(r.kurikulum, r.kode_mk), r]));
+  // Admin/GKM selalu boleh (boleh_mk); dosen lain dari mk_boleh_saya().
+  BOLEH = new Set(KELOLA ? MK.map(m => kunci(m.kurikulum, m.kode)) : boleh.map(b => kunci(b.kurikulum, b.kode_mk)));
+  const kurs = [...new Set(MK.map(m => m.kurikulum))].sort();
+  if (!KUR || !kurs.includes(KUR)) KUR = kurs[kurs.length - 1] || '';
+  // Tautan dari Berkas nilai CPL: ?kode=SI101[&kelas=<id>] membuka MK itu (kurikulum terbaru yang memuatnya).
+  const kodeAwal = URL_AWAL.get('kode');
+  if (kodeAwal && !PILIH) {
+    const m = [...MK].reverse().find(x => x.kode.toUpperCase() === kodeAwal.toUpperCase());
+    if (m) buka(m.kurikulum, m.kode, false);
+  }
+  gambar();
+}
+
+const mkDari = k => MK.find(m => kunci(m.kurikulum, m.kode) === k);
+const namaPengampu = m => (m.pengampu || []).map(n => DOSEN.find(d => d.nidn === n)?.nama || n);
+function statusMK(m){
+  const s = STR.get(kunci(m.kurikulum, m.kode))?.data, ci = cplMK(REF_CPL, PETA, m.kurikulum, m.kode);
+  return statusStruktur(s, s ? periksaStruktur(dataTemplat(s, ci)) : []);
+}
+
+function buka(kur, kode, gambarUlang = true){
+  if (KOTOR && !confirm('Perubahan belum disimpan. Tinggalkan?')) return;
+  PILIH = kunci(kur, kode);
+  const s = STR.get(PILIH)?.data;
+  D = s ? JSON.parse(JSON.stringify(s)) : strukturKosong();
+  for (const k of ['cpmk', 'sub', 'asesmen']) D[k] = D[k] || [];
+  D.bobot = D.bobot || {};
+  CI = cplMK(REF_CPL, PETA, kur, kode);
+  KOTOR = false;
+  history.replaceState(null, '', `?kode=${encodeURIComponent(kode)}`);
+  if (gambarUlang) { gambar(); scrollTo(0, 0); }
+}
+
+// ---------- daftar ----------
+function htmlDaftar(){
+  const kurs = [...new Set(MK.map(m => m.kurikulum))].sort();
+  const semua = MK.filter(m => m.kurikulum === KUR && m.aktif !== false && (!F.saya || BOLEH.has(kunci(m.kurikulum, m.kode))));
+  const xs = saringMK(semua, F, { status: statusMK, jenis: jenisDaftar, teksCari: m => namaPengampu(m).join(' ') });
+  const st = new Map(xs.map(m => [m.kode, statusMK(m)]));
+  const n = k => [...st.values()].filter(x => x === k).length;
+  const opsi = (xs2, v) => xs2.map(([k, l]) => `<option value="${esc(k)}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+  const grup = susunanMK(xs, semPilihan(xs)), { ganjil, genap, lain } = bagiParitas(grup);
+  const tabel = g => `<div class="gulir"><table class="ds daftar-mk ringkas"><thead><tr class="grup"><th colspan="4">${esc(g.judul)}<span class="ket"> · ${g.xs.length} MK · ${komaSks(g.sks)} sks</span></th></tr></thead><tbody>
+    ${g.xs.map(m => { const k = kunci(m.kurikulum, m.kode), jenis = jenisDaftar(m), s = st.get(m.kode);
+      const sks = +m.sks_praktikum ? `${komaSks(m.sks)} sks (P ${komaSks(m.sks_praktikum)})` : `${komaSks(m.sks)} sks`;
+      return `<tr><td class="kode">${esc(m.kode)}</td>
+        <td>${esc(m.nama)}<div class="ket">${jenis ? `<span class="chip jenis-${esc(jenis.toLowerCase())}" title="${esc(NAMA_JENIS[jenis] || '')}">${esc(jenis)}</span> ` : ''}${esc(sks)}${
+          m.sifat === 'pilihan' ? ' · Pilihan' : ''} · ${esc(namaPengampu(m).join(', ')) || 'koordinator belum ditetapkan'}</div></td>
+        <td><span class="chip st-${s}">${LABEL_ST[s]}</span>${m.rps_url ? `<div><a href="${esc(m.rps_url)}" target="_blank" rel="noopener">RPS</a>${m.rps_9_komponen ? ' · 9 komponen' : ''}</div>` : ''}</td>
+        <td><button class="b" data-buka="${esc(k)}">${BOLEH.has(k) ? 'Isi' : 'Lihat'}</button></td></tr>`; }).join('')}</tbody></table></div>`;
+  const tot = x => `<span class="ket"> · ${x.mk} MK · ${String(x.sks).replace('.', ',')} sks</span>`, rs = ringkasSemester(xs);
+  const kolom = (gs, judul) => `<div><h3 class="judul-kolom">${judul}</h3>${gs.map(tabel).join('') || '<p class="kosong">Tidak ada mata kuliah yang cocok.</p>'}</div>`;
+  return `<section class="kartu"><h2>Mata kuliah ${esc(KUR)}</h2>
+    <p class="ket">Isi CPMK, Sub-CPMK, butir asesmen, dan bobotnya sekali per mata kuliah; berlaku untuk semua kelas dan semester sampai
+      diubah. Dari isian ini situs membuat templat nilai CPL per kelas, jadi dosen tinggal mengisi NIM dan nilai.
+      ${KELOLA ? 'Admin/GKM menetapkan koordinator MK di halaman tiap mata kuliah.' : 'Anda bisa mengubah mata kuliah yang Anda koordinasikan atau ampu semester ini.'}</p>
+    <div class="alat saring"><label>Kurikulum <select id="fKur">${kurs.map(k => `<option${k === KUR ? ' selected' : ''}>${esc(k)}</option>`).join('')}</select></label>
+      <input type="search" id="fCari" placeholder="Cari kode, nama, koordinator" value="${esc(F.cari)}" style="min-width:220px">
+      <label><input type="checkbox" id="fSaya"${F.saya ? ' checked' : ''}> Hanya MK saya</label>
+      <span class="ket">${xs.length} dari ${MK.filter(m => m.kurikulum === KUR && m.aktif !== false).length} MK · CPMK lengkap ${n('lengkap')} · belum lengkap ${n('belum')} · belum diisi ${n('kosong')} ·
+        RPS ${xs.filter(m => m.rps_url).length}</span></div>
+    ${F.saya && !semua.length ? pesanKosongSaya(MK.filter(m => m.kurikulum === KUR && m.aktif !== false).length) : ''}
+    ${htmlSaringan(F, GRUP_SARING_CPMK, esc)}
+    ${htmlRingkasSemester(rs)}
+    ${F.semester.length ? `<div class="lebar">${grup.map(tabel).join('') || '<p class="kosong">Tidak ada mata kuliah yang cocok.</p>'}</div>`
+      : `<div class="dua-kolom">${kolom(ganjil, 'Semester Ganjil' + tot(rs.ganjil))}${kolom(genap, 'Semester Genap' + tot(rs.genap))}</div>
+    ${lain.length ? `<div class="kolom-lain">${lain.map(tabel).join('')}</div>` : ''}`}
+    <p class="ket">Jenis: ${Object.entries(NAMA_JENIS).map(([k, v]) => `<b>${esc(k)}</b> ${esc(v)}`).join(' · ')}. MK pilihan ditempatkan di kolom Ganjil/Genap
+      menurut semester yang diisi di RPS-nya; yang belum diisi tampil di bawah.</p></section>`;
+}
+// Saringan bertombol (pemilik 2026-11-19): boleh lebih dari satu nilai per grup; semester disaring = tampilan melebar.
+const GRUP_SARING_CPMK = [{ kunci: 'semester', label: 'Semester', opsi: [...['1', '2', '3', '4', '5', '6', '7', '8'].map(s => [s, s]), ['pilihan', 'Pilihan']] },
+  { kunci: 'jenis', label: 'Jenis', opsi: JENIS_MK.map(([k]) => [k, k]) }, { kunci: 'sifat', label: 'Sifat', opsi: [['wajib', 'Wajib'], ['pilihan', 'Pilihan']] },
+  { kunci: 'status', label: 'CPMK', opsi: Object.entries(LABEL_ST) }];
+// Jenis dari RPS bila diisi (identitas:data->identitas; coba lokal: data.identitas), selain itu dari kode MK.
+const jenisDaftar = m => { const r = RPS_ST.get(kunci(m.kurikulum, m.kode)); return r?.identitas?.jenis_mk || r?.data?.identitas?.jenis_mk || jenisMK(m); };
+// Susunan daftar per semester (pemilik 2026-11-19, sama dengan rps.html): nama jenis dari formulir K26; semester MK pilihan
+// dari RPS (identitas:data->identitas; tiruan coba lokal mengembalikan baris utuh, jadi data.identitas juga dibaca).
+const NAMA_JENIS = Object.fromEntries(JENIS_MK.map(([k, l]) => [k, (l.match(/\((.*)\)/) || [, l])[1]]));
+const semPilihan = xs => Object.fromEntries(xs.map(m => { const r = RPS_ST.get(kunci(m.kurikulum, m.kode));
+  return [m.kode, r?.identitas?.semester || r?.data?.identitas?.semester || '']; }));
+const komaSks = v => String(+v || 0).replace('.', ',');
+
+// ---------- penyunting ----------
+const ro = () => !BOLEH.has(PILIH);
+const dis = () => ro() ? ' disabled' : '';
+
+function htmlPeriksa(){
+  const g = periksaStruktur(dataTemplat(D, CI));
+  const kosong = [...D.cpmk.filter(c => !String(c.rumusan || '').trim()).map(c => `${c.kode}: rumusan belum diisi.`),
+                  ...D.sub.filter(s => !String(s.rumusan || '').trim()).map(s => `${s.kode}: rumusan belum diisi.`)];
+  const semua = [...(D.cpmk.length ? [] : ['Belum ada CPMK.']), ...kosong, ...g];
+  const kom = [...periksaKomposisi({ struktur: D, mk: mkDari(PILIH) || {} }).map(x => x.pesan), ...pesanHitung()];
+  return (semua.length ? `<div class="periksa belum"><b>Belum lengkap untuk templat nilai</b><ul>${semua.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`
+    : '<div class="periksa ok"><b>Lengkap.</b> Templat nilai CPL per kelas bisa diunduh di bawah.</div>')
+    + (kom.length ? `<div class="periksa belum"><b>Komposisi penilaian (Pedoman Lampiran I dan III; wajib untuk RPS)</b><ul>${kom.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '');
+}
+
+// Bagian 4 (pemilik 2026-11-19): mode Manual (isi bobot tiap sel) atau Otomatis (cara Simulator Pemetaan Sub-CPMK UP:
+// rasio target per butir dan per Sub-CPMK, centang sel, bobot dihitung dan dibulatkan; cpmk.js hitungOtomatis).
+const pct = v => `${+(+v).toFixed(1)}%`.replace('.', ',');
+function htmlBobot(){
+  if (!(D.sub.length && D.asesmen.length)) return '<p class="kosong">Tambahkan Sub-CPMK dan butir asesmen dulu.</p>';
+  const H = D.hitung, oto = H?.mode === 'otomatis', jk = jenisKuliah(mkDari(PILIH) || {});
+  const alat = `<div class="alat"><span class="seg">${MODE_HITUNG.map(([k, l]) => `<button type="button" class="b${(oto ? 'otomatis' : 'manual') === k ? ' aktif' : ''}"
+      data-mode-hitung="${k}"${dis()}>${l}</button>`).join('')}</span>
+    ${oto ? `<label>Bila target bertentangan, utamakan <select data-f="hprio"${dis()}>${PRIORITAS.map(([k, l]) => `<option value="${k}"${H.prioritas === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>Pembulatan <select data-f="hbulat"${dis()}>${PEMBULATAN.map(([k, l]) => `<option value="${k}"${+H.bulat === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}
+    <span class="ket">Jenis perkuliahan: ${esc((JENIS_KULIAH.find(x => x[0] === jk) || [, jk])[1])} (dari data MK)</span></div>`;
+  if (!oto) return `${alat}<p class="ket">Persen nilai akhir yang diukur tiap butir untuk tiap Sub-CPMK (lazimnya total 100). Kosong = butir itu tidak mengukur Sub-CPMK tersebut.
+      Mode <b>Otomatis</b> menghitung bobot sel dari rasio target, seperti Simulator Pemetaan Sub-CPMK.</p>
+    <div class="gulir"><table class="ds mx"><thead><tr><th>Sub-CPMK</th>${D.asesmen.map(a => `<th>${esc(a.nama)}</th>`).join('')}<th>jumlah</th></tr></thead><tbody>
+      ${D.sub.map(x => { const b = D.bobot[x.kode] || {}; const j = Object.values(b).reduce((p, q) => p + +q, 0);
+        return `<tr><td class="kode" title="${esc(x.rumusan)}">${esc(x.kode)}</td>${D.asesmen.map(a => `<td><input class="angka" inputmode="decimal" data-f="bobot" data-s="${esc(x.kode)}" data-a="${esc(a.nama)}"
+          value="${esc(b[a.nama] ?? '')}"${dis()}></td>`).join('')}<td class="kode" data-jumlah-sub="${esc(x.kode)}">${+j.toFixed(2)}</td></tr>`; }).join('')}
+      </tbody><tfoot><tr id="jumlahKolom">${htmlJumlah()}</tr></tfoot></table></div>`;
+  const h = hitungOtomatis(D), A = D.asesmen;
+  return `${alat}<p class="ket">Isi <b>rasio target</b> tiap butir asesmen (kolom, mis. 15 : 30 : 25 : 30) dan tiap Sub-CPMK (baris); angka dinormalkan
+      menjadi 100%. Centang butir yang mengukur tiap Sub-CPMK. Bobot sel dihitung sehingga kedua target sedekat mungkin terpenuhi
+      (sisi yang diutamakan tepat), lalu dibulatkan. Pindah ke Manual untuk menyunting angka sel langsung.</p>
+    <div class="gulir"><table class="ds mx oto"><thead><tr><th>Sub-CPMK</th><th>Rasio target</th>${A.map(a => `<th>${esc(a.nama)}<div class="ket">${
+        esc((KELOMPOK_ASESMEN.find(x => x[0] === kelompokAsesmen(a)) || [, ''])[1])}</div></th>`).join('')}<th>hasil / target</th></tr>
+      <tr class="target"><th>Rasio target asesmen</th><td></td>${A.map((a, j) => `<td><input class="angka" inputmode="decimal" data-f="tases" data-a="${esc(a.nama)}"
+        value="${esc(H.asesmen?.[a.nama] ?? '')}"${dis()}><div class="ket">${pct(h.colT[j])}</div></td>`).join('')}<td></td></tr></thead><tbody>
+      ${D.sub.map((x, i) => `<tr><td class="kode" title="${esc(x.rumusan)}">${esc(x.kode)}</td>
+        <td><input class="angka" inputmode="decimal" data-f="tsub" data-s="${esc(x.kode)}" value="${esc(H.sub?.[x.kode] ?? '')}"${dis()}><div class="ket">${pct(h.rowT[i])}</div></td>
+        ${A.map(a => { const on = (H.sel?.[x.kode] || []).includes(a.nama), v = h.bobot[x.kode]?.[a.nama];
+          return `<td><label class="sel"><input type="checkbox" data-f="hsel" data-s="${esc(x.kode)}" data-a="${esc(a.nama)}"${on ? ' checked' : ''}${dis()}>
+            <b>${v ? esc(String(v).replace('.', ',')) : ''}</b></label></td>`; }).join('')}
+        <td class="kode${Math.abs(h.rowSum[i] - h.rowT[i]) > 0.5 ? ' simpang' : ''}">${pct(h.rowSum[i])} / ${pct(h.rowT[i])}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td>hasil / target</td><td></td>${A.map((a, j) => `<td class="${Math.abs(h.colSum[j] - h.colT[j]) > 0.5 ? 'simpang' : ''}">${pct(h.colSum[j])} / ${pct(h.colT[j])}</td>`).join('')}
+        <td><b>${pct(h.rowSum.reduce((a, b) => a + b, 0))}</b></td></tr></tfoot></table></div>`;
+}
+/** Pesan hitung otomatis: target tak tercapai, Sub-CPMK belum diukur, butir bertarget tanpa Sub-CPMK. */
+function pesanHitung(){
+  if (D.hitung?.mode !== 'otomatis' || !D.sub.length || !D.asesmen.length) return [];
+  const h = hitungOtomatis(D), out = [];
+  if (h.belumDiukur.length) out.push(`Sub-CPMK belum diukur asesmen apa pun (centang selnya): ${h.belumDiukur.join(', ')}.`);
+  if (h.tanpaSel.length) out.push(`Butir bertarget tetapi belum mengukur Sub-CPMK mana pun: ${h.tanpaSel.join(', ')}.`);
+  if (h.simpang > 0.5) out.push(`Komposisi akhir menyimpang dari target hingga ${String(+h.simpang.toFixed(1)).replace('.', ',')} poin persen: pola centang belum memungkinkan kedua target terpenuhi; tambah centang pada baris/kolom yang selisihnya besar, atau ubah targetnya.`);
+  return out;
+}
+
+function htmlJumlah(){
+  const j = jumlahBobot(D);
+  return `<td>jumlah</td>${D.asesmen.map(a => `<td>${+j.kolom[a.nama].toFixed(2)}</td>`).join('')}<td><b>${+j.total.toFixed(2)}</b></td>`;
+}
+
+function htmlEditor(){
+  const m = mkDari(PILIH), s = STR.get(PILIH), ind = CI.indikator;
+  const kelasMK = KELAS.filter(k => k.kode_mk.toUpperCase() === m.kode.toUpperCase());
+  const kini = semesterKini(), kelasAwal = URL_AWAL.get('kelas');
+  return `<div class="alat"><button class="b" id="kembali">← Daftar mata kuliah</button>
+      <span class="ket">${s ? `Terakhir disimpan ${esc(new Date(s.diperbarui).toLocaleString('id-ID'))} oleh ${esc(s.oleh || '—')}` : 'Belum pernah disimpan.'}</span></div>
+    <section class="kartu"><h2><span class="kode">${esc(m.kode)}</span> ${esc(m.nama)} <span class="ket">(${esc(m.kurikulum)}, ${esc(m.sks ?? '—')} sks, semester ${esc(m.semester ?? '—')})</span></h2>
+      <p class="ket">Koordinator MK: ${esc(namaPengampu(m).join(', ')) || 'belum ditetapkan'}.${ro() ? ' Anda hanya bisa melihat; yang mengisi koordinator MK, pengampu kelas semester ini, GKM, atau admin.' : ''}</p>
+      <h3>CPL dan indikator mata kuliah ini</h3>
+      ${CI.cpl.length ? CI.cpl.map(c => `<div class="cpl"><b>CPL ${esc(c.kode)}</b> ${esc(c.rumusan)}
+        ${ind.filter(i => i.cpl === c.kode).map(i => `<div class="ind"><span class="kode">${esc(i.kode)}</span> ${esc(i.teks || '(teks indikator belum ada di Data prodi)')}</div>`).join('')}</div>`).join('')
+        : '<p class="kosong">Mata kuliah ini belum dipetakan ke CPL. Admin: Data prodi › Kurikulum &amp; CPL › peta MK–CPL.</p>'}
+    </section>
+
+    <section class="kartu"><h2>1. CPMK dan Sub-CPMK</h2>
+      <p class="ket">CPMK = capaian pembelajaran mata kuliah (paling banyak 10); Sub-CPMK = kemampuan akhir tiap tahap (paling banyak 50 untuk semua CPMK).</p>
+      ${D.cpmk.map(c => `<div class="cpmk"><div class="cpmk-kepala"><span class="kode">${esc(c.kode)}</span>
+          <textarea data-f="cpmk" data-k="${esc(c.kode)}" placeholder="Mahasiswa mampu …"${dis()}>${esc(c.rumusan)}</textarea>
+          ${ro() ? '' : `<button class="b awas" data-hapus-cpmk="${esc(c.kode)}" title="Hapus CPMK beserta Sub-CPMK-nya">Hapus</button>`}</div>
+        ${D.sub.filter(x => x.cpmk === c.kode).map(x => `<div class="sub"><span class="kode">${esc(x.kode)}</span>
+          <span><textarea data-f="sub" data-k="${esc(x.kode)}" placeholder="Mahasiswa mampu … (C2)"${dis()}>${esc(x.rumusan)}</textarea>
+          <label class="ket">CPL yang didukung (RPS: 1 Sub-CPMK, 1 CPMK, 1 CPL)
+            <select data-f="subcpl" data-k="${esc(x.kode)}"${dis()}><option value="">(pilih)</option>${CI.cpl.map(p => `<option value="${esc(p.kode)}"${
+              x.cpl === p.kode ? ' selected' : ''}>CPL ${esc(p.kode)}</option>`).join('')}</select></label></span>
+          ${ro() ? '' : `<button class="b awas" data-hapus-sub="${esc(x.kode)}">Hapus</button>`}</div>`).join('')}
+        ${ro() ? '' : `<div class="sub"><span></span><span><button class="b" data-tambah-sub="${esc(c.kode)}">+ Sub-CPMK</button></span></div>`}</div>`).join('')
+        || '<p class="kosong">Belum ada CPMK.</p>'}
+      ${ro() ? '' : '<p><button class="b" id="tambahCpmk">+ CPMK</button></p>'}
+    </section>
+
+    <section class="kartu"><h2>2. Pemetaan CPMK ke indikator CPL</h2>
+      <p class="ket">Isi bobot (angka, mis. 1 atau 0,5) bila CPMK mendukung indikator itu; kosong = tidak terkait. Bobot dipakai templat untuk menghitung capaian CPL.</p>
+      ${D.cpmk.length && ind.length ? `<div class="gulir"><table class="ds mx"><thead><tr><th>CPMK</th>${ind.map(i => `<th title="${esc(i.teks)}">${esc(i.kode)}</th>`).join('')}</tr></thead><tbody>
+        ${D.cpmk.map(c => `<tr><td class="kode" title="${esc(c.rumusan)}">${esc(c.kode)}</td>${ind.map(i => `<td><input class="angka" inputmode="decimal" data-f="ind" data-c="${esc(c.kode)}" data-i="${esc(i.kode)}"
+          value="${esc(c.indikator?.[i.kode] ?? '')}"${dis()}></td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+        : '<p class="kosong">Tambahkan CPMK dulu' + (ind.length ? '.' : '; mata kuliah ini juga belum punya indikator CPL.') + '</p>'}
+    </section>
+
+    <section class="kartu"><h2>3. Butir asesmen</h2>
+      <p class="ket">Tugas, kuis, praktikum, UTS, UAS, proyek, dan sebagainya; sama dengan rencana asesmen di RPS (paling banyak 50). Nama bisa diubah langsung.</p>
+      <p class="ket">Jenis butir menentukan kolom Rencana Asesmen Sumatif di RPS (Kuis, Tugas, UTS, UAS, Lainnya). Kelompok
+        (Ujian/kuis atau Penugasan) dipakai untuk syarat bobot Penugasan paling rendah 20% pada perkuliahan reguler.</p>
+      <div class="alat">${D.asesmen.map(a => `<span><input data-f="ases" data-lama="${esc(a.nama)}" value="${esc(a.nama)}" style="width:150px"${dis()}>
+        <select data-f="asesjenis" data-k="${esc(a.nama)}" title="Jenis asesmen"${dis()}>${JENIS_ASESMEN.map(([k, l]) => `<option value="${k}"${
+          jenisAsesmen(a) === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
+        <select data-f="aseskel" data-k="${esc(a.nama)}" title="Kelompok (syarat Penugasan paling rendah 20% perkuliahan reguler)"${dis()}>${KELOMPOK_ASESMEN.map(([k, l]) => `<option value="${k}"${
+          kelompokAsesmen(a) === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
+        ${ro() ? '' : `<button class="b awas" data-hapus-ases="${esc(a.nama)}" title="Hapus butir ini">×</button>`}</span>`).join('') || '<span class="kosong">Belum ada butir.</span>'}</div>
+      ${ro() ? '' : '<div class="alat"><input id="asesBaru" placeholder="mis. Tugas 1" style="width:180px"><button class="b" id="tambahAses">+ Butir</button><span class="msg" id="mAses"></span></div>'}
+    </section>
+
+    <section class="kartu"><h2>4. Bobot butir asesmen per Sub-CPMK</h2>
+      ${htmlBobot()}
+      <div id="periksa">${htmlPeriksa()}</div>
+      ${ro() ? '' : htmlRpsB() + '<p><button class="b utama" id="simpan">Simpan CPMK dan bobot</button><span class="msg" id="mSimpan"></span></p>'}
+    </section>
+
+    <section class="kartu"><h2>5. RPS</h2>
+      <p><a class="b utama" href="rps.html?kur=${encodeURIComponent(m.kurikulum)}&kode=${encodeURIComponent(m.kode)}">Susun RPS di situs</a>
+        <span class="ket">Bagian B RPS memakai CPMK, Sub-CPMK, asesmen, dan bobot di halaman ini; simpan dulu sebelum membuka RPS.</span></p>
+      <p>${m.rps_ada ? 'RPS disahkan Kaprodi (terhitung di penilaian akreditasi).' : '<span class="kosong">RPS belum disahkan Kaprodi.</span>'}
+        ${m.rps_url ? `Bukti (RPS bertanda tangan Dekan): <a href="${esc(m.rps_url)}" target="_blank" rel="noopener">buka</a>.` : '<span class="kosong">Bukti RPS bertanda tangan Dekan belum diunggah.</span>'}</p>
+      <p class="ket">RPS disusun, diajukan ke Kaprodi, dan berkas bertanda tangan Dekan diunggah di halaman RPS;
+        hanya berkas bertanda tangan Dekan yang menjadi bukti akreditasi.</p>
+    </section>
+
+    <section class="kartu"><h2>6. Templat nilai CPL per kelas</h2>
+      <p class="ket">Templat resmi (Template_Input_Data_CPL) yang sudah terisi CPL, indikator, CPMK, Sub-CPMK, butir asesmen, dan bobot dari halaman ini.
+        Dosen pengampu tinggal mengisi NIM dan nilai di lembar Nilai, lalu mengunggahnya di Berkas nilai CPL.</p>
+      <div class="grid">
+        <label>Kelas dari daftar kelas CPL<select id="tKelas"><option value="">— isi manual di sebelah —</option>${kelasMK.map(k =>
+          `<option value="${k.id}"${String(k.id) === kelasAwal ? ' selected' : ''}>${esc(k.tahun_akademik)} ${esc(k.semester)} · kelas ${esc(k.kelas)}</option>`).join('')}</select></label>
+        <label>Tahun akademik<input id="tTa" value="${esc(kini.ta)}"></label>
+        <label>Semester<select id="tSm">${['Ganjil', 'Genap'].map(x => `<option${x === kini.sm ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+        <label>Kelas<input id="tKls" placeholder="mis. A"></label></div>
+      <p><button class="b utama" id="unduhTemplat">Unduh templat terisi</button><span class="msg" id="mTemplat"></span></p>
+    </section>
+
+    ${KELOLA ? `<section class="kartu"><h2>Koordinator MK / pengampu</h2>
+      <p class="ket">Dosen yang boleh mengisi CPMK dan RPS mata kuliah ini sepanjang tahun (juga kolom pengampu Tabel 4.a LKPS). Pengampu kelas semester ini
+        (daftar kelas CPL) otomatis boleh mengisi.</p>
+      <div class="pilih-dosen">${DOSEN.map(d => `<label><input type="checkbox" data-pengampu="${esc(d.nidn)}"${(m.pengampu || []).includes(d.nidn) ? ' checked' : ''}> ${esc(d.nama)}</label>`).join('')}</div>
+      <p><button class="b" id="simpanPengampu">Simpan koordinator MK</button><span class="msg" id="mPengampu"></span></p></section>` : ''}`;
+}
+
+function gambar(){
+  $('isi').innerHTML = PILIH && mkDari(PILIH) ? htmlEditor() : htmlDaftar();
+  if (!PILIH) {
+    $('fKur').onchange = () => { KUR = $('fKur').value; gambar(); };
+    $('fSaya').onchange = () => { F.saya = $('fSaya').checked; ingatHanyaSaya('cpmk', F.saya); gambar(); };
+    document.querySelectorAll('[data-saring], [data-saring-hapus]').forEach(b => b.onclick = () => {
+      ubahSaringan(F, b.dataset.saringHapus ? null : b.dataset.saring, b.dataset.nilai, GRUP_SARING_CPMK); gambar(); });
+    $('fCari').oninput = () => { F.cari = $('fCari').value; const p = $('fCari').selectionStart; gambar(); $('fCari').focus(); $('fCari').setSelectionRange(p, p); };
+    document.querySelectorAll('[data-buka]').forEach(b => { b.onclick = () => { const [k, kode] = b.dataset.buka.split('|'); buka(k, kode); }; });
+    return;
+  }
+  $('kembali').onclick = () => { if (KOTOR && !confirm('Perubahan belum disimpan. Tinggalkan?')) return; KOTOR = false; PILIH = null; D = null;
+    history.replaceState(null, '', location.pathname); gambar(); };
+  if ($('tambahCpmk')) $('tambahCpmk').onclick = () => ubahStruktur(() => tambahCpmk(D));
+  document.querySelectorAll('[data-hapus-cpmk]').forEach(b => { b.onclick = () => {
+    if (confirm(`Hapus ${b.dataset.hapusCpmk} beserta Sub-CPMK dan bobotnya?`)) ubahStruktur(() => hapusCpmk(D, b.dataset.hapusCpmk)); }; });
+  document.querySelectorAll('[data-tambah-sub]').forEach(b => { b.onclick = () => ubahStruktur(() => tambahSub(D, b.dataset.tambahSub)); });
+  document.querySelectorAll('[data-hapus-sub]').forEach(b => { b.onclick = () => {
+    if (confirm(`Hapus ${b.dataset.hapusSub} beserta bobotnya?`)) ubahStruktur(() => hapusSub(D, b.dataset.hapusSub)); }; });
+  document.querySelectorAll('[data-hapus-ases]').forEach(b => { b.onclick = () => {
+    if (confirm(`Hapus butir "${b.dataset.hapusAses}" beserta bobotnya?`)) ubahStruktur(() => hapusAsesmen(D, b.dataset.hapusAses)); }; });
+  if ($('tambahAses')) {
+    const tambah = () => { try { tambahAsesmen(D, $('asesBaru').value); KOTOR = true; gambar(); $('asesBaru')?.focus(); } catch (e) { tulis('mAses', 'buruk', e.message); } };
+    $('tambahAses').onclick = tambah;
+    $('asesBaru').onkeydown = e => { if (e.key === 'Enter') tambah(); };
+  }
+  if ($('simpan')) $('simpan').onclick = simpan;
+  if ($('simpanPengampu')) $('simpanPengampu').onclick = simpanPengampu;
+  $('unduhTemplat').onclick = unduhTemplat;
+  $('tKelas').onchange = isiDariKelas; isiDariKelas();
+}
+
+function ubahStruktur(f){ try { f(); KOTOR = true; gambar(); } catch (e) { alert(e.message); } }
+
+// Isian teks dan angka: ubah status tanpa menggambar ulang (fokus tetap); periksa dan jumlah diperbarui.
+$('isi').addEventListener('input', e => {
+  const t = e.target, f = t.dataset?.f;
+  if (!f || !D) return;
+  try {
+    if (f === 'cpmk') D.cpmk.find(c => c.kode === t.dataset.k).rumusan = t.value;
+    else if (f === 'sub') D.sub.find(s => s.kode === t.dataset.k).rumusan = t.value;
+    else if (f === 'subcpl') { const s = D.sub.find(s => s.kode === t.dataset.k); if (t.value) s.cpl = t.value; else delete s.cpl; }
+    else if (f === 'asesjenis') D.asesmen.find(a => a.nama === t.dataset.k).jenis = t.value;
+    else if (f === 'aseskel') D.asesmen.find(a => a.nama === t.dataset.k).kelompok = t.value;
+    else if (f === 'ind') { const c = D.cpmk.find(c => c.kode === t.dataset.c); c.indikator = c.indikator || {}; aturBobot(c.indikator, t.dataset.i, t.value); }
+    else if (f === 'bobot') {
+      aturBobot(D.bobot[t.dataset.s] = D.bobot[t.dataset.s] || {}, t.dataset.a, t.value);
+      const j = Object.values(D.bobot[t.dataset.s]).reduce((p, q) => p + +q, 0);
+      const sel = document.querySelector(`[data-jumlah-sub="${CSS.escape(t.dataset.s)}"]`); if (sel) sel.textContent = +j.toFixed(2);
+      if ($('jumlahKolom')) $('jumlahKolom').innerHTML = htmlJumlah();
+    } else return;
+    t.style.borderColor = '';
+  } catch { t.style.borderColor = 'var(--merah)'; return; }
+  KOTOR = true;
+  $('periksa').innerHTML = htmlPeriksa();
+});
+// Hitung otomatis (pemilik 2026-11-19): target/centang/prioritas/pembulatan berubah -> bobot dihitung ulang, bagian digambar ulang.
+const HITUNG_F = ['tases', 'tsub', 'hsel', 'hprio', 'hbulat'];
+function hitungUlang(){ D.bobot = hitungOtomatis(D).bobot; KOTOR = true; const y = scrollY; gambar(); scrollTo(0, y); }
+$('isi').addEventListener('change', e => {
+  const t = e.target, f = t.dataset?.f;
+  if (!D || !HITUNG_F.includes(f) || D.hitung?.mode !== 'otomatis') return;
+  const H = D.hitung, v = String(t.value).replace(',', '.');
+  if (f === 'tases') (H.asesmen ||= {})[t.dataset.a] = +v || 0;
+  else if (f === 'tsub') (H.sub ||= {})[t.dataset.s] = +v || 0;
+  else if (f === 'hprio') H.prioritas = t.value;
+  else if (f === 'hbulat') H.bulat = +t.value;
+  else if (f === 'hsel') {
+    const xs = new Set((H.sel ||= {})[t.dataset.s] || []);
+    if (t.checked) xs.add(t.dataset.a); else xs.delete(t.dataset.a);
+    H.sel[t.dataset.s] = D.asesmen.map(a => a.nama).filter(n => xs.has(n));
+  }
+  hitungUlang();
+});
+$('isi').addEventListener('click', e => {
+  const b = e.target.closest?.('[data-mode-hitung]');
+  if (!b || !D || b.disabled) return;
+  if (b.dataset.modeHitung === 'otomatis') {
+    if (!D.hitung) D.hitung = hitungAwal(D); else D.hitung.mode = 'otomatis';
+    hitungUlang();
+  } else if (D.hitung) { D.hitung.mode = 'manual'; KOTOR = true; const y = scrollY; gambar(); scrollTo(0, y); }
+});
+$('isi').addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset?.f !== 'ases' || !D) return;
+  try { gantiNamaAsesmen(D, t.dataset.lama, t.value); KOTOR = true; gambar(); } catch (err) { alert(err.message); t.value = t.dataset.lama; }
+});
+
+// 114 (pemilik 2026-11-19): bagian B yang diubah setelah RPS disahkan menjadikan RPS draf (trigger rps_b_berubah); diajukan ulang.
+let RPS_ST = new Map();
+function htmlRpsB(){
+  const r = RPS_ST.get(PILIH);
+  if (r?.status === 'disahkan') return `<p class="ket" style="color:#8A5A00">RPS mata kuliah ini sudah disahkan Kaprodi. Menyimpan perubahan CPMK, Sub-CPMK,
+    asesmen, atau bobot menjadikan RPS draf lagi dan perlu diajukan ulang di halaman RPS; versi yang disahkan tetap berlaku sampai disahkan lagi.</p>`;
+  if (r?.status === 'diajukan') return '<p class="ket" style="color:#8A5A00">RPS mata kuliah ini sedang diperiksa Kaprodi; perubahan di sini ikut terbaca dan ikut disahkan.</p>';
+  return '';
+}
+
+async function simpan(){
+  const [kur, kode] = PILIH.split('|');
+  $('simpan').disabled = true; tulis('mSimpan', '', 'Menyimpan…');
+  const { data, error } = await sb.from('mk_struktur').upsert({ kurikulum: kur, kode_mk: kode, data: D }, { onConflict: 'kurikulum,kode_mk' })
+    .select('kurikulum,kode_mk,data,oleh,diperbarui');
+  $('simpan').disabled = false;
+  if (error) return tulis('mSimpan', 'buruk', 'Gagal: ' + error.message);
+  STR.set(PILIH, data[0]); KOTOR = false;
+  const sebelum = RPS_ST.get(PILIH)?.status;
+  if (sebelum === 'disahkan') {
+    const { data: st } = await sb.from('mk_rps').select('kurikulum,kode_mk,status,revisi').eq('kurikulum', kur).eq('kode_mk', kode);
+    if (st?.[0]) RPS_ST.set(PILIH, st[0]);
+  }
+  gambar();
+  tulis('mSimpan', 'ok', sebelum === 'disahkan' && RPS_ST.get(PILIH)?.status === 'draf'
+    ? 'Tersimpan. RPS mata kuliah ini kembali menjadi draf; ajukan ulang ke Kaprodi di halaman RPS.' : 'Tersimpan.');
+}
+
+
+async function simpanPengampu(){
+  const [kur, kode] = PILIH.split('|');
+  const nidn = [...document.querySelectorAll('[data-pengampu]:checked')].map(c => c.dataset.pengampu);
+  const { error } = await sb.rpc('mk_atur_pengampu', { p_kurikulum: kur, p_kode: kode, p_nidn: nidn });
+  if (error) return tulis('mPengampu', 'buruk', 'Gagal: ' + error.message);
+  mkDari(PILIH).pengampu = nidn;
+  const boleh = await baca(sb.rpc('mk_boleh_saya')); BOLEH = new Set(boleh.map(b => kunci(b.kurikulum, b.kode_mk)));
+  gambar(); tulis('mPengampu', 'ok', 'Koordinator MK tersimpan.');
+}
+
+function isiDariKelas(){
+  const k = KELAS.find(x => String(x.id) === $('tKelas').value);
+  for (const id of ['tTa', 'tSm', 'tKls']) $(id).disabled = !!k;
+  if (k) { $('tTa').value = k.tahun_akademik; $('tSm').value = k.semester; $('tKls').value = k.kelas; }
+}
+
+async function unduhTemplat(){
+  const m = mkDari(PILIH);
+  const info = { kode_mk: m.kode, nama_mk: m.nama, sks: m.sks, semester: $('tSm').value, tahun_akademik: $('tTa').value.trim(),
+                 kurikulum: m.kurikulum, dosen: namaPengampu(m).join(', ') || SAYA.nama, kelas: $('tKls').value.trim() };
+  if (!/^\d{4}\/\d{4}$/.test(info.tahun_akademik)) return tulis('mTemplat', 'buruk', 'Tahun akademik berbentuk 2026/2027.');
+  if (!info.kelas) return tulis('mTemplat', 'buruk', 'Isi kelas (seperti di SIAKAD), atau pilih dari daftar kelas.');
+  $('unduhTemplat').disabled = true; tulis('mTemplat', '', 'Menyiapkan templat…');
+  try {
+    const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const r = await fetch('Template_Input_Data_CPL.xlsx', {cache: 'no-cache'});
+    if (!r.ok) throw new Error('Templat resmi tidak terbaca.');
+    const zip = await JSZip.loadAsync(await r.arrayBuffer(), { createFolders: false });
+    await isiTemplat(zip, dataTemplat(D, CI), info);
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: namaBerkasTemplat(info) });
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    tulis('mTemplat', 'ok', `${a.download} diunduh${KOTOR ? ' (memakai isian yang belum disimpan; simpan juga)' : ''}.`);
+  } catch (e) { tulis('mTemplat', 'buruk', e.message); }
+  $('unduhTemplat').disabled = false;
+}
+
+async function mulai(){
+  SAYA = await gerbang(sb);
+  if (!SAYA) return;
+  KELOLA = bolehMutu(SAYA);
+  F.saya = bawaanHanyaSaya('cpmk', SAYA);   // MK saya bawaan untuk dosen (pemilik 2026-11-21)
+  $('hSub').textContent = `Masuk sebagai ${SAYA.nama}`;
+  await muat();
+}
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">Gagal memuat: ${esc(e.message || String(e))}</p>`; });
+</script>
+</body>
+</html>

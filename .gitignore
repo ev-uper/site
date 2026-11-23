@@ -1,0 +1,43 @@
+# Kunci rahasia — TIDAK BOLEH ter-commit
+rahasia.env
+
+# Path mesin untuk run_cpl.py (contohnya config.local.yaml.contoh)
+config.local.yaml
+
+# Laporan yang memuat data sensitif; dibangun ulang kapan saja
+laporan-internal.html
+
+# SQL pemulihan dan cadangan gladi (supabase_archive.py pulihkan): memuat data pribadi
+/pulih/
+
+# Berkas sementara Excel
+~$*.xlsx
+.~lock.*
+
+# Data Excel lama (dipensiunkan 2026-11-04): memuat email/NIDN dosen, tidak
+# dibaca bangun.py lagi. Tetap boleh ada di disk, tetapi tidak dilacak git.
+/data-prodi*.xlsx
+/data_prestasi.xlsx
+
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+venv/
+
+# Paket pemasangan untuk prodi lain (tools/make_package.py)
+/paket/
+
+# Dependensi tools/make_full_schema.mjs (npm install --prefix tools)
+/tools/node_modules/
+# python coba_lokal.py: salinan situs dengan data contoh (2026-11-12)
+/coba-lokal/
+
+# Repo ini publik: data pribadi tidak boleh masuk
+/cadangan/
+/arsip/
+/pulih/
+/impor-rps/
+/pasang-tercatat.json
+/isian.ini

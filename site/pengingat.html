@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>Pengingat — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+  .wrap{max-width:1000px;margin:0 auto;padding:18px 20px 80px}
+  .kosong{color:var(--muted)}
+  .ringkas{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+    border-top:4px solid var(--aksi);padding:14px 18px;margin-bottom:16px}
+  .ringkas b{font-size:18px;color:var(--biru)}
+  .bar{flex:1;min-width:160px;height:10px;background:var(--line-soft);border-radius:5px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--aksi)}
+  .ringkas label{font-size:14px;cursor:pointer}"
+  /* Tugas per pihak (pemilik 2026-11-11) */
+  .pihak-tab{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+  .pihak-tab button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+  .pihak-tab button[aria-pressed="true"]{background:var(--biru);color:#fff;border-color:var(--biru)}
+  ol.tugas{padding-left:20px;font-size:14px}
+  ol.tugas li{margin:4px 0}
+  @media print{ body.cetak-tugas > *:not(main), body.cetak-tugas #isi > *:not(#tugas),
+    body.cetak-tugas .pihak-tab, body.cetak-tugas #cetak-tugas{display:none !important} }
+  section.bag{background:var(--panel);border:1px solid var(--line);margin-bottom:12px;padding:6px 18px 10px}
+  section.bag h2{font-size:16px;color:var(--biru);margin:8px 0 6px;display:flex;justify-content:space-between;gap:10px}
+  section.bag h2 small{font-weight:400;font-size:13px;color:var(--muted);white-space:nowrap}
+  .item{display:grid;grid-template-columns:92px 1fr 90px 64px;gap:10px;align-items:start;padding:7px 0;border-top:1px solid var(--line-soft)}
+  .chip{font-size:12px;font-weight:600;padding:1px 7px;border-radius:3px;text-align:center;border:1px solid currentColor}
+  .chip.selesai{color:var(--hijau)}
+  .chip.sebagian{color:var(--aksi)}
+  .chip.belum{color:var(--merah)}
+  .ket{font-size:13px;color:var(--muted)}
+  .angka{font-family:var(--mono);font-size:13px;text-align:right}
+  .item a{font-size:13px;color:var(--aksi)}
+  .item details{font-size:13px;color:var(--muted)}
+  .item summary{cursor:pointer}
+  .item ul{margin:4px 0 0;padding-left:18px}
+  .hanya-belum .item.selesai-baris{display:none}
+  @media (max-width:640px){.item{grid-template-columns:82px 1fr}.angka{text-align:left}}
+</style>
+<style>
+  /* Pengingat (pemilik 2026-11-11) */
+  .jenis{background:var(--panel);border:1px solid var(--line);padding:14px 16px;margin:14px 0}
+  .jenis h2{margin:0 0 6px;font-size:17px}
+  .baris{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start;font-size:14px;margin:6px 0}
+  .baris input[type=email]{width:100%}
+  textarea{width:100%;min-height:150px;font:13px/1.5 var(--mono);padding:8px}
+  input[type=text].subjek{width:100%;padding:6px;font:inherit}
+  .aksi{display:flex;gap:10px;align-items:center;margin-top:10px}
+  .ket{color:var(--muted);font-size:13px}
+  /* Masa berlaku (pemilik 2026-11-11) */
+  table.bl{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+  table.bl th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);padding:5px 8px}
+  table.bl td{padding:6px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  table.bl tr.aman{display:none}
+  .tampil-aman table.bl tr.aman{display:table-row}
+</style>
+</head>
+<body>
+<div class="hero" role="region" aria-label="Pembuka halaman"><div class="hero-in">
+  <div class="hero-inst" data-identitas></div>
+  <h1>Pengingat</h1>
+  <div class="sub" id="hSub">Memuat…</div>
+</div></div>
+<main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// Pengingat lewat email (pemilik 2026-11-11). Admin melihat penerima dan isi,
+// menyunting, lalu mengirim; email keluar dari akun Google prodi lewat Apps
+// Script (Code.gs kind 'kirim_pengingat', maks. 30 per kirim). Tidak ada yang
+// terkirim tanpa tombol Kirim.
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { gerbang } from './menu.js?v=2026-11-22-866c27';
+import { bacaTinjauan, unsurDariTinjauan } from './tinjauan-rps.js?v=2026-11-22-866c27';
+import { tugasPerPihak } from './kelengkapan.js?v=2026-11-22-866c27';
+import { PIHAK } from './unsur-butir.js?v=2026-11-22-866c27';
+import { penerimaTemuan, HARI_DEKAT } from './temuan-ami.js?v=2026-11-22-866c27';
+import { daftarBerlaku, penerimaBerlaku, htmlBerlaku, HARI_SEGERA } from './masa-berlaku.js?v=2026-11-22-866c27';
+import { penerimaKarya, penerimaProfil, isiPola } from './pengingat-dosen.js?v=2026-11-22-866c27';
+import { penerimaTindak, HARI_TINDAK } from './rapat.js?v=2026-11-22-866c27';
+import { penerimaHibah, penerimaPanggilan, HARI_PENGINGAT } from './hibah.js?v=2026-11-22-866c27';
+import { kelengkapanBerhalangan, penerimaBerhalangan, semesterBerikut, tanggalSemester } from './jadwal-berhalangan.js?v=2026-11-22-866c27';
+import { penerimaRefleksi, penerimaTindakEval, HARI_TINDAK_EVAL, semesterKini } from './evaluasi-pembelajaran.js?v=2026-11-22-866c27';
+import { penerimaRevisi, HARI_REVISI } from './rekap-ta.js?v=2026-11-22-866c27';
+import { penerimaTenggatRps, penerimaReviewBelum, penerimaTanggapBelum, isoDari, HARI_TAMPIL } from './pengingat-rps.js?v=2026-11-22-866c27';
+import { tanggalPanjang } from './rps-docx.js?v=2026-11-22-866c27';
+import { penerimaTarget } from './target-kinerja.js?v=2026-11-22-866c27';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+const sb = createClient(window.SB_URL, window.SB_KEY);
+const situs = location.href.replace(/[^/]*$/, '');
+const taKini = () => { const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`; };
+const semKini = () => { const m = new Date().getMonth(); return m >= 1 && m <= 7 ? 'genap' : 'ganjil'; };
+const simpanAman = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } } };
+let DATA = null, PRODI = '';
+// Templat email (instal-lengkap.sql, pemilik 2026-11-12): kunci kelompok -> {subjek, isi}.
+// BAWAAN diisi saat kelompok digambar, untuk "Kembalikan bawaan". ADA_TEMPLAT = tabel bisa dibaca.
+let TEMPLAT = {}, BAWAAN = {}, ADA_TEMPLAT = false;
+
+// Satu kelompok pengingat: daftar penerima (centang) + subjek + isi berpola.
+function htmlJenis(id, judul, ket, penerima, subjek, isi){
+  BAWAAN[id] = { subjek, isi };
+  const t = TEMPLAT[id];
+  if (t) { subjek = t.subjek; isi = t.isi; }
+  return `<section class="jenis" id="j-${id}"><h2>${esc(judul)} (${penerima.length})</h2><p class="ket">${ket}</p>
+    ${penerima.length ? `<div>${penerima.map((p, i) => `<label class="baris"><input type="checkbox" data-i="${i}" checked>
+      <span><b>${esc(p.nama)}</b> &lt;${esc(p.email)}&gt;${p.rinci ? `<br><span class="ket">${esc(p.rinci)}</span>` : ''}</span></label>`).join('')}</div>
+      <p><label>Subjek<br><input type="text" class="subjek" value="${esc(subjek)}"></label></p>
+      <p><label>Isi (<code>{nama}</code>, <code>{rinci}</code>, <code>{situs}</code>, <code>{prodi}</code> diganti otomatis)${t
+        ? ` <span class="ket">· memakai templat tersimpan${t.oleh ? ` (${esc(t.oleh)})` : ''}</span>` : ''}<br><textarea>${esc(isi)}</textarea></label></p>
+      <div class="aksi"><button type="button" class="btn" data-kirim="${id}">Kirim ke yang dicentang</button>
+        ${ADA_TEMPLAT ? `<button type="button" class="btn ghost" data-tsimpan="${id}">Simpan sebagai templat</button>
+        ${t ? `<button type="button" class="btn ghost" data-tbawaan="${id}">Kembalikan bawaan</button>` : ''}` : ''}
+        <span class="msg" id="m-${id}"></span></div>` : '<p class="kosong">Tidak ada penerima.</p>'}</section>`;
+}
+
+// setelah(): dijalankan bila ada yang terkirim (mis. menandai panggilan hibah sudah diumumkan).
+async function kirim(id, penerima, setelah){
+  const box = $('j-' + id), m = $('m-' + id);
+  const subjek = box.querySelector('.subjek').value.trim(), pola = box.querySelector('textarea').value;
+  const pilih = [...box.querySelectorAll('[data-i]:checked')].map(c => penerima[+c.dataset.i]).filter(p => p?.email);
+  if (!pilih.length) { m.className = 'msg buruk'; m.textContent = 'Belum ada penerima yang dicentang.'; return; }
+  if (pilih.length > 30) { m.className = 'msg buruk'; m.textContent = 'Paling banyak 30 sekali kirim.'; return; }
+  if (!confirm(`Kirim ${pilih.length} email dari akun Google prodi?`)) return;
+  const pesan = pilih.map(p => ({ ke: p.email, subjek: isiPola(subjek, p, { situs, prodi: PRODI }), isi: isiPola(pola, p, { situs, prodi: PRODI }) }));
+  m.className = 'msg'; m.textContent = 'Mengirim…';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Sesi masuk habis. Muat ulang halaman.');
+    const res = await fetch(window.UPLOAD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ token: session.access_token, kind: 'kirim_pengingat', pengirim: PRODI, pesan }) });
+    const out = await res.json();
+    if (!out.ok) throw new Error(/tidak dikenal/i.test(out.error || '') ? 'Apps Script belum diperbarui: terbitkan ulang Code.gs.' : out.error);
+    m.className = out.gagal?.length ? 'msg buruk' : 'msg ok';
+    m.textContent = `${out.terkirim} terkirim${out.gagal?.length ? `; gagal: ${out.gagal.join('; ')}` : ''}. Sisa kuota hari ini: ${out.sisa}.`;
+    if (out.terkirim && setelah) await setelah();
+  } catch (e) { m.className = 'msg buruk'; m.textContent = e.message || String(e); }
+}
+
+function gambar(){
+  const ta = $('p_ta').value.trim(), sem = $('p_sem').value;
+  const { dosen, bkd, ditolak, butirBukti } = DATA;
+  // 1. DTPS aktif tanpa BKD untuk TA + semester terpilih.
+  const sudah = new Set(bkd.filter(b => b.tahun_akademik === ta && b.semester === sem).map(b => b.nidn));
+  const bkdBelum = dosen.filter(d => d.dtps && d.aktif !== false && d.email && !sudah.has(d.nidn))
+    .map(d => ({ nama: d.nama, email: d.email, rinci: `BKD ${ta} semester ${sem}` }));
+  // 2. Karya ditolak: per penulis dari prodi.
+  const per = new Map();
+  for (const k of ditolak) for (const p of (k.karya_penulis || [])) {
+    const d = p.dosen; if (!d?.email) continue;
+    if (!per.has(d.email)) per.set(d.email, { nama: d.nama, email: d.email, judul: [] });
+    per.get(d.email).judul.push(`- ${k.judul}${k.catatan ? ` (catatan admin: ${k.catatan})` : ''}`);
+  }
+  const tolak = [...per.values()].map(p => ({ ...p, rinci: p.judul.join('\n') }));
+  // 3. Unsur bukti per pihak: email unit diisi admin (disimpan di peramban ini).
+  const tugas = tugasPerPihak(butirBukti, DATA.unsurOtomatis || []), emailPihak = JSON.parse(simpanAman.get('pengingatEmailPihak') || '{}');
+  const pihak = ['U', 'F', 'P', 'S'].filter(k => tugas[k].length && emailPihak[k])
+    .map(k => ({ nama: PIHAK[k], email: emailPihak[k],
+      rinci: tugas[k].map(x => `- Butir ${x.no} unsur ${x.n}: ${x.label}`).join('\n') }));
+  // 4. Tindak lanjut AMI lewat atau dekat tenggat (instal-lengkap.sql).
+  const { penerima: ami, tanpaEmail } = penerimaTemuan(DATA.temuan, emailPihak);
+  // 5. Masa berlaku MoU/SK/dokumen (instal-lengkap.sql, masa-berlaku.js).
+  const berlaku = penerimaBerlaku(DATA.berlaku, emailPihak.P, PIHAK.P);
+  // 6. Hibah (instal-lengkap.sql, hibah.js): tenggat pengajuan, tenggat laporan, pengumuman panggilan.
+  const hAjuan = penerimaHibah(DATA.hibah, 'pengajuan'), hLapor = penerimaHibah(DATA.hibah, 'laporan');
+  const hPanggil = penerimaPanggilan(dosen, DATA.panggilan);
+  const tanpa = xs => xs.length ? ` <b>${xs.length} proposal tanpa email ketua/tim</b> (${xs.map(a => esc(String(a.judul).slice(0, 40))).join(', ')}).` : '';
+  // 7. Tindak lanjut rapat (instal-lengkap.sql, rapat.js): ke PJ dosen.
+  const tRapat = penerimaTindak(DATA.tindak);
+  // Revisi TA (95): mahasiswa dan pembimbing.
+  const perNidn = Object.fromEntries(dosen.filter(x => x.nidn).map(x => [x.nidn, { nama: x.nama, email: x.email }]));
+  const rTa = penerimaRevisi(DATA.revisi, perNidn, new Map(DATA.revisi.filter(r => r.pengajuan_mahasiswa?.email).map(r => [r.id, r.pengajuan_mahasiswa.email])));
+  // 8. Pembaruan karya dan profil (pengingat-dosen.js, pemilik 2026-11-12): manual.
+  const pKarya = penerimaKarya(dosen, DATA.karya, DATA.berBukti), pProfil = penerimaProfil(dosen);
+  // 9. Evaluasi pembelajaran (68-patch) dan target kinerja (66-patch), pemilik 2026-11-12.
+  const eRef = penerimaRefleksi(dosen, DATA.evaluasi), eTindak = penerimaTindakEval(dosen, DATA.tindakEval);
+  const pTarget = penerimaTarget(dosen, DATA.tahunTarget, DATA.target);
+  // RPS dan review sejawat (120): tenggat RPS per semester (= sudah diajukan), review N hari sejak ditunjuk.
+  const R = DATA.rpsTenggat, rTenggat = penerimaTenggatRps({ mk: R.mk, rps: R.rps, tenggat: R.tenggat, dosen, kelas: R.kelas });
+  const rReview = penerimaReviewBelum({ review: R.review, mk: R.mk, dosen, hari: R.hari });
+  const rTanggap = penerimaTanggapBelum({ review: R.review, mk: R.mk, dosen, kelas: R.kelas });
+  // Jadwal berhalangan semester berikutnya belum lengkap (140).
+  const B = DATA.berhalangan, bKel = B ? kelengkapanBerhalangan({ dosen, ...B }) : null;
+  const bPenerima = B ? penerimaBerhalangan(bKel, B) : [];
+  const J = { berhalangan: bPenerima, karya: pKarya, profil: pProfil, bkd: bkdBelum, tolak, pihak, ami, berlaku, hibah_ajuan: hAjuan.penerima, hibah_laporan: hLapor.penerima, panggilan: hPanggil.penerima,
+    rapat: tRapat.penerima, revisi_ta: rTa.penerima, eval_refleksi: eRef.penerima, eval_tindak: eTindak.penerima, target: pTarget,
+    rps_tenggat: rTenggat.penerima, rps_review: rReview, rps_tanggap: rTanggap };
+  const SETELAH = { panggilan: async () => {
+    const ids = hPanggil.panggilan.map(p => p.id);
+    if (ids.length) await sb.from('hibah_panggilan').update({ diumumkan: new Date().toISOString() }).in('id', ids);
+  } };
+  $('daftar').innerHTML =
+    `<section class="jenis" id="masa-berlaku"><h2>Masa berlaku</h2>
+      <p class="ket">Kerja sama, kerja sama di karya dosen, SK akreditasi prodi, peta jalan, dokumen pustaka yang diberi
+      tanggal "berlaku sampai" (Data prodi › Dokumen › Nomor/tanggal), dan tautan AMI.
+      <label><input type="checkbox" id="tampil-aman"> tampilkan juga yang masih lama</label></p>
+      ${htmlBerlaku(DATA.berlaku)}</section>`
+    + htmlJenis('berlaku', 'Masa berlaku akan habis', `Yang sudah berakhir (setahun terakhir) atau berakhir ≤ ${HARI_SEGERA} hari.
+      Data prodi dikirim ke email pihak Prodi${emailPihak.P ? '' : ' <b>(belum diisi di bawah)</b>'}; kerja sama di karya dikirim
+      ke dosen penulisnya.`, berlaku,
+      'Pengingat masa berlaku kerja sama dan dokumen',
+      `Yth. {nama},\n\nBerikut kerja sama atau dokumen yang sudah atau akan segera berakhir masa berlakunya:\n{rinci}\n\nMohon diperpanjang atau diperbarui, lalu tanggalnya diperbarui di situs kinerja prodi:\n${situs}\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('karya', 'Mohon perbarui karya', `Semua dosen aktif (bukan asesor). Rincian per dosen: karya tercatat tahun ini dan
+        tahun lalu, yang menunggu verifikasi, yang terverifikasi tetapi belum ada buktinya, dan yang dikembalikan. Draf dosen tidak
+        terlihat admin, jadi tidak ikut dihitung.`, pKarya,
+        'Mohon perbarui karya di situs kinerja prodi',
+        `Yth. {nama},\n\nMohon memperbarui karya Anda (publikasi, penelitian, PkM, luaran, rekognisi) beserta buktinya di situs kinerja prodi. Ringkasan karya Anda saat ini:\n{rinci}\n\nKarya baru diisi di Data saya › Karya dosen; bukti diunggah pada tiap karya:\n{situs}karya.html\n\nTerima kasih.\n{prodi}`)
+    + htmlJenis('profil', 'Mohon lengkapi profil', `Dosen aktif yang profilnya belum lengkap (SINTA ID, ORCID, Scopus ID bila ada, jabatan,
+        riwayat pendidikan, topik keahlian, foto profil). Dosen yang profilnya lengkap tidak masuk daftar.`, pProfil,
+        'Mohon lengkapi profil di situs kinerja prodi',
+        `Yth. {nama},\n\nProfil Anda di situs kinerja prodi belum lengkap. Isian yang masih kosong:\n{rinci}\n\nProfil ini juga tampil di situs publik prodi (daftar dosen, halaman dosen, dan halaman untuk calon mahasiswa). Foto dan topik keahlian membantu calon mahasiswa mengenal bidang yang Anda ajarkan dan teliti.\n\nMohon dilengkapi di Data saya › Profil saya (perubahan berlaku setelah disetujui admin; foto langsung berlaku):\n{situs}profil.html\n\nTerima kasih.\n{prodi}`)
+    + htmlJenis('bkd', 'BKD belum diisi', `DTPS aktif yang belum mengisi BKD ${esc(ta)} semester ${esc(sem)}.`, bkdBelum,
+      `Pengingat pengisian BKD ${ta} semester ${sem}`,
+      `Yth. {nama},\n\nMohon mengisi BKD {rinci} di situs kinerja prodi (Input › BKD saya), dengan mengunggah LKD SISTER:\n${situs}karya.html\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('tolak', 'Karya perlu diperbaiki', 'Penulis dari prodi pada karya berstatus ditolak. Draf dosen tidak terlihat admin, jadi tidak termasuk.', tolak,
+      'Karya Anda perlu diperbaiki',
+      `Yth. {nama},\n\nKarya berikut dikembalikan untuk diperbaiki:\n{rinci}\n\nSilakan perbaiki di situs kinerja prodi:\n${situs}karya.html\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('pihak', 'Bukti akreditasi per pihak', 'Unsur penilaian yang belum ada buktinya, dikirim ke email tiap pihak (isi di bawah).', pihak,
+      'Permohonan bukti untuk akreditasi program studi',
+      `Yth. {nama},\n\nUntuk akreditasi program studi, kami memerlukan bukti berikut:\n{rinci}\n\nMohon dikirimkan ke program studi. Terima kasih.\n${PRODI}`)
+    + htmlJenis('ami', 'Tindak lanjut AMI', `Temuan AMI yang belum selesai dan tenggatnya sudah lewat atau tinggal ${HARI_DEKAT} hari atau kurang;
+      dikirim ke email penanggung jawab, atau email pihak bila kosong.${tanpaEmail.length ? ` <b>${tanpaEmail.length} temuan tanpa email</b>
+      (${tanpaEmail.map(r => esc(r.kode || String(r.uraian || '').slice(0, 30))).join(', ')}): isi email PJ di Data prodi › Temuan AMI
+      atau email pihak di bawah.` : ''}${DATA.temuanGalat ? ` (${esc(DATA.temuanGalat)})` : ''}`, ami,
+      'Pengingat tindak lanjut temuan AMI',
+      `Yth. {nama},\n\nTindak lanjut temuan audit mutu internal berikut mendekati atau melewati tenggat:\n{rinci}\n\nMohon segera ditindaklanjuti dan buktinya dikirim ke program studi; status dapat dilihat di Monitoring:\n${situs}monitoring.html\n\nTerima kasih.\n${PRODI}`)
+    + (DATA.hibahGalat ? `<section class="jenis"><h2>Hibah</h2><p class="kosong">${esc(DATA.hibahGalat)}</p></section>`
+      : htmlJenis('hibah_ajuan', 'Tenggat pengajuan hibah', `Proposal berstatus rencana yang tenggat kirimnya ≤ ${HARI_PENGINGAT} hari lagi
+        dan belum diberi tanggal dikirim; ke ketua tim (seluruh tim bila ketua belum dipilih).${tanpa(hAjuan.tanpaEmail)}`, hAjuan.penerima,
+        'Pengingat tenggat pengajuan hibah',
+        `Yth. {nama},\n\nTenggat pengiriman proposal hibah berikut sudah dekat:\n{rinci}\n\nSetelah proposal dikirim, mohon status dan tanggal kirimnya diperbarui di situs kinerja prodi:\n${situs}hibah.html\n\nTerima kasih.\n${PRODI}`)
+      + htmlJenis('hibah_laporan', 'Tenggat laporan hibah', `Hibah didanai yang laporan kemajuan atau akhirnya sudah lewat tenggat (setahun terakhir)
+        atau tinggal ≤ ${HARI_PENGINGAT} hari, dan tanggal dikirimnya belum diisi; ke ketua tim.${tanpa(hLapor.tanpaEmail)}`, hLapor.penerima,
+        'Pengingat tenggat laporan hibah',
+        `Yth. {nama},\n\nLaporan hibah berikut mendekati atau melewati tenggat:\n{rinci}\n\nSetelah laporan dikirim, mohon tanggalnya diisi di situs kinerja prodi (Pengajuan hibah › Ubah):\n${situs}hibah.html\n\nTerima kasih.\n${PRODI}`)
+      + htmlJenis('panggilan', 'Panggilan hibah', `Pengumuman ke semua dosen aktif: panggilan yang masih terbuka dan
+        ${hPanggil.panggilan.some(p => p.diumumkan) ? '<b>semuanya sudah pernah diumumkan</b> (dikirim ulang)' : 'belum pernah diumumkan'}
+        (${hPanggil.panggilan.length} panggilan). Panggilan dicatat di <a href="hibah.html">Pengajuan hibah</a>; setelah terkirim ditandai "diumumkan".`,
+        hPanggil.penerima, 'Info panggilan hibah penelitian dan PkM',
+        `Yth. {nama},\n\nBerikut panggilan hibah yang sedang dibuka:\n{rinci}\n\nBila berminat, catat rencana proposal dan tim Anda di situs kinerja prodi agar tenggatnya ikut diingatkan:\n${situs}hibah.html\n\nTerima kasih.\n${PRODI}`))
+    + htmlJenis('revisi_ta', 'Revisi TA', `Hasil "lulus dengan revisi" yang belum dinyatakan selesai dan batasnya sudah lewat atau tinggal
+        ≤ ${HARI_REVISI} hari; ke mahasiswa (email kampus dari pendaftarannya) dan pembimbing.${rTa.tanpaEmail.length
+        ? ` <b>${rTa.tanpaEmail.length} mahasiswa tanpa email</b> (jadwal diisi manual di Data prodi): ingatkan langsung.` : ''}`, rTa.penerima,
+        'Pengingat batas revisi Tugas Akhir',
+        `Yth. {nama},\n\nRevisi Tugas Akhir berikut mendekati atau melewati batas:\n{rinci}\n\nMahasiswa: serahkan revisi kepada pembimbing. Pembimbing: setelah revisi diterima, tandai selesai di Rekap seminar/sidang TA:\n${situs}rekap-ta.html#revisi\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('rapat', 'Tindak lanjut rapat', `Keputusan rapat berstatus terbuka/proses yang tenggatnya sudah lewat (setahun terakhir) atau
+        tinggal ≤ ${HARI_TINDAK} hari; dikirim ke PJ dosen.${tRapat.tanpaEmail.length ? ` <b>${tRapat.tanpaEmail.length} tindak lanjut tanpa PJ dosen</b>
+        (PJ berupa nama/unit): ingatkan langsung.` : ''}${DATA.tindakGalat ? ` (${esc(DATA.tindakGalat)})` : ''}`, tRapat.penerima,
+        'Pengingat tindak lanjut rapat',
+        `Yth. {nama},
+
+Tindak lanjut keputusan rapat berikut mendekati atau melewati tenggat:
+{rinci}
+
+Mohon ditindaklanjuti dan statusnya diperbarui di situs kinerja prodi (Rapat dan notulen › Tindak lanjut saya):
+${situs}rapat.html
+
+Terima kasih.
+${PRODI}`)
+    + (DATA.evaluasiAda ? htmlJenis('eval_refleksi', 'Refleksi evaluasi pembelajaran', eRef.semester
+        ? `Dosen yang belum mengisi kesesuaian pelaksanaan dengan RPS dan catatan metode untuk mata kuliahnya, semester
+          <b>${esc(eRef.semester.ta)} ${esc(eRef.semester.sm)}</b> (semester terbaru di Evaluasi pembelajaran).`
+        : 'Belum ada baris di Evaluasi pembelajaran.', eRef.penerima,
+        eRef.semester ? `Mohon isi evaluasi pembelajaran ${eRef.semester.ta} ${eRef.semester.sm}` : 'Mohon isi evaluasi pembelajaran',
+        `Yth. {nama},\n\nMohon mengisi evaluasi pembelajaran (kesesuaian pelaksanaan dengan RPS dan catatan metode) untuk mata kuliah berikut:\n{rinci}\n\nIsian ada di Operasional › Evaluasi pembelajaran:\n{situs}evaluasi-pembelajaran.html${eRef.semester ? `?ta=${encodeURIComponent(eRef.semester.ta)}&sm=${eRef.semester.sm}` : ''}\n\nTerima kasih.\n{prodi}`)
+      + htmlJenis('eval_tindak', 'Tindak lanjut evaluasi pembelajaran', `Tindak lanjut yang belum selesai dan tenggatnya sudah lewat (setahun terakhir)
+        atau tinggal ≤ ${HARI_TINDAK_EVAL} hari; dikirim ke penanggung jawabnya.${eTindak.tanpaPJ.length ? ` <b>${eTindak.tanpaPJ.length} tindak lanjut tanpa PJ
+        dosen aktif ber-email</b>: ingatkan langsung atau ganti PJ-nya.` : ''}`, eTindak.penerima,
+        'Pengingat tindak lanjut evaluasi pembelajaran',
+        `Yth. {nama},\n\nTindak lanjut evaluasi pembelajaran berikut mendekati atau melewati tenggat:\n{rinci}\n\nMohon ditindaklanjuti; setelah selesai, isi hasilnya di Operasional › Evaluasi pembelajaran:\n{situs}evaluasi-pembelajaran.html\n\nTerima kasih.\n{prodi}`)
+      : `<section class="jenis"><h2>Evaluasi pembelajaran</h2><p class="kosong">Tabel belum ada: jalankan supabase/instal-lengkap.sql.</p></section>`)
+    + htmlJenis('target', `Target kinerja ${DATA.tahunTarget} belum tercapai`, `DTPS aktif yang punya indikator target ${DATA.tahunTarget} belum tercapai
+        (Monitoring › Target kinerja dosen). Karya yang belum diverifikasi ditulis sebagai menunggu.${DATA.target.baku.length || DATA.target.khusus.length ? ''
+        : ` <b>Target ${DATA.tahunTarget} belum diisi.</b>`}`, pTarget,
+        `Capaian target kinerja ${DATA.tahunTarget}`,
+        `Yth. {nama},\n\nBerikut indikator target kinerja ${DATA.tahunTarget} Anda yang belum tercapai:\n{rinci}\n\nBila sudah ada karya yang belum dicatat, mohon diisi di Data saya › Karya dosen. Rincian target ada di:\n{situs}target.html\n\nTerima kasih.\n{prodi}`)
+    + htmlJenis('rps_tenggat', 'RPS belum diajukan', `RPS mata kuliah aktif yang belum diajukan ke Kaprodi, untuk semester yang tenggatnya tinggal
+        ≤ ${HARI_TAMPIL} hari atau sudah lewat; ke penyusun (koordinator MK dan pengampu kelas semester terakhir). Tenggat: ${['Ganjil', 'Genap'].map(p => `${p.toLowerCase()} ${R.tenggat[p] ? esc(tanggalPanjang(R.tenggat[p])) : '<b>belum diisi</b>'}`).join(', ')}
+        (diisi admin di halaman RPS).${rTenggat.tanpaPenyusun.length ? ` <b>${rTenggat.tanpaPenyusun.length} MK tanpa penyusun ber-email</b>
+        (${rTenggat.tanpaPenyusun.map(m => esc(m.kode)).join(', ')}): tetapkan koordinator MK di CPMK dan penilaian.` : ''}`, rTenggat.penerima,
+        'Pengingat tenggat pengajuan RPS',
+        `Yth. {nama},\n\nRPS mata kuliah berikut belum diajukan ke Kaprodi:\n{rinci}\n\nMohon dilengkapi lalu diajukan di halaman RPS (daftar periksa membantu melihat yang kurang):\n{situs}rps.html\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('rps_review', 'Review RPS belum dikirim', `Reviewer yang ditunjuk tetapi belum mengirim review; tenggat ${R.hari} hari sejak ditunjuk
+        (diubah admin di halaman RPS).`, rReview,
+        'Pengingat review RPS',
+        `Yth. {nama},\n\nAnda ditunjuk sebagai reviewer RPS berikut dan reviewnya belum dikirim:\n{rinci}\n\nForm review ada di samping RPS (Ruang kerja › Tugas saya menautkan langsung):\n{situs}rps.html\n\nTerima kasih.\n${PRODI}`)
+    + htmlJenis('rps_tanggap', 'Review RPS belum ditanggapi', 'Review yang sudah dikirim reviewer tetapi belum ditanggapi penyusun RPS-nya.', rTanggap,
+        'Mohon tanggapi review RPS',
+        `Yth. {nama},\n\nReview sejawat untuk RPS berikut sudah masuk dan belum ditanggapi:\n{rinci}\n\nMohon tanggapi tiap catatan reviewer (diperbaiki, sebagian, atau tidak diubah beserta alasannya) di kartu Review sejawat pada halaman RPS:\n{situs}rps.html\n\nTerima kasih.\n${PRODI}`)
+    + (B ? htmlJenis('berhalangan', 'Jadwal berhalangan belum lengkap', `Dosen yang belum menandai isian berhalangan semester
+        <b>${esc(B.sm)} ${esc(B.ta)}</b> lengkap (${bKel.ringkas.lengkap} dari ${bKel.ringkas.n} sudah). Dipakai untuk menyusun jadwal kuliah dan
+        mencari waktu rapat; rincian per dosen di Jadwal berhalangan › Rekap.`, bPenerima,
+        `Mohon lengkapi jadwal berhalangan ${B.sm} ${B.ta}`,
+        `Yth. {nama},\n\nUntuk menyusun jadwal kuliah dan rapat semester ${B.sm} ${B.ta}, mohon isi jadwal yang tidak bisa Anda pakai\n(mengajar prodi lain, tugas fakultas/universitas, kegiatan luar), lalu tekan "Tandai isian lengkap".\nBila memang tidak ada halangan, cukup tandai lengkap.\n{rinci}\n\nRuang kerja › Jadwal berhalangan › Mingguan semester:\n{situs}jadwal-berhalangan.html\n\nTerima kasih.\n${PRODI}`) : '')
+    + `<section class="jenis"><h2>Email tiap pihak</h2><p class="ket">Dipakai pengingat bukti per pihak; tersimpan di peramban ini saja.</p>
+      ${['U', 'F', 'P', 'S'].map(k => `<label class="baris"><span>${esc(PIHAK[k])}</span>
+        <input type="email" data-pihak="${k}" value="${esc(emailPihak[k] || '')}" placeholder="email unit"></label>`).join('')}
+      <p class="ket">Juga dipakai pengingat tindak lanjut AMI bila email penanggung jawab temuan kosong.</p>
+      <div class="aksi"><button type="button" class="btn ghost" id="simpan-pihak">Simpan email pihak</button></div></section>`;
+  document.querySelectorAll('[data-kirim]').forEach(b => { b.onclick = () => kirim(b.dataset.kirim, J[b.dataset.kirim], SETELAH[b.dataset.kirim]); });
+  // Templat: simpan subjek/isi yang sedang tampil, atau hapus untuk kembali ke teks bawaan.
+  document.querySelectorAll('[data-tsimpan]').forEach(b => { b.onclick = async () => {
+    const id = b.dataset.tsimpan, box = $('j-' + id), m = $('m-' + id);
+    const isi = { kunci: id, subjek: box.querySelector('.subjek').value.trim(), isi: box.querySelector('textarea').value, oleh: DATA.saya, diperbarui: new Date().toISOString() };
+    if (!isi.subjek || !isi.isi.trim()) { m.className = 'msg buruk'; m.textContent = 'Subjek dan isi tidak boleh kosong.'; return; }
+    const { error } = await sb.from('templat_email').upsert(isi, { onConflict: 'kunci' });
+    if (error) { m.className = 'msg buruk'; m.textContent = error.message; return; }
+    TEMPLAT[id] = isi; gambar(); $('m-' + id).className = 'msg ok'; $('m-' + id).textContent = 'Templat tersimpan untuk semua admin.';
+  }; });
+  document.querySelectorAll('[data-tbawaan]').forEach(b => { b.onclick = async () => {
+    const id = b.dataset.tbawaan;
+    if (!confirm('Hapus templat tersimpan dan kembali ke teks bawaan?')) return;
+    const { error } = await sb.from('templat_email').delete().eq('kunci', id);
+    if (error) { $('m-' + id).className = 'msg buruk'; $('m-' + id).textContent = error.message; return; }
+    delete TEMPLAT[id]; gambar(); $('m-' + id).className = 'msg ok'; $('m-' + id).textContent = 'Kembali ke teks bawaan.';
+  }; });
+  const aman = () => $('masa-berlaku').classList.toggle('tampil-aman', $('tampil-aman').checked);
+  $('tampil-aman').onchange = aman;
+  $('simpan-pihak').onclick = () => {
+    const x = {}; document.querySelectorAll('[data-pihak]').forEach(i => { if (i.value.trim()) x[i.dataset.pihak] = i.value.trim(); });
+    simpanAman.set('pengingatEmailPihak', JSON.stringify(x)); gambar();
+  };
+}
+
+async function mulai(){
+  const saya = await gerbang(sb);
+  if (!saya) return;
+  $('hSub').textContent = `Masuk sebagai ${saya.nama}`;
+  if (saya.peran !== 'admin') { $('isi').innerHTML = '<p class="kosong">Halaman ini khusus admin prodi.</p>'; return; }
+  if (!window.UPLOAD_URL) { $('isi').innerHTML = '<p class="kosong">Apps Script belum disiapkan (UPLOAD_URL di config.js).</p>'; return; }
+  const baca = q => q.then(r => r.data || [], () => []);   // tabel yang belum ada = kosong
+  const [ks, kk, pu, pj, dk, ta] = await Promise.all([
+    baca(sb.from('lkps_kerjasama').select('mitra,jenis,tanggal_selesai,tahun_selesai')),
+    baca(sb.from('karya').select('judul,mitra_institusi,selesai_ks,karya_penulis(dosen(nama,email))')
+      .not('selesai_ks', 'is', null).in('status', ['diajukan', 'terverifikasi'])),
+    baca(sb.from('lkps_prodi_upps').select('nama_prodi,nomor_sk,tanggal_kedaluwarsa')),
+    baca(sb.from('lkps_peta_jalan').select('judul,jenis,tahun_selesai')),
+    baca(sb.from('dokumen').select('*')),
+    baca(sb.from('tautan_ami').select('judul,sampai,dicabut'))]);
+  const berlaku = daftarBerlaku({ kerjasama: ks, karyaKS: kk, prodiUpps: pu, petaJalan: pj, dokumen: dk, tautanAmi: ta });
+  const [ds, bk, kt, bb, dj, tm] = await Promise.all([
+    // Kolom profil untuk "Mohon lengkapi profil"; tanpa patch 22/61 jatuh ke kolom dasar.
+    sb.from('dosen').select('id,nama,email,nidn,dtps,aktif,peran,sinta_id,scopus_id,orcid,jabatan,riwayat_pendidikan,topik_keahlian,foto_url')
+      .then(r => r.error ? sb.from('dosen').select('id,nama,email,nidn,dtps,aktif,peran,sinta_id,scopus_id,orcid,jabatan,riwayat_pendidikan,topik_keahlian') : r)
+      .then(r => r.error ? sb.from('dosen').select('id,nama,email,nidn,dtps,aktif,peran,sinta_id,scopus_id,orcid,jabatan') : r),
+    sb.from('lkps_bkd').select('nidn,tahun_akademik,semester'),
+    sb.from('karya').select('judul,catatan,karya_penulis(dosen(nama,email))').eq('status', 'ditolak').limit(500),
+    sb.from('butir_bukti').select('butir,unsur'),
+    fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    sb.from('ami_temuan').select('kode,siklus,uraian,pihak,pj_nama,pj_email,tenggat,status')]);
+  PRODI = [dj.prodi, dj.institusi].filter(Boolean).join(' ') || 'Program Studi';
+  // Hibah (instal-lengkap.sql); tabel belum ada = pesan, bukan halaman gagal.
+  const [hb, hp] = await Promise.all([
+    sb.from('hibah_ajuan').select('judul,status,tenggat_ajuan,tanggal_ajuan,tenggat_kemajuan,kemajuan_selesai,tenggat_akhir,akhir_selesai,hibah_tim(peran,dosen(nama,email))'),
+    sb.from('hibah_panggilan').select('*')]);
+  const eH = hb.error || hp.error;
+  // Tindak lanjut rapat (instal-lengkap.sql); PJ dosen dipadankan ke daftar dosen (nama, email).
+  // Pembaruan karya (pemilik 2026-11-12): karya non-draf dan karya yang punya bukti terpisah.
+  const [kr, kb, te] = await Promise.all([
+    sb.from('karya').select('id,judul,tahun,kategori,status,bukti_url,catatan,karya_penulis(dosen_id)').neq('status', 'draf').limit(5000),
+    sb.from('karya_bukti').select('karya_id').limit(20000),
+    sb.from('templat_email').select('*')]);
+  ADA_TEMPLAT = !te.error;
+  TEMPLAT = Object.fromEntries((te.data || []).map(t => [t.kunci, t]));
+  // Revisi TA (instal-lengkap.sql): email mahasiswa dari pengajuannya; tabel/kolom belum ada = kosong.
+  const rv = await sb.from('jadwal_ta').select('id,tahap,nama_mahasiswa,judul,pembimbing,hasil,status,batas_revisi,revisi_selesai,pengajuan_mahasiswa(email)')
+    .eq('hasil', 'lulus_revisi').is('revisi_selesai', null);
+  const tr = await sb.from('rapat_tindak').select('id,keputusan,tenggat,status,pj_dosen_id,pj_nama,rapat(judul,tanggal)');
+  // Evaluasi pembelajaran (68-patch) dan target kinerja tahun berjalan (66-patch); tabel belum ada = kosong.
+  const th = new Date().getFullYear();
+  const [ev, et, tb, tk, tkar, thb, tsk] = await Promise.all([
+    sb.from('evaluasi_mk').select('id,dosen_id,tahun_akademik,semester,kode_mk,nama_mk,rps_sesuai'),
+    sb.from('evaluasi_tindak').select('id,rencana,tenggat,status,pj_id,evaluasi_mk(kode_mk,tahun_akademik,semester)').in('status', ['terbuka', 'proses']),
+    baca(sb.from('target_baku').select('*').eq('tahun', th)),
+    baca(sb.from('target_dosen').select('*').eq('tahun', th)),
+    baca(sb.from('karya').select('id,kategori,indeksasi,tahun,status,karya_penulis(dosen_id)').eq('tahun', th).in('status', ['terverifikasi', 'diajukan']).limit(5000)),
+    baca(sb.from('hibah_ajuan').select('status,tanggal_ajuan,tahun_usulan,skema_kode,hibah_tim(dosen_id)')),
+    baca(sb.from('ref_skema_dana').select('kode,kelompok'))]);
+  const kelSkema = new Map(tsk.map(s => [s.kode, s.kelompok]));
+  // RPS dan review sejawat (120); tabel/kolom belum ada = kosong.
+  const [rMk, rRps, rKelas, rRev, rAtur] = await Promise.all([
+    baca(sb.from('ref_mata_kuliah').select('kurikulum,kode,nama,semester,aktif,pengampu')),
+    baca(sb.from('mk_rps').select('kurikulum,kode_mk,status,revisi,smt:data->identitas->>semester')),
+    baca(sb.from('cpl_kelas').select('tahun_akademik,semester,kode_mk,dosen_email')),
+    baca(sb.from('mk_rps_review').select('*')),
+    baca(sb.from('pengaturan').select('kunci,nilai').in('kunci', ['rps_tenggat_ganjil', 'rps_tenggat_genap', 'rps_review_hari']))]);
+  const atur = k => rAtur.find(x => x.kunci === k)?.nilai;
+  // Jadwal berhalangan semester berikutnya (132/135/140, pemilik 2026-11-21); tabel belum ada = jenis ini tidak tampil.
+  const bSem = semesterBerikut(semesterKini()), bTgl = tanggalSemester(bSem.ta, bSem.sm);
+  const [bMg, bTg, bRt, bKf] = await Promise.all([
+    baca(sb.from('dosen_berhalangan').select('dosen_id,tahun_akademik,semester').eq('tahun_akademik', bSem.ta).eq('semester', bSem.sm)),
+    baca(sb.from('dosen_berhalangan_tgl').select('dosen_id,tanggal').gte('tanggal', bTgl.dari).lte('tanggal', bTgl.sampai)),
+    baca(sb.from('dosen_berhalangan_rentang').select('dosen_id,mulai,selesai').lte('mulai', bTgl.sampai).gte('selesai', bTgl.dari)),
+    sb.from('berhalangan_konfirmasi').select('dosen_id,tahun_akademik,semester').eq('tahun_akademik', bSem.ta).eq('semester', bSem.sm)]);
+  const berhalangan = bKf.error ? null : { ...bSem, mingguan: bMg, tanggalan: bTg, rentang: bRt, konfirmasi: bKf.data || [] };
+  const rpsTenggat = { mk: rMk, rps: new Map(rRps.map(r => [`${r.kurikulum}|${r.kode_mk}`, r])), kelas: rKelas, review: rRev,
+    tenggat: { Ganjil: isoDari(atur('rps_tenggat_ganjil')), Genap: isoDari(atur('rps_tenggat_genap')) }, hari: +atur('rps_review_hari') || 14 };
+  const perId = new Map((ds.data || []).map(d => [d.id, d]));
+  const tindak = (tr.data || []).map(t => ({ ...t, pj: t.pj_dosen_id ? perId.get(t.pj_dosen_id) : { nama: t.pj_nama } }));
+  const unsurOtomatis = unsurDariTinjauan(await bacaTinjauan(sb)).unsur.map(n => `15|${n}`);   // tinjauan RPS (115)
+  DATA = { dosen: ds.data || [], bkd: bk.data || [], ditolak: kt.data || [], butirBukti: bb.data || [], unsurOtomatis,
+           berlaku, temuan: tm.data || [], temuanGalat: tm.error && !/does not exist|schema cache/i.test(tm.error.message) ? tm.error.message : '',
+           hibah: hb.data || [], panggilan: hp.data || [], tindak, saya: saya.email, revisi: rv.error ? [] : rv.data || [],
+           karya: kr.data || [], berBukti: new Set((kb.data || []).map(x => x.karya_id)),
+           tindakGalat: tr.error && !/does not exist|schema cache/i.test(tr.error.message) ? tr.error.message : '',
+           rpsTenggat, berhalangan, evaluasiAda: !ev.error, evaluasi: ev.data || [], tindakEval: et.data || [], tahunTarget: th,
+           target: { baku: tb, khusus: tk, karya: tkar, hibah: thb.map(a => ({ ...a, skema: { kelompok: kelSkema.get(a.skema_kode) } })) },
+           hibahGalat: eH ? (/does not exist|schema cache/i.test(eH.message) ? 'Tabel hibah belum ada: jalankan supabase/instal-lengkap.sql.' : eH.message) : '' };
+  $('isi').innerHTML = `<p class="ket">Periksa penerima dan isi, lalu tekan Kirim. Email keluar dari akun Google prodi
+      (kuota Gmail sekitar 100 per hari); balasan diarahkan ke email Anda.</p>
+    <div class="aksi"><label>Tahun akademik BKD <input id="p_ta" value="${taKini()}" size="10"></label>
+      <label>Semester <select id="p_sem"><option value="ganjil">ganjil</option><option value="genap">genap</option></select></label></div>
+    <div id="daftar"></div>`;
+  $('p_sem').value = semKini();
+  $('p_ta').onchange = $('p_sem').onchange = gambar;
+  gambar();
+}
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">Gagal memuat: ${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>

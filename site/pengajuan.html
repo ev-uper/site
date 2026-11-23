@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex">
+<title>Pengajuan KP, TA, lomba, luaran, kabar kegiatan, surat, dan yudisium — Program Studi</title>
+<meta name="description" content="Pengajuan mahasiswa (Kerja Praktik, TA, lomba, luaran, kabar kegiatan, surat, yudisium): isi, unggah berkas, dan pantau prosesnya.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  /* Pengajuan mahasiswa, publik tanpa masuk akun (pemilik 2026-11-17; patch 90). Warna dari tema.css. */
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}   /* .dua/.fld berdisplay grid/block mengalahkan hidden */
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px 80px}
+  .hero{background:var(--biru);color:#fff;border-bottom:4px solid var(--merah)}
+  .hero-in{max-width:860px;margin:0 auto;padding:22px 16px 18px}
+  .hero a.balik{color:var(--biru-m4);font-size:13px;text-decoration:none}
+  .hero a.balik:hover{text-decoration:underline}
+  h1{font-family:var(--serif);font-size:clamp(22px,4.2vw,30px);font-weight:600;margin:6px 0 0;line-height:1.2;color:#fff}
+  .prodi{color:var(--biru-m4);font-size:14px;margin-top:6px}
+  h2{font-family:var(--serif);font-size:19px;font-weight:600;margin:26px 0 8px}
+  .ket, .kosong{color:var(--muted)} .ket{font-size:13.5px}
+  .kotak{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:10px}
+  .pilih{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .pilih label{flex:1 1 220px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;gap:8px;align-items:flex-start}
+  .pilih label:has(input:checked){border-color:var(--biru);box-shadow:0 0 0 1px var(--biru)}
+  .pilih small{display:block;color:var(--muted);font-size:12.5px}
+  .fld{margin:10px 0}
+  .fld>label{display:block;font-size:13.5px;font-weight:600;margin-bottom:4px}
+  .fld>label span{font-weight:400;color:var(--muted)}
+  .fld input:not([type=checkbox]), .fld textarea, .fld select{width:100%;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+  .fld textarea{min-height:80px;resize:vertical}
+  .fld small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+  .cek{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+  .dua{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  @media (max-width:560px){.dua{grid-template-columns:1fr}}
+  .jebakan{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+  button.b{font:inherit;font-weight:600;font-size:14px;border-radius:7px;padding:9px 18px;cursor:pointer;border:1px solid var(--biru);background:var(--panel);color:var(--biru)}
+  button.utama{background:var(--biru);color:#fff}
+  button.b:disabled{opacity:.6;cursor:default}
+  button.b:focus-visible{outline:2px solid var(--biru);outline-offset:2px}
+  .msg{font-size:14px;margin-left:8px} .msg.buruk{color:var(--merah)} .msg.ok{color:var(--hijau)}
+  /* Susunan halaman pengajuan (pemilik 2026-11-19) */
+  ol.langkah{margin:14px 0 6px;padding-left:22px;font-size:14.5px} ol.langkah li{margin:3px 0}
+  .info-jenis{margin:4px 0 2px;padding:8px 12px;border-left:3px solid var(--biru);background:var(--panel);font-size:13.5px;color:var(--ink)}
+  details.bantuan{margin-top:22px;border:1px solid var(--line);border-radius:10px;padding:0 14px;background:var(--panel)}
+  details.bantuan>summary{cursor:pointer;font-weight:600;padding:12px 0;color:var(--biru)}
+  details.bantuan[open]{padding-bottom:14px}
+  details.bantuan h2{font-size:16.5px;margin:16px 0 4px;scroll-margin-top:12px}
+  /* Kiri bawah: kanan atas menutupi tombol Menu kepala situs (2026-11-19). */
+  .lencana-contoh{position:fixed;bottom:12px;left:12px;z-index:50;background:#b7791f;color:#fff;font-weight:700;font-size:12.5px;
+    letter-spacing:.06em;padding:4px 10px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none}
+  .contoh-pita{margin:10px 0 14px;padding:10px 14px;border:2px dashed #b7791f;border-radius:10px;
+    background:#fff6dc;color:#4a3410;font-size:14px} .contoh-pita nav{margin:6px 0 2px} .contoh-pita .b{margin-top:8px}
+  .contoh-pita .ket{color:#4a3410}
+  /* Jalur proses */
+  .jalur{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  @media (max-width:640px){.jalur{grid-template-columns:1fr}}
+  .jalur li{border:1px solid var(--line);border-top:4px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel);font-size:13.5px}
+  .jalur li b{display:block;font-size:14px}
+  .jalur li.selesai{border-top-color:var(--hijau)} .jalur li.kini{border-top-color:var(--biru);box-shadow:0 0 0 1px var(--biru)}
+  .jalur li.kembali{border-top-color:var(--emas)} .jalur li.tolak{border-top-color:var(--merah)}
+  .jalur .tanda{font-family:var(--mono);font-size:11px;text-transform:uppercase;color:var(--muted)}
+  .jalur .cat{margin-top:4px;white-space:pre-line;color:var(--ink)}
+  .status{font-weight:600}
+  h3.sub-h{font-size:14px;font-weight:600;color:var(--muted);margin:14px 0 0;text-transform:uppercase;letter-spacing:.04em}
+  .daftar{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+  .daftar li{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:14px}
+  .daftar li:last-child{border-bottom:0}
+  .daftar .isi{flex:1;min-width:0;overflow-wrap:anywhere}
+  .daftar .meta{font-size:12.5px;color:var(--muted)}
+  .daftar li.prodi-berkas{background:var(--bg)}
+  /* Berkas yudisium (122): tanda per butir; berkas di bawah butirnya. */
+  .daftar.yud li{align-items:flex-start}
+  .tanda-yud{display:inline-block;min-width:62px;text-align:center;font-size:11.5px;font-weight:600;padding:1px 6px;border-radius:999px;
+    margin-right:6px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+  .daftar.yud li.ada .tanda-yud{background:var(--hijau-m3,#e6f4ea);color:var(--hijau,#1e7b34);border-color:transparent}
+  .daftar.yud li.kurang .tanda-yud{background:var(--merah-m3);color:var(--merah);border-color:transparent}
+  .daftar.yud .meta .b{margin-left:6px}
+  .b.kecil{padding:2px 8px;font-size:12.5px}
+  .unggah input[type=url],.unggah input:not([type]){font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:7px;min-width:0;flex:1 1 200px}
+  .tautan-yud{margin-top:10px}
+  .tautan-yud summary{cursor:pointer;color:var(--biru-2);font-size:14px}
+  .unggah{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .unggah select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+  .ringkas{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;font-size:14px}
+  .jadwal-kotak{border-left:4px solid var(--hijau)}
+  .ringkas dt{color:var(--muted)} .ringkas dd{margin:0;overflow-wrap:anywhere;white-space:pre-line}
+  footer{margin-top:32px;font-size:13px;color:var(--muted)} footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="hero" role="region" aria-label="Pembuka halaman"><div class="hero-in">
+  <a class="balik" href="layanan-mahasiswa.html">&larr; Layanan mahasiswa</a>
+  <h1>Pengajuan KP, seminar/sidang TA, lomba, publikasi/luaran, kabar kegiatan, surat, dan yudisium</h1><div class="prodi" id="hProdi"></div>
+</div></div>
+<main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// Kepala dan kaki bersama situs umum (pemilik 2026-11-19, tahap 2).
+import { pasangKerangka } from './kerangka.js?v=2026-11-22-866c27';
+pasangKerangka({ aktif: 'mahasiswa', muat: true });
+// Mahasiswa tidak login (pemilik 2026-11-17). Tanpa token: formulir baru dan minta tautan lagi; Apps Script
+// membuat pengajuan dan mengirim tautan pribadi ke <NIM>@<domain kampus>. Dengan #t=<token> (dari email):
+// jalur proses, berkas, perbaikan isian, dan Kirim untuk diperiksa (fungsi mhs_* di patch 90).
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { JENIS, LABEL_BERKAS, LABEL_STATUS, TINGKAT, BIDANG, jalur, bolehUbah, bacaAnggota, teksAnggota,
+         periksaIsian, judulPengajuan, keB64, bukaIsi, appsScript, labelStatus, jalurTahap, BERKAS_SELESAI, PROGRAM_KP, labelProgram,
+         periksaSelesai, JENIS_SURAT, TAHAP_TA, TAHAP_TA_AJU, TAHAP_PEMBIMBING_TA, penetapanTA, pembimbingCocok, JENIS_PUB, TINGKAT_PUB, INDEKSASI, JENIS_LUARAN,
+         BERKAS_YUDISIUM_BAWAAN, kelengkapanYudisium, labelBerkas, JENIS_KEGIATAN } from './pengajuan-mhs.js?v=2026-11-22-866c27';
+import { saranInstansi } from './rekap-kp.js?v=2026-11-22-866c27';
+import { CONTOH_PENGAJUAN, contohPengajuan } from './pengajuan-contoh.js?v=2026-11-22-866c27';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+const sb = createClient(window.SB_URL, window.SB_KEY, { auth: { persistSession: false } });
+const tglWaktu = s => s ? new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const opsi = (xs, v) => xs.map(([k, l]) => `<option value="${k}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const TOKEN = (new URLSearchParams(location.hash.slice(1)).get('t') || '').trim();
+// Konfirmasi email alternatif (104): tautan #alt=<token> dari email kampus.
+const ALT = (new URLSearchParams(location.hash.slice(1)).get('alt') || '').trim();
+// Ruang KP (105): ?jenis=kp memilih jenis; usulan nama instansi dari data.json (mitra kerja sama + tempat KP).
+const JENIS_AWAL = (new URLSearchParams(location.search).get('jenis') || '').trim();
+// Lapor selesai KP (106/107): ?lapor=kp membuka formulir terpisah untuk KP yang sudah selesai.
+const LAPOR = (new URLSearchParams(location.search).get('lapor') || '').trim() === 'kp';
+// Pengajuan baru setelah ditolak instansi (107): ?nim=&pembimbing= mengisi NIM dan usulan pembimbing lama.
+const NIM_AWAL = (new URLSearchParams(location.search).get('nim') || '').replace(/\D/g, '').slice(0, 15);
+const PB_AWAL = (new URLSearchParams(location.search).get('pembimbing') || '').trim();
+// ?contoh=<kunci> (pemilik 2026-11-19): contoh halaman tautan pribadi dengan data fiktif; tidak memanggil fungsi mhs_*.
+const CONTOH = (new URLSearchParams(location.search).get('contoh') || '').trim();
+let SARAN = [];
+function isiSaran(){
+  const dl = $('daftar_instansi');
+  if (dl) dl.innerHTML = SARAN.map(n => `<option value="${esc(n)}">`).join('');
+}
+let DOSEN = [], P = null;
+// TA (110): dosen dengan KK dan kk_cocok (pembimbing_pilihan_ta); KK = [{kode, nama}] dari data.json. null = patch 110 belum ada.
+let DOSEN_TA = null, KK = [];
+// Berkas yudisium (122): daftar dari yudisium_berkas_daftar(); tanpa patch 122 (situs coba, contoh) daftar bawaan.
+let YUD = BERKAS_YUDISIUM_BAWAAN;
+
+function tulis(id, kelas, teks){ const m = $(id); m.className = 'msg ' + kelas; m.textContent = teks; }
+
+// Isian per jenis (dipakai formulir baru dan perbaikan).
+function htmlIsian(jenis, d = {}, nama = '', pembimbing = ''){
+  // KP (107): mahasiswa mengusulkan; koordinator KP menetapkan sesuai kuota. Lapor selesai: pembimbing yang membimbing.
+  const usulKP = jenis === 'kp' && d.susulan !== 'selesai';
+  const pb = `<div class="fld"><label for="f_pb">${usulKP ? 'Usulan dosen pembimbing KP' : `Dosen pembimbing ${jenis === 'kp' ? 'KP' : jenis === 'ta' ? 'TA' : 'lomba'}`}</label>
+    <select id="f_pb"><option value="">(pilih)</option>${DOSEN.map(x => `<option value="${x.id}"${x.id === pembimbing ? ' selected' : ''}>${esc(x.nama)}</option>`).join('')}</select>
+    <small>${usulKP ? 'Usulan Anda; koordinator KP menetapkan dosen pembimbing sesuai kuota.'
+      : jenis === 'kp' ? 'Dosen ini memeriksa laporan selesai Anda lebih dulu, lalu koordinator KP atau admin prodi.'
+      : jenis === 'lomba' ? 'Disahkan dosen ini atau pembina kemahasiswaan (siapa pun lebih dulu).'
+      : 'Dosen ini memeriksa pengajuan Anda lebih dulu, lalu admin prodi.'}</small></div>`;
+  const nm = `<div class="fld"><label for="f_nama">Nama lengkap</label><input id="f_nama" maxlength="120" autocomplete="name" value="${esc(nama)}"></div>`;
+  // Kabar kegiatan (144): dosen pendamping opsional; disahkan satu orang lalu terbit di kabar.html dan beranda.
+  if (jenis === 'kabar') return `${nm}
+    <div class="fld"><label for="f_judul">Judul kabar <span>(3–200 huruf)</span></label>
+      <input id="f_judul" maxlength="200" value="${esc(d.judul)}" placeholder="mis. Kunjungan lapangan ke proyek bendungan"></div>
+    <div class="dua">
+      <div class="fld"><label for="f_tgl">Tanggal kegiatan</label><input id="f_tgl" type="date" value="${esc(d.tanggal)}"></div>
+      <div class="fld"><label for="f_jk">Jenis kegiatan</label><select id="f_jk"><option value="">(pilih)</option>${opsi(JENIS_KEGIATAN, d.jenis_kegiatan)}</select></div>
+    </div>
+    <div class="fld"><label for="f_tempat">Tempat <span>(opsional)</span></label><input id="f_tempat" maxlength="200" value="${esc(d.tempat)}"></div>
+    <div class="fld"><label for="f_ring">Ringkasan <span>(20–1200 huruf; tampil di situs prodi)</span></label>
+      <textarea id="f_ring" maxlength="1200" style="min-height:120px" placeholder="Apa kegiatannya, siapa yang terlibat, apa hasilnya.">${esc(d.ringkasan)}</textarea></div>
+    <div class="fld"><label for="f_taut">Tautan <span>(opsional, mis. unggahan Instagram himpunan)</span></label>
+      <input id="f_taut" type="url" maxlength="300" value="${esc(d.tautan)}" placeholder="https://…"></div>
+    <div class="fld"><label for="f_pb">Dosen pendamping <span>(opsional)</span></label>
+      <select id="f_pb"><option value="">(tidak ada)</option>${DOSEN.map(x => `<option value="${x.id}"${x.id === pembimbing ? ' selected' : ''}>${esc(x.nama)}</option>`).join('')}</select>
+      <small>Diverifikasi dosen ini, pembina kemahasiswaan, atau admin prodi (siapa pun lebih dulu). Tanpa dosen pendamping:
+        pembina kemahasiswaan atau admin prodi.</small></div>`;
+  if (jenis === 'yudisium') return `${nm}
+    <div class="fld"><label for="f_judul">Judul Tugas Akhir <span>(opsional)</span></label><textarea id="f_judul" maxlength="400" style="min-height:60px">${esc(d.judul)}</textarea></div>
+    <div class="fld"><label for="f_cat">Catatan untuk admin prodi <span>(opsional, maks. 600 huruf)</span></label>
+      <textarea id="f_cat" maxlength="600" placeholder="mis. berkas TOEFL menyusul minggu depan">${esc(d.catatan)}</textarea></div>`;
+  if (jenis === 'luaran') return `${nm}${pb.replace('Dosen pembimbing lomba', 'Dosen pemeriksa (pembimbing/dosen terkait)')}
+    <div class="pilih" role="radiogroup" aria-label="Kategori">
+      <label><input type="radio" name="f_kat" value="publikasi"${d.kategori !== 'luaran' ? ' checked' : ''}><span>Publikasi<small>jurnal, prosiding, buku</small></span></label>
+      <label><input type="radio" name="f_kat" value="luaran"${d.kategori === 'luaran' ? ' checked' : ''}><span>Luaran<small>paten, hak cipta, desain industri,
+        merek, TTG, produk, buku ber-ISBN, book chapter</small></span></label></div>
+    <div class="fld"><label for="f_judul">Judul</label><textarea id="f_judul" maxlength="400" style="min-height:60px">${esc(d.judul)}</textarea></div>
+    <div class="dua">
+      <div class="fld" data-kat="publikasi"><label for="f_jp">Jenis publikasi</label><select id="f_jp"><option value="">(pilih)</option>${opsi(JENIS_PUB, d.jenis_pub)}</select></div>
+      <div class="fld" data-kat="luaran"><label for="f_jl">Jenis luaran</label><select id="f_jl"><option value="">(pilih)</option>${opsi(JENIS_LUARAN, d.jenis_luaran)}</select></div>
+      <div class="fld"><label for="f_th">Tahun terbit/terdaftar</label><input id="f_th" inputmode="numeric" maxlength="4" value="${esc(d.tahun)}"></div>
+      <div class="fld"><label for="f_bl">Bulan <span>(1–12, dianjurkan)</span></label><input id="f_bl" inputmode="numeric" maxlength="2" value="${esc(d.bulan)}"></div>
+      <div class="fld" data-kat="publikasi"><label for="f_tk">Tingkat</label><select id="f_tk"><option value="">(pilih)</option>${opsi(TINGKAT_PUB, d.tingkat)}</select></div>
+      <div class="fld" data-kat="publikasi"><label for="f_ix">Indeksasi</label><select id="f_ix"><option value="">(pilih)</option>${opsi(INDEKSASI, d.indeksasi)}</select></div>
+      <div class="fld" data-kat="publikasi"><label for="f_tb">Nama jurnal/prosiding/penerbit</label><input id="f_tb" maxlength="300" value="${esc(d.terbitan)}"></div>
+      <div class="fld" data-kat="luaran"><label for="f_no">Nomor (pendaftaran/HKI/sertifikat TKT/ISBN)</label><input id="f_no" maxlength="300" value="${esc(d.nomor)}"></div>
+      <div class="fld" data-kat="luaran"><label for="f_sh">Status paten <span>(paten saja)</span></label><select id="f_sh"><option value="">—</option>${opsi([['registered', 'Terdaftar'], ['granted', 'Diberikan (granted)'], ['komersial', 'Dikomersialkan']], d.status_hki)}</select></div>
+      <div class="fld" data-kat="luaran"><label for="f_tkt">TKT <span>(TTG/produk, 1–9)</span></label><input id="f_tkt" inputmode="numeric" maxlength="1" value="${esc(d.tkt)}"></div>
+    </div>
+    <div class="fld"><label for="f_doi">DOI atau URL <span>(opsional)</span></label><input id="f_doi" type="url" maxlength="300" value="${esc(d.doi_url)}" placeholder="https://doi.org/…"></div>
+    <div class="fld"><label for="f_anggota">Mahasiswa lain penulis/pencipta <span>(opsional; satu per baris: NIM - Nama)</span></label>
+      <textarea id="f_anggota">${esc(teksAnggota(d.anggota))}</textarea></div>
+    <label class="cek"><input type="checkbox" id="f_bd"${d.bersama_dosen ? ' checked' : ''}> Ditulis/dibuat bersama dosen prodi. Bila dicentang, karya ini
+      dicatat lewat karya dosen (dosen memasukkannya dengan Anda sebagai penulis), bukan sebagai karya mandiri mahasiswa.</label>`;
+  if (jenis === 'ta') return `${nm}
+    <div class="dua">
+      <div class="fld"><label for="f_tahap">Tahap</label><select id="f_tahap"><option value="">(pilih)</option>${opsi(DOSEN_TA ? TAHAP_TA_AJU : TAHAP_TA, d.tahap_ta)}</select>
+        <small>Mulai TA? Pilih <b>Pengajuan pembimbing TA</b> dulu; koordinator TA menetapkan pembimbing Anda.</small></div>
+      <div class="fld" data-ta="pembimbing"><label for="f_kk">Kelompok keahlian topik TA</label>
+        <select id="f_kk"><option value="">(pilih)</option>${opsi(KK.map(k => [k.kode, k.nama]), d.kk_ta)}</select>
+        <small>Pembimbing 1 harus dari kelompok keahlian ini atau yang berdekatan.</small></div>
+      ${pb.replace('Dosen pembimbing TA', 'Pembimbing 1')}
+    </div>
+    <p class="ket" data-ta="pembimbing">Pembimbing yang Anda pilih adalah usulan; koordinator TA menetapkan pembimbing menurut kelompok keahlian
+      dan kuota dosen.</p>
+    <p class="ket" data-ta="seminar">Bila pembimbing TA Anda sudah ditetapkan koordinator TA, seminar/sidang memakai pembimbing itu.</p>
+    <div class="fld"><label for="f_pb2">Pembimbing 2 <span>(opsional)</span></label>
+      <select id="f_pb2"><option value="">(tidak ada)</option>${DOSEN.map(x => `<option value="${x.id}"${x.id === d.pembimbing_2 ? ' selected' : ''}>${esc(x.nama)}</option>`).join('')}</select>
+      <small>Belum punya pembimbing? <a href="layanan-mahasiswa.html#pembimbing" target="_blank" rel="noopener">Cari calon pembimbing TA</a>
+        menurut judul. Pembimbing 1 memeriksa kesiapan Anda, lalu admin prodi menetapkan jadwal dan penguji.</small></div>
+    <div class="fld"><label for="f_judul">Judul TA</label><textarea id="f_judul" maxlength="400" style="min-height:60px">${esc(d.judul)}</textarea></div>
+    <label class="cek" data-ta="seminar"><input type="checkbox" id="f_tampil"${d.tampil_nama ? ' checked' : ''}> Saya setuju nama saya ditampilkan
+      di jadwal seminar/sidang di situs prodi (tanpa NIM). Tanpa centang: ditulis "Mahasiswa TA".</label>`;
+  if (jenis === 'surat') return `${nm}
+    <div class="fld"><label for="f_js">Jenis surat</label><select id="f_js"><option value="">(pilih)</option>${opsi(JENIS_SURAT, d.jenis_surat)}</select>
+      <small>Ditandatangani Kaprodi. Diproses admin prodi; surat yang sudah ditandatangani diunduh lewat tautan pribadi Anda.</small></div>
+    <div class="fld"><label for="f_kep">Keperluan</label><textarea id="f_kep" maxlength="600" placeholder="mis. syarat beasiswa, pengambilan data Tugas Akhir">${esc(d.keperluan)}</textarea></div>
+    <div class="fld" data-surat="izin_penelitian rekomendasi"><label for="f_tuj">Tujuan surat (kepada)</label><input id="f_tuj" maxlength="300" value="${esc(d.tujuan_surat)}" placeholder="mis. Kepala Dinas PUPR Kota …"></div>
+    <div class="fld" data-surat="izin_penelitian rekomendasi"><label for="f_alt">Alamat tujuan <span>(opsional)</span></label><input id="f_alt" maxlength="300" value="${esc(d.alamat_tujuan)}"></div>
+    <div class="fld" data-surat="izin_penelitian"><label for="f_jdl">Judul penelitian</label><input id="f_jdl" maxlength="300" value="${esc(d.judul_penelitian)}"></div>
+    <div class="dua" data-surat="izin_penelitian">
+      <div class="fld"><label for="f_lok">Lokasi <span>(opsional)</span></label><input id="f_lok" maxlength="300" value="${esc(d.lokasi)}"></div>
+      <div class="fld"><label for="f_wkt">Waktu pelaksanaan <span>(opsional)</span></label><input id="f_wkt" maxlength="300" value="${esc(d.waktu_pelaksanaan)}" placeholder="mis. Desember 2026 – Januari 2027"></div>
+    </div>`;
+  // Lapor selesai KP (106): tanggal diisi di laporan selesai.
+  const sus = d.susulan === 'selesai' ? 'selesai' : '';
+  if (jenis === 'kp') return `${nm}${pb}<input type="hidden" id="f_susulan" value="${esc(sus)}">
+    <div class="fld"><label for="f_program">Program</label><select id="f_program">${PROGRAM_KP.map(([k, l]) =>
+      `<option value="${k}"${(d.program || 'kp') === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+    <div class="fld"><label for="f_instansi">${sus ? 'Instansi tempat KP/magang' : 'Instansi tujuan KP/magang'}</label><input id="f_instansi" maxlength="300" value="${esc(d.instansi)}" list="daftar_instansi" autocomplete="off">
+      <datalist id="daftar_instansi"></datalist>
+      <small>Bila instansinya sudah pernah dipakai KP atau menjadi mitra prodi, pilih nama dari usulan supaya tercatat sama.</small></div>
+    <div class="fld"><label for="f_alamat">Alamat instansi <span>(opsional)</span></label><input id="f_alamat" maxlength="300" value="${esc(d.alamat_instansi)}"></div>
+    <div class="dua">
+      <div class="fld"><label for="f_bidang">Bidang/divisi <span>(opsional)</span></label><input id="f_bidang" maxlength="300" value="${esc(d.bidang_kerja)}"></div>
+      <div class="fld"><label for="f_kontak">Kontak instansi <span>(opsional)</span></label><input id="f_kontak" maxlength="300" value="${esc(d.kontak_instansi)}" placeholder="nama, jabatan, telepon/email"></div>
+      ${sus === 'selesai' ? '' : `<div class="fld"><label for="f_mulai">Rencana mulai <span>(opsional)</span></label><input id="f_mulai" type="date" value="${esc(d.rencana_mulai)}"></div>
+      <div class="fld"><label for="f_selesai">Rencana selesai <span>(opsional)</span></label><input id="f_selesai" type="date" value="${esc(d.rencana_selesai)}"></div>`}
+    </div>`;
+  return `${nm}${pb}
+    <div class="fld"><label for="f_keg">Nama kegiatan/lomba</label><input id="f_keg" maxlength="300" value="${esc(d.nama_kegiatan)}"></div>
+    <div class="dua">
+      <div class="fld"><label for="f_peny">Penyelenggara <span>(opsional)</span></label><input id="f_peny" maxlength="300" value="${esc(d.penyelenggara)}"></div>
+      <div class="fld"><label for="f_tgl">Tanggal lomba (hari pengumuman)</label><input id="f_tgl" type="date" value="${esc(d.tanggal)}"></div>
+      <div class="fld"><label for="f_tingkat">Tingkat</label><select id="f_tingkat"><option value="">(pilih)</option>${opsi(TINGKAT, d.tingkat)}</select></div>
+      <div class="fld"><label for="f_bid">Bidang</label><select id="f_bid"><option value="">(pilih)</option>${opsi(BIDANG, d.bidang)}</select></div>
+    </div>
+    <div class="fld"><label for="f_capaian">Capaian <span>(mis. Juara 1, Finalis)</span></label><input id="f_capaian" maxlength="300" value="${esc(d.capaian)}"></div>
+    <div class="fld"><label for="f_anggota">Anggota tim lain <span>(opsional; satu orang per baris: NIM - Nama)</span></label>
+      <textarea id="f_anggota">${esc(teksAnggota(d.anggota))}</textarea></div>
+    <div class="fld"><label for="f_cerita">Cerita singkat untuk situs prodi <span>(opsional, maks. 600 huruf)</span></label>
+      <textarea id="f_cerita" maxlength="600">${esc(d.cerita)}</textarea></div>
+    <label class="cek"><input type="checkbox" id="f_tampil"${d.tampil_nama ? ' checked' : ''}> Saya dan anggota tim setuju nama kami
+      ditampilkan di situs prodi bila prestasi ini disetujui (tanpa NIM). Tanpa centang: ditulis "Tim mahasiswa".</label>`;
+}
+
+// TA (110): tahap Pengajuan pembimbing menampilkan KK dan menyaring pembimbing 1 (KK sama atau berdekatan).
+function pasangTA(){
+  const th = $('f_tahap'); if (!th) return;
+  const pb = $('f_pb'), awal = pb.value;
+  const atur = () => {
+    const aju = th.value === TAHAP_PEMBIMBING_TA, kk = $('f_kk').value, pilih = pb.value || awal;
+    document.querySelectorAll('[data-ta]').forEach(el => { el.hidden = el.dataset.ta !== (aju ? 'pembimbing' : 'seminar'); });
+    const xs = aju && DOSEN_TA ? pembimbingCocok(DOSEN_TA, kk) : DOSEN;
+    pb.innerHTML = `<option value="">${aju && !kk ? '(pilih kelompok keahlian dulu)' : '(pilih)'}</option>` + xs.map(x =>
+      `<option value="${x.id}"${x.id === pilih ? ' selected' : ''}>${esc(x.nama)}${aju && x.kk && x.kk !== kk ? ` (${esc(x.kk)}, berdekatan)` : ''}</option>`).join('');
+  };
+  th.onchange = atur; $('f_kk').onchange = atur; atur();
+}
+
+// Kolom publikasi/luaran mengikuti kategori (96).
+function pasangLuaran(){
+  const rs = document.querySelectorAll('[name=f_kat]'); if (!rs.length) return;
+  const atur = () => { const k = document.querySelector('[name=f_kat]:checked')?.value;
+    document.querySelectorAll('[data-kat]').forEach(el => { el.hidden = el.dataset.kat !== k; }); };
+  rs.forEach(r => { r.onchange = atur; }); atur();
+}
+
+function pasangSurat(){
+  const js = $('f_js'); if (!js) return;
+  const atur = () => document.querySelectorAll('[data-surat]').forEach(el => { el.hidden = !el.dataset.surat.split(' ').includes(js.value); });
+  js.onchange = atur; atur();
+}
+
+function bacaIsian(jenis){
+  const v = id => ($(id)?.value || '').trim();
+  if (jenis === 'luaran') {
+    const kat = document.querySelector('[name=f_kat]:checked')?.value || '';
+    const umum = { kategori: kat, judul: v('f_judul'), tahun: v('f_th'), bulan: v('f_bl'), doi_url: v('f_doi'),
+                   anggota: bacaAnggota($('f_anggota').value), bersama_dosen: $('f_bd').checked };
+    return { nama: v('f_nama'), pembimbing: v('f_pb'), data: kat === 'luaran'
+      ? { ...umum, jenis_luaran: v('f_jl'), nomor: v('f_no'), status_hki: v('f_sh'), tkt: v('f_tkt') }
+      : { ...umum, jenis_pub: v('f_jp'), tingkat: v('f_tk'), indeksasi: v('f_ix'), terbitan: v('f_tb') } };
+  }
+  if (jenis === 'ta') return { nama: v('f_nama'), pembimbing: v('f_pb'), data: { tahap_ta: v('f_tahap'), judul: v('f_judul'),
+    pembimbing_2: v('f_pb2'), tampil_nama: $('f_tampil').checked, ...(v('f_tahap') === TAHAP_PEMBIMBING_TA ? { kk_ta: v('f_kk') } : {}) } };
+  if (jenis === 'yudisium') return { nama: v('f_nama'), pembimbing: '', data: { judul: v('f_judul'), catatan: v('f_cat') } };
+  // Kabar (144): dosen pendamping kosong dikirim null (basis data: opsional).
+  if (jenis === 'kabar') return { nama: v('f_nama'), pembimbing: v('f_pb') || null, data: { judul: v('f_judul'), tanggal: v('f_tgl'),
+    jenis_kegiatan: v('f_jk'), tempat: v('f_tempat'), ringkasan: v('f_ring'), tautan: v('f_taut') } };
+  if (jenis === 'surat') return { nama: v('f_nama'), pembimbing: '', data: { jenis_surat: v('f_js'), keperluan: v('f_kep'),
+    tujuan_surat: v('f_tuj'), alamat_tujuan: v('f_alt'), judul_penelitian: v('f_jdl'), lokasi: v('f_lok'), waktu_pelaksanaan: v('f_wkt') } };
+  const data = jenis === 'kp'
+    ? { program: v('f_program'), instansi: v('f_instansi'), alamat_instansi: v('f_alamat'), bidang_kerja: v('f_bidang'), kontak_instansi: v('f_kontak'),
+        rencana_mulai: v('f_mulai'), rencana_selesai: v('f_selesai'), susulan: v('f_susulan') }
+    : { nama_kegiatan: v('f_keg'), penyelenggara: v('f_peny'), tanggal: v('f_tgl'), tingkat: v('f_tingkat'), bidang: v('f_bid'),
+        capaian: v('f_capaian'), anggota: bacaAnggota($('f_anggota').value), cerita: v('f_cerita'), tampil_nama: $('f_tampil').checked };
+  return { nama: v('f_nama'), pembimbing: v('f_pb'), data };
+}
+
+// ---------- tanpa token: pengajuan baru ----------
+function halamanBaru(){
+  // Susunan (pemilik 2026-11-19): 3 langkah; kartu jenis ringkas, keterangan lengkap hanya untuk jenis terpilih; bantuan dilipat.
+  $('isi').innerHTML = `
+    <ol class="langkah">
+      <li><b>Pilih jenis</b> dan isi data di bawah.</li>
+      <li><b>Buka email kampus</b> Anda (NIM@domain mahasiswa; periksa juga Spam): tautan pribadi dikirim ke sana.</li>
+      <li>Lewat tautan itu <b>unggah berkas</b>, tekan <b>Kirim untuk diperiksa</b>, lalu pantau prosesnya.
+        <a href="pengajuan.html?contoh=baru">Lihat contoh halaman tautan pribadi</a>.</li>
+    </ol>
+    <form class="kotak" id="frm" novalidate>
+      <div class="pilih" role="radiogroup" aria-label="Jenis pengajuan">
+        <label><input type="radio" name="jenis" value="kp" checked><span>Kerja Praktik / magang<small>surat pengantar ke instansi</small></span></label>
+        <label><input type="radio" name="jenis" value="ta"><span>Seminar/sidang TA<small>proposal, kemajuan, sidang akhir</small></span></label>
+        <label><input type="radio" name="jenis" value="lomba"><span>Laporan lomba<small>lomba yang sudah diikuti</small></span></label>
+        <label><input type="radio" name="jenis" value="luaran"><span>Publikasi/luaran<small>artikel, prosiding, HKI, produk, buku</small></span></label>
+        <label><input type="radio" name="jenis" value="kabar"><span>Kabar kegiatan<small>kuliah tamu, kunjungan lapangan, seminar, kegiatan himpunan…</small></span></label>
+        <label><input type="radio" name="jenis" value="surat"><span>Permohonan surat<small>aktif kuliah, izin penelitian, rekomendasi</small></span></label>
+        <label><input type="radio" name="jenis" value="yudisium"><span>Berkas yudisium<small>unggah berkas syarat yudisium</small></span></label>
+      </div>
+      <p class="info-jenis" id="infoJenis"></p>
+      <div class="fld"><label for="f_nim">NIM</label><input id="f_nim" inputmode="numeric" maxlength="15" autocomplete="off"></div>
+      <div id="isian"></div>
+      <div class="jebakan" aria-hidden="true"><label for="f_situs">Situs web</label><input id="f_situs" type="text" tabindex="-1" autocomplete="off"></div>
+      <p><button type="submit" class="b utama" id="b_ajukan">Buat pengajuan dan kirim tautan</button><span class="msg" id="m_ajukan" role="status"></span></p>
+      <p class="ket">Berkas tidak tampil di situs. <a href="privasi.html">Kebijakan privasi</a>.</p>
+    </form>
+    <details class="bantuan" id="bantuan">
+      <summary>Butuh bantuan? Tautan hilang, email kampus bermasalah, atau KP sudah selesai</summary>
+      <h2 id="tautan">Tautan pengajuan hilang atau tidak berlaku</h2>
+      <form class="kotak" id="frmUlang" novalidate>
+        <p class="ket" style="margin-top:0">Tulis NIM; tautan baru untuk semua pengajuan Anda dikirim ke email kampus (tautan lama tidak berlaku lagi).</p>
+        <div class="fld"><label for="u_nim">NIM</label><input id="u_nim" inputmode="numeric" maxlength="15" autocomplete="off"></div>
+        <div class="jebakan" aria-hidden="true"><input id="u_situs" type="text" tabindex="-1" autocomplete="off"></div>
+        <button type="submit" class="b" id="b_ulang">Kirim tautan baru</button><span class="msg" id="m_ulang" role="status"></span>
+      </form>
+      <h2 id="email">Email kampus bermasalah</h2>
+      <form class="kotak" id="frmAlt" novalidate>
+        <p class="ket" style="margin-top:0">Daftarkan email alternatif (mis. Gmail). Tautan konfirmasi dikirim ke <b>email kampus</b>;
+          sesudah Anda membukanya, tautan dan kabar pengajuan dikirim ke email kampus <b>dan</b> email alternatif.</p>
+        <div class="fld"><label for="a_nim">NIM</label><input id="a_nim" inputmode="numeric" maxlength="15" autocomplete="off"></div>
+        <div class="fld"><label for="a_email">Email alternatif</label><input id="a_email" type="email" maxlength="120" autocomplete="email"></div>
+        <div class="jebakan" aria-hidden="true"><input id="a_situs" type="text" tabindex="-1" autocomplete="off"></div>
+        <button type="submit" class="b" id="b_alt">Kirim tautan konfirmasi</button><span class="msg" id="m_alt" role="status"></span>
+        <p class="ket">Email kampus sama sekali tidak bisa dibuka? Datang ke admin prodi atau koordinator KP/TA dengan KTM;
+          mereka bisa mendaftarkan email alternatif Anda langsung.</p>
+      </form>
+      <h2>KP sudah selesai sebelum layanan ini dipakai</h2>
+      <div class="kotak"><p style="margin:0">Laporkan lewat formulir <b>Pelaporan selesai KP</b>: tanpa surat permohonan dan surat pengantar.</p>
+        <p><a class="b" href="pengajuan.html?lapor=kp">Buka formulir pelaporan selesai KP</a></p></div>
+    </details>`;
+  const jenis = () => document.querySelector('[name=jenis]:checked').value;
+  const INFO_JENIS = {
+    kp: 'Diperiksa koordinator KP, yang juga menetapkan dosen pembimbing. Sudah diterima instansi tanpa surat pengantar? Ajukan juga, lalu unggah surat balasannya. Pelaporan selesai KP menyusul lewat tautan yang sama.',
+    ta: 'Diperiksa dosen pembimbing, lalu admin prodi. Jadwal dan penguji ditetapkan prodi, lalu Anda input ke SIUP.',
+    lomba: 'Disahkan dosen pembimbing atau pembina kemahasiswaan (siapa pun lebih dulu), lalu tercatat sebagai prestasi mahasiswa.',
+    luaran: 'Karya Anda (juga yang mandiri) tercatat untuk akreditasi program studi.',
+    kabar: 'Diverifikasi dosen pendamping, pembina kemahasiswaan, atau admin prodi (siapa pun lebih dulu), lalu tampil di halaman Kabar kegiatan dan beranda situs prodi. Lewat tautan pribadi Anda mengunggah 1–6 foto kegiatan.',
+    surat: 'Surat ditandatangani Kaprodi dan diunduh lewat tautan pribadi Anda.',
+    yudisium: `Diperiksa admin prodi. Lewat tautan pribadi Anda mengunggah ${YUD.filter(x => x.wajib).length} berkas wajib (formulir pendaftaran, laporan TA, transkrip, surat bebas pinjam, foto, dan lainnya); berkas yang terlalu besar boleh berupa tautan Google Drive.` };
+  const gambar = () => { $('infoJenis').textContent = INFO_JENIS[jenis()] || '';
+    $('isian').innerHTML = htmlIsian(jenis(), {}, '', jenis() === 'kp' ? PB_AWAL : ''); pasangSurat(); pasangLuaran(); pasangTA(); isiSaran(); };
+  // #tautan / #email / #bantuan (mis. dari "Cek pengajuan saya"): bantuan dibuka dan digulir ke bagiannya.
+  const sasaran = { '#tautan': 'tautan', '#email': 'email', '#bantuan': 'bantuan' }[location.hash];
+  if (sasaran) { $('bantuan').open = true; setTimeout(() => { $(sasaran).scrollIntoView(); if (sasaran === 'tautan') $('u_nim').focus({ preventScroll: true }); }, 0); }
+  document.querySelectorAll('[name=jenis]').forEach(r => { r.onchange = gambar; });
+  const awal = document.querySelector(`[name=jenis][value="${CSS.escape(JENIS_AWAL)}"]`);
+  if (awal) awal.checked = true;
+  if (NIM_AWAL) $('f_nim').value = NIM_AWAL;
+  gambar();
+  $('frm').onsubmit = async e => {
+    e.preventDefault();
+    const j = jenis(), x = bacaIsian(j), nim = $('f_nim').value.trim();
+    const g = periksaIsian(j, { nim, ...x });
+    if (g.length) return tulis('m_ajukan', 'buruk', g.join(' '));
+    $('b_ajukan').disabled = true; tulis('m_ajukan', '', 'Mengirim…');
+    try {
+      const out = await appsScript({ kind: 'mhs_ajukan', jenis: j, nim, nama: x.nama, pembimbing_id: x.pembimbing, data: x.data,
+                                     jebakan: $('f_situs').value });
+      $('frm').innerHTML = `<p><b>Pengajuan dibuat sebagai draf.</b> Tautan pribadi sudah dikirim ke <b>${esc(out.email || 'email kampus Anda')}</b>.
+        Buka email itu (periksa juga folder Spam/Junk) untuk mengunggah berkas dan menekan <b>Kirim untuk diperiksa</b>.</p>`;
+    } catch (err) { tulis('m_ajukan', 'buruk', err.message); $('b_ajukan').disabled = false; }
+  };
+  $('frmAlt').onsubmit = async e => {
+    e.preventDefault();
+    const nim = $('a_nim').value.trim(), email = $('a_email').value.trim();
+    if (!/^\d{6,15}$/.test(nim)) return tulis('m_alt', 'buruk', 'NIM harus angka 6–15 digit.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return tulis('m_alt', 'buruk', 'Tulis alamat email alternatif yang sah.');
+    $('b_alt').disabled = true; tulis('m_alt', '', 'Mengirim…');
+    try {
+      const out = await appsScript({ kind: 'mhs_email_alt', nim, email, jebakan: $('a_situs').value });
+      tulis('m_alt', 'ok', `Tautan konfirmasi dikirim ke ${out.email || 'email kampus Anda'}; berlaku 2 hari.`);
+    } catch (err) { tulis('m_alt', 'buruk', err.message); }
+    finally { $('b_alt').disabled = false; }
+  };
+  $('frmUlang').onsubmit = async e => {
+    e.preventDefault();
+    const nim = $('u_nim').value.trim();
+    if (!/^\d{6,15}$/.test(nim)) return tulis('m_ulang', 'buruk', 'NIM harus angka 6–15 digit.');
+    $('b_ulang').disabled = true; tulis('m_ulang', '', 'Mengirim…');
+    try {
+      const out = await appsScript({ kind: 'mhs_tautan_ulang', nim, jebakan: $('u_situs').value });
+      tulis('m_ulang', 'ok', `Bila NIM ini punya pengajuan, tautan baru sudah dikirim ke ${out.email || 'email kampus'}.`);
+    } catch (err) { tulis('m_ulang', 'buruk', err.message); }
+    finally { $('b_ulang').disabled = false; }
+  };
+}
+
+// ---------- tanpa token, ?lapor=kp: pelaporan selesai KP untuk KP yang sudah selesai (106/107) ----------
+function halamanLapor(){
+  $('isi').innerHTML = `
+    <p class="ket">Formulir <b>Pelaporan selesai KP</b> untuk mahasiswa yang KP atau magangnya <b>sudah selesai</b> sebelum layanan
+      pengajuan dipakai. Belum KP, atau sedang KP? Pakai <a href="pengajuan.html?jenis=kp">Pengajuan KP</a> (yang sudah diterima instansi
+      mengunggah surat balasannya).</p>
+    <form class="kotak" id="frmLapor" novalidate>
+      <div class="fld"><label for="f_nim">NIM</label><input id="f_nim" inputmode="numeric" maxlength="15" autocomplete="off"></div>
+      <div id="isian"></div>
+      <div class="jebakan" aria-hidden="true"><label for="f_situs">Situs web</label><input id="f_situs" type="text" tabindex="-1" autocomplete="off"></div>
+      <p><button type="submit" class="b utama" id="b_ajukan">Buat laporan dan kirim tautan</button><span class="msg" id="m_ajukan" role="status"></span></p>
+    </form>
+    <div class="kotak"><b>Langkah berikutnya.</b> Tautan pribadi dikirim ke email kampus Anda. Lewat tautan itu:
+      <ol style="margin:6px 0 0 18px;padding:0">
+        <li>isi tanggal mulai dan selesai, pembimbing lapangan, dan ringkasan kegiatan;</li>
+        <li>unggah <b>laporan KP</b> dan <b>surat keterangan selesai</b> (logbook dan foto bila ada);</li>
+        <li>tekan <b>Kirim laporan selesai</b>: diperiksa dosen pembimbing, lalu koordinator KP atau admin prodi.</li>
+      </ol></div>
+    <p class="ket"><a href="pengajuan.html">Kembali ke halaman pengajuan</a></p>`;
+  $('isian').innerHTML = htmlIsian('kp', { susulan: 'selesai' }); isiSaran();
+  $('frmLapor').onsubmit = async e => {
+    e.preventDefault();
+    const x = bacaIsian('kp'), nim = $('f_nim').value.trim();
+    const g = periksaIsian('kp', { nim, ...x });
+    if (g.length) return tulis('m_ajukan', 'buruk', g.join(' '));
+    $('b_ajukan').disabled = true; tulis('m_ajukan', '', 'Mengirim…');
+    try {
+      const out = await appsScript({ kind: 'mhs_ajukan', jenis: 'kp', nim, nama: x.nama, pembimbing_id: x.pembimbing, data: x.data,
+                                     jebakan: $('f_situs').value });
+      $('frmLapor').innerHTML = `<p><b>Laporan KP dibuat sebagai draf.</b> Tautan pribadi sudah dikirim ke <b>${esc(out.email || 'email kampus Anda')}</b>.
+        Buka email itu (periksa juga folder Spam/Junk), lalu isi laporan selesai, unggah laporan KP dan surat keterangan selesai,
+        dan tekan <b>Kirim laporan selesai</b>.</p>`;
+    } catch (err) { tulis('m_ajukan', 'buruk', err.message); $('b_ajukan').disabled = false; }
+  };
+}
+
+// ---------- dengan token: pengajuan saya ----------
+async function muat(){
+  const { data, error } = await sb.rpc('mhs_lihat', { p_token: TOKEN });
+  if (error) throw new Error(error.message);
+  P = data;
+}
+
+function htmlJalur(xs){
+  return `<ol class="jalur" aria-label="Jalur proses">${xs.map(t => `<li class="${t.keadaan}">
+      <span class="tanda">${{ selesai: 'selesai', kini: 'sekarang', nanti: 'berikutnya', kembali: 'perlu diperbaiki', tolak: 'ditolak' }[t.keadaan]}</span>
+      <b>${esc(t.label)}</b>${t.waktu ? `<div class="meta ket">${esc(tglWaktu(t.waktu))}${t.oleh && t.oleh !== 'mahasiswa' ? ' · ' + esc(t.oleh) : ''}</div>` : ''}
+      ${t.catatan ? `<div class="cat">${esc(t.catatan)}</div>` : ''}</li>`).join('')}</ol>`;
+}
+
+// Laporan selesai KP (91): isian setelah pengajuan disetujui.
+function htmlSelesai(d = {}){
+  return `<div class="dua">
+      <div class="fld"><label for="s_mulai">Tanggal mulai KP</label><input id="s_mulai" type="date" value="${esc(d.tanggal_mulai)}"></div>
+      <div class="fld"><label for="s_selesai">Tanggal selesai KP</label><input id="s_selesai" type="date" value="${esc(d.tanggal_selesai)}"></div>
+      <div class="fld"><label for="s_pl">Pembimbing lapangan</label><input id="s_pl" maxlength="300" value="${esc(d.pembimbing_lapangan)}"></div>
+      <div class="fld"><label for="s_jab">Jabatan pembimbing lapangan <span>(opsional)</span></label><input id="s_jab" maxlength="300" value="${esc(d.jabatan_lapangan)}"></div>
+      <div class="fld"><label for="s_kon">Kontak pembimbing lapangan <span>(opsional)</span></label><input id="s_kon" maxlength="300" value="${esc(d.kontak_lapangan)}"></div>
+      <div class="fld"><label for="s_div">Bagian/proyek <span>(opsional)</span></label><input id="s_div" maxlength="300" value="${esc(d.divisi)}"></div>
+    </div>
+    <div class="fld"><label for="s_ring">Ringkasan kegiatan KP <span>(apa yang dikerjakan, hasilnya; minimal 30 huruf)</span></label>
+      <textarea id="s_ring" maxlength="3000" style="min-height:120px">${esc(d.ringkasan)}</textarea></div>`;
+}
+const bacaSelesai = () => { const v = id => ($(id)?.value || '').trim();
+  return { tanggal_mulai: v('s_mulai'), tanggal_selesai: v('s_selesai'), pembimbing_lapangan: v('s_pl'), jabatan_lapangan: v('s_jab'),
+           kontak_lapangan: v('s_kon'), divisi: v('s_div'), ringkasan: v('s_ring') }; };
+
+const lbl = (xs, k) => (xs.find(t => t[0] === k) || [, ''])[1];
+function ringkasLuaran(d){
+  return [['Kategori', d.kategori === 'luaran' ? 'Luaran (HKI, produk, buku)' : 'Publikasi'], ['Judul', d.judul],
+    ['Jenis', d.kategori === 'luaran' ? lbl(JENIS_LUARAN, d.jenis_luaran) : lbl(JENIS_PUB, d.jenis_pub)],
+    ['Tingkat / indeksasi', [lbl(TINGKAT_PUB, d.tingkat), lbl(INDEKSASI, d.indeksasi)].filter(Boolean).join(' · ')],
+    ['Terbitan', d.terbitan], ['Nomor', d.nomor], ['Status paten', d.status_hki], ['TKT', d.tkt],
+    ['Tahun', [d.bulan, d.tahun].filter(Boolean).join('/')], ['DOI/URL', d.doi_url], ['Anggota lain', teksAnggota(d.anggota)],
+    ['Bersama dosen prodi', d.bersama_dosen ? 'ya (dicatat lewat karya dosen)' : 'tidak (mandiri)']];
+}
+
+function halamanSaya(){
+  const p = P, J = JENIS[p.jenis], d = p.data || {}, ds = p.data_selesai || {};
+  const ubah = p.boleh_ubah ?? bolehUbah(p.status);                         // sebelum patch 91: status saja
+  const ubahPengajuan = (p.tahap || 'pengajuan') === 'pengajuan' && bolehUbah(p.status);
+  const jendelaSelesai = !!p.jendela_selesai, adaSelesai = p.jenis === 'kp' && (jendelaSelesai || p.tahap === 'selesai');
+  const jenisUnggah = ubahPengajuan ? J.berkas : BERKAS_SELESAI;
+  // Lapor selesai KP (106): langsung ke laporan selesai. Nilai lama 'berjalan' = pengajuan KP biasa (107).
+  const sus = p.jenis === 'kp' && d.susulan === 'selesai' ? 'selesai' : '';
+  const wajibAwal = sus === 'selesai' || penetapanTA(p) ? null : J.wajib;   // pengajuan pembimbing TA (110): naskah tidak wajib
+  // Jawaban instansi atas surat pengantar (107): diterima (surat balasan + tanggal mulai) atau ditolak (pengajuan ditutup).
+  const tahapAju = p.jenis === 'kp' && (p.tahap || 'pengajuan') === 'pengajuan';
+  const bisaJawab = tahapAju && p.status === 'disetujui' && !d.jawaban_instansi;
+  const ditolakInstansi = tahapAju && p.status === 'ditolak' && d.jawaban_instansi === 'ditolak';
+  // Pelaporan selesai KP dibuka setelah diterima instansi (pengajuan lama sebelum 107: laporkan diterima dulu).
+  const bukaSelesai = jendelaSelesai && (sus === 'selesai' || p.tahap === 'selesai' || d.jawaban_instansi === 'diterima');
+  // Sebelum jawaban instansi: surat balasan (atau lainnya); berkas laporan selesai menyusul setelah diterima.
+  const unggahan = !ubahPengajuan ? (bisaJawab ? ['surat_balasan', 'lainnya'] : jenisUnggah)
+    : sus === 'selesai' ? BERKAS_SELESAI : jenisUnggah;
+  const baru = `pengajuan.html?jenis=kp&nim=${encodeURIComponent(p.nim)}${p.pembimbing_id ? '&pembimbing=' + encodeURIComponent(p.pembimbing_id) : ''}`;
+  // Berkas bertanda "[ditolak …]" (106) adalah catatan surat ke instansi yang menolak: tidak bisa dibuang mahasiswa.
+  const bisaBuang = b => ubah && b.oleh !== 'prodi' && !(p.status === 'disetujui' && b.jenis === 'surat_permohonan')
+    && !String(b.nama || '').startsWith('[ditolak ');
+  const ringkas = p.jenis === 'luaran' ? ringkasLuaran(d)
+    : p.jenis === 'ta'
+    ? penetapanTA(p)
+      ? [['Tahap', 'Pengajuan pembimbing TA'], ['Kelompok keahlian', KK.find(k => k.kode === d.kk_ta)?.nama || d.kk_ta], ['Judul awal', d.judul],
+         [p.status === 'disetujui' ? 'Pembimbing (ditetapkan)' : 'Pembimbing', [p.pembimbing, p.pembimbing_2].filter(Boolean).join(', ')]]
+      : [['Tahap', (TAHAP_TA.find(t => t[0] === d.tahap_ta) || [, ''])[1]], ['Judul', d.judul],
+         ['Pembimbing', [p.pembimbing, p.pembimbing_2].filter(Boolean).join(', ')], ['Nama di jadwal publik', d.tampil_nama ? 'boleh ditampilkan' : 'tidak']]
+    : p.jenis === 'yudisium' ? [['Judul Tugas Akhir', d.judul], ['Catatan untuk admin', d.catatan]]
+    : p.jenis === 'kabar' ? [['Judul', d.judul], ['Tanggal', d.tanggal], ['Jenis kegiatan', lbl(JENIS_KEGIATAN, d.jenis_kegiatan)],
+       ['Tempat', d.tempat], ['Ringkasan', d.ringkasan], ['Tautan', d.tautan], ['Dosen pendamping', p.pembimbing]]
+    : p.jenis === 'surat'
+    ? [['Jenis surat', judulPengajuan(p)], ['Keperluan', d.keperluan], ['Tujuan', [d.tujuan_surat, d.alamat_tujuan].filter(Boolean).join(', ')],
+       ['Judul penelitian', d.judul_penelitian], ['Lokasi', d.lokasi], ['Waktu', d.waktu_pelaksanaan]]
+    : p.jenis === 'kp'
+    ? [['Program', labelProgram(d.program)], ['Instansi', d.instansi], ['Alamat', d.alamat_instansi], ['Bidang/divisi', d.bidang_kerja],
+       ['Kontak', d.kontak_instansi],
+       ['Rencana', [d.rencana_mulai, d.rencana_selesai].filter(Boolean).join(' s.d. ')],
+       ['Jawaban instansi', d.jawaban_instansi === 'diterima' ? `diterima${d.tanggal_mulai ? ', mulai KP ' + d.tanggal_mulai : ''}`
+         : d.jawaban_instansi === 'ditolak' ? `ditolak${d.alasan_instansi ? ': ' + d.alasan_instansi : ''}` : ''],
+       ['Dilaporkan', sus === 'selesai' ? 'setelah KP selesai' : '']]
+    : [['Kegiatan', d.nama_kegiatan], ['Penyelenggara', d.penyelenggara], ['Tanggal', d.tanggal],
+       ['Tingkat', (TINGKAT.find(t => t[0] === d.tingkat) || [, ''])[1]], ['Bidang', (BIDANG.find(t => t[0] === d.bidang) || [, ''])[1]],
+       ['Capaian', d.capaian], ['Anggota lain', teksAnggota(d.anggota)], ['Nama di situs', d.tampil_nama ? 'boleh ditampilkan' : 'tidak']];
+  const ringkasSelesai = [['Tanggal', [ds.tanggal_mulai, ds.tanggal_selesai].filter(Boolean).join(' s.d. ')], ['Pembimbing lapangan',
+    [ds.pembimbing_lapangan, ds.jabatan_lapangan].filter(Boolean).join(', ')], ['Kontak', ds.kontak_lapangan], ['Bagian/proyek', ds.divisi],
+    ['Ringkasan', ds.ringkasan]];
+  const pengantar = p.berkas.filter(b => b.jenis === 'surat_pengantar' || b.jenis === 'surat_jadi');
+  const semua = [{ id: p.id, jenis: p.jenis, status: p.status, tahap: p.tahap, judul: judulPengajuan(p), ini: true }, ...(p.lain || [])];
+  $('isi').innerHTML = `
+    <p class="ket">Halaman ini terbuka dengan tautan pribadi dari email kampus Anda. Jangan bagikan alamatnya.</p>
+    <h2>${esc(J.label)}${p.jenis === 'yudisium' ? (d.judul ? ': ' + esc(d.judul) : '') : ': ' + esc(judulPengajuan(p))}</h2>
+    <div>Status: <span class="status">${esc(labelStatus(p))}</span> · ${esc(p.nama)} (${esc(p.nim)})
+      ${J.tanpaPembimbing ? '' : (p.jenis === 'kabar' ? '· dosen pendamping ' : '· pembimbing ') + esc([p.pembimbing, p.pembimbing_2].filter(Boolean).join(', ') || '—')}</div>
+    ${sus === 'selesai' ? '<p class="ket">KP dilaporkan setelah selesai: tahap pengajuan dan surat pengantar dilewati.</p>'
+      : `${p.jenis === 'kp' ? '<h3 class="sub-h">Pengajuan KP</h3>' : ''}${htmlJalur(jalurTahap(p, 'pengajuan'))}`}
+    ${adaSelesai && (bukaSelesai || p.tahap === 'selesai') ? `<h3 class="sub-h">Pelaporan selesai KP</h3>${htmlJalur(jalurTahap(p, 'selesai'))}` : ''}
+    ${p.jenis === 'ta' && !penetapanTA(p) && p.penetapan_ta ? `<div class="kotak"><b>Pembimbing TA Anda (ditetapkan koordinator TA):</b>
+      ${esc([p.penetapan_ta.pembimbing, p.penetapan_ta.pembimbing_2].filter(Boolean).join(', '))}.
+      <span class="ket">Seminar/sidang ini memakai pembimbing tersebut.</span></div>` : ''}
+    ${p.jadwal ? `<div class="kotak jadwal-kotak"><b>Jadwal ${esc((TAHAP_TA.find(t => t[0] === d.tahap_ta) || [, 'seminar/sidang'])[1].toLowerCase())}
+      Anda${p.jadwal.status === 'ditunda' ? ' (DITUNDA)' : p.jadwal.status === 'batal' ? ' (DIBATALKAN)' : ''}</b>
+      <dl class="ringkas">${[['Tanggal', p.jadwal.tanggal ? new Date(p.jadwal.tanggal + 'T00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''],
+        ['Jam', p.jadwal.jam], ['Ruang', p.jadwal.ruang], ['Tautan daring', p.jadwal.tautan_daring],
+        ['Penguji', [...(p.jadwal.penguji || []), p.jadwal.penguji_luar].filter(Boolean).join(', ')]]
+        .filter(([, v]) => v).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+      ${p.jadwal.hasil ? `<p><b>Hasil: ${esc({ lulus: 'Lulus', lulus_revisi: 'Lulus dengan revisi', mengulang: 'Mengulang' }[p.jadwal.hasil] || p.jadwal.hasil)}</b>${
+        p.jadwal.hasil === 'lulus_revisi' ? (p.jadwal.revisi_selesai ? ` · revisi selesai ${esc(p.jadwal.revisi_selesai)}`
+          : ` · batas revisi ${esc(p.jadwal.batas_revisi || '(belum ditetapkan)')}`) : ''}</p>
+        ${p.jadwal.catatan_revisi && !p.jadwal.revisi_selesai ? `<p class="ket" style="white-space:pre-line">Catatan revisi: ${esc(p.jadwal.catatan_revisi)}</p>` : ''}`
+      : '<p class="ket">Langkah berikutnya: input jadwal ini ke SIUP sesuai ketentuan universitas.</p>'}</div>` : ''}
+    ${pengantar.length ? `<div class="kotak"><b>${p.jenis === 'surat' ? 'Surat dari prodi sudah terbit.' : 'Surat pengantar dari prodi sudah tersedia.'}</b>
+      ${pengantar.map(b => `<button class="b" data-buka="${b.id}" style="margin-left:8px">Buka ${esc(b.nama || 'surat')}</button>`).join('')}</div>` : ''}
+    ${bisaJawab ? `<div class="kotak" id="kJawab"><b>Laporkan jawaban instansi atas surat pengantar</b>
+      <p class="ket" style="margin-top:4px">Setelah surat pengantar Anda kirim ke ${esc(d.instansi || 'instansi')}, laporkan jawabannya di sini.</p>
+      <div class="dua">
+        <div><b>Diterima</b><p class="ket" style="margin:2px 0 6px">Unggah <b>surat balasan instansi</b> di bagian Berkas, isi tanggal mulai KP.</p>
+          <div class="fld"><label for="j_mulai">Tanggal mulai KP</label><input id="j_mulai" type="date"></div>
+          <button class="b utama" id="b_terima">Laporkan diterima</button><span class="msg" id="m_terima" role="status"></span></div>
+        <div><b>Ditolak</b><p class="ket" style="margin:2px 0 6px">Pengajuan ini <b>ditutup</b>; lalu buat pengajuan baru untuk instansi lain
+          (diperiksa lagi oleh koordinator KP).</p>
+          <div class="fld"><label for="t_alasan">Alasan dari instansi <span>(mis. kuota penuh)</span></label>
+            <textarea id="t_alasan" maxlength="300" style="min-height:60px"></textarea></div>
+          <button class="b" id="b_tolak">Laporkan ditolak</button><span class="msg" id="m_tolak" role="status"></span></div>
+      </div></div>` : ''}
+    ${ditolakInstansi ? `<div class="kotak"><b>Pengajuan ini ditutup karena ditolak instansi.</b> Buat pengajuan KP baru untuk instansi lain;
+      NIM dan usulan pembimbing sudah terisi. <p><a class="b utama" href="${esc(baru)}">Buat pengajuan baru</a></p></div>` : ''}
+    ${jendelaSelesai && !bukaSelesai ? `<p class="ket">Pelaporan selesai KP terbuka setelah Anda melaporkan <b>diterima instansi</b>.</p>` : ''}
+    ${bukaSelesai ? `<div class="kotak"><b>Pelaporan selesai KP.</b> Setelah KP selesai, isi laporan selesai di bawah, unggah <b>laporan KP</b> dan
+      <b>surat keterangan selesai</b> (wajib), serta logbook dan foto bila ada, lalu tekan <b>Kirim laporan selesai</b>.
+      Diperiksa dosen pembimbing, lalu koordinator KP atau admin prodi.</div>` : ''}
+    ${p.jenis === 'yudisium' ? htmlYudisium(p, ubah, bisaBuang) : `<h2>Berkas</h2>
+    <p class="ket">${ubahPengajuan && wajibAwal ? `Wajib sebelum dikirim: <b>${esc(LABEL_BERKAS[wajibAwal])}</b>${p.jenis === 'kp'
+      ? ' (atau <b>surat balasan instansi</b> bila Anda sudah diterima)' : ''}. ` : ''}${p.jenis === 'kabar'
+      ? 'Unggah 1–6 foto kegiatan (JPG/PNG); paling banyak 6 foto pertama yang tampil di situs. Jangan unggah foto yang memperlihatkan wajah orang yang tidak setuju dipublikasikan. ' : ''}${p.jenis === 'surat' ? 'Lampiran pendukung (mis. proposal) boleh diunggah, tidak wajib. ' : ''}${bukaSelesai
+      ? 'Wajib untuk laporan selesai: <b>Laporan KP</b> dan <b>Surat keterangan selesai</b>. ' : ''}Boleh lebih dari satu berkas per jenis; maks. 20 berkas.</p>
+    <ul class="daftar">${p.berkas.map(b => `<li class="${b.oleh === 'prodi' ? 'prodi-berkas' : ''}"><div class="isi">${esc(LABEL_BERKAS[b.jenis] || b.jenis)}
+      <div class="meta">${esc(b.nama)} · ${esc(tglWaktu(b.dibuat))}${b.oleh === 'prodi' ? ' · dari prodi' : ''}</div></div>
+      <button class="b" data-buka="${b.id}">Buka</button>${bisaBuang(b) ? `<button class="b" data-buang="${b.id}" aria-label="Buang berkas">×</button>` : ''}</li>`).join('')
+      || '<li><span class="kosong">Belum ada berkas.</span></li>'}</ul>
+    ${ubah ? `<div class="unggah"><select id="u_jenis" aria-label="Jenis berkas">${unggahan.map(k => `<option value="${k}">${esc(LABEL_BERKAS[k])}</option>`).join('')}</select>
+      <input type="file" id="u_berkas" multiple accept=".pdf,.jpg,.jpeg,.png">
+      <button class="b" id="b_unggah">Unggah</button><span class="msg" id="m_berkas" role="status"></span></div>
+      <p class="ket">PDF, JPG, atau PNG (berkas Word/Excel disimpan sebagai PDF dulu).</p>` : '<span class="msg" id="m_berkas" role="status"></span>'}`}
+    ${adaSelesai && (bukaSelesai || p.tahap === 'selesai') ? `<h2>Pelaporan selesai KP</h2>${bukaSelesai ? `<form class="kotak" id="frmSelesai" novalidate>${htmlSelesai(ds)}
+        <p><button type="submit" class="b" id="b_simpanS">Simpan laporan</button><span class="msg" id="m_simpanS" role="status"></span></p>
+        <p><button type="button" class="b utama" id="b_kirimS">Kirim laporan selesai</button><span class="msg" id="m_kirimS" role="status"></span></p></form>`
+      : `<dl class="kotak ringkas">${ringkasSelesai.filter(([, v]) => v).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}` : ''}
+    <h2>${sus ? 'Data KP' : 'Isian pengajuan'}</h2>
+    ${ubahPengajuan ? `<form class="kotak" id="frmUbah" novalidate>${htmlIsian(p.jenis, d, p.nama, p.pembimbing_id || '')}
+      <p><button type="submit" class="b" id="b_simpan">Simpan isian</button><span class="msg" id="m_simpan" role="status"></span></p></form>
+      ${sus === 'selesai' ? '<p class="ket">Isian ini ikut tersimpan saat Anda menekan <b>Kirim laporan selesai</b> di atas.</p>' : `<div class="kotak"><b>Sudah lengkap?</b> Setelah dikirim, isian dan berkas terkunci sampai pemeriksaan selesai atau dikembalikan.
+        <p><button class="b utama" id="b_kirim">Kirim untuk diperiksa</button><span class="msg" id="m_kirim" role="status"></span></p></div>`}`
+      : `<dl class="kotak ringkas">${ringkas.filter(([, v]) => v).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}
+    <h2>Semua pengajuan Anda</h2>
+    <p class="ket">Semua pengajuan dengan NIM ${esc(p.nim)}. Tiap pengajuan dibuka dengan tautannya sendiri dari email;
+      tautan hilang? <a href="pengajuan.html">Minta tautan baru</a> untuk semuanya sekaligus.</p>
+    <ul class="daftar">${semua.map(x => `<li><div class="isi">${esc(JENIS[x.jenis]?.singkat || x.jenis)}: ${esc(x.judul || '—')}
+      <div class="meta">${esc(labelStatus(x))}${x.ini ? ' · sedang dibuka' : ''}</div></div></li>`).join('')}</ul>
+    <p class="ket"><a href="pengajuan.html">Buat pengajuan baru</a> (tautannya dikirim ke email kampus).</p>`;
+  document.querySelectorAll('[data-buka]').forEach(b => { b.onclick = () => buka(+b.dataset.buka, b); });
+  document.querySelectorAll('[data-buang]').forEach(b => { b.onclick = () => buang(+b.dataset.buang, b); });
+  if (ubah) $('b_unggah').onclick = unggah;
+  if (ubah && $('b_tautan')) $('b_tautan').onclick = tempelTautan;
+  if (ubahPengajuan) {
+    pasangSurat(); pasangLuaran(); pasangTA(); isiSaran();
+    $('frmUbah').onsubmit = async e => { e.preventDefault(); await simpan(); };
+    if ($('b_kirim')) $('b_kirim').onclick = kirim;
+  }
+  if (bisaJawab) { $('b_tolak').onclick = tolakInstansi; $('b_terima').onclick = terimaInstansi; }
+  if (bukaSelesai) {
+    $('frmSelesai').onsubmit = async e => { e.preventDefault(); await simpanSelesai(); };
+    $('b_kirimS').onclick = kirimSelesai;
+  }
+}
+
+// Berkas yudisium (122): daftar kelengkapan per butir; tiap butir boleh lebih dari satu berkas; berkas yang melebihi
+// batas unggah boleh berupa tautan Google Drive (dibuka langsung, dibuang = barisnya saja).
+function htmlYudisium(p, ubah, bisaBuang){
+  const k = kelengkapanYudisium(YUD, p.berkas), kurang1 = k.butir.find(b => b.wajib && !b.berkas.length)?.kode;
+  const pilihan = id => `<select id="${id}" aria-label="Jenis berkas">${k.butir.map(b => `<option value="${esc(b.kode)}"${b.kode === kurang1 ? ' selected' : ''}>${
+    b.berkas.length ? '✓ ' : ''}${esc(b.label)}${b.wajib ? '' : ' (opsional)'}</option>`).join('')}</select>`;
+  const berkas = f => `<div class="meta">${f.tautan ? 'Tautan: ' : ''}${esc(f.nama)} · ${esc(tglWaktu(f.dibuat))}
+    ${f.tautan && f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">Buka tautan</a>` : `<button class="b kecil" data-buka="${f.id}">Buka</button>`}${
+    bisaBuang(f) ? `<button class="b kecil" data-buang="${f.id}" aria-label="Buang berkas">×</button>` : ''}</div>`;
+  return `<h2>Berkas yudisium</h2>
+    <p class="ket">Berkas wajib: <b>${k.ada} dari ${k.wajib}</b> sudah ada${k.kurang.length ? '' : ' (lengkap)'}. Tiap butir boleh lebih dari satu berkas;
+      maks. 40 berkas. Berkas lain di luar daftar masuk <b>Bukti tambahan</b>.</p>
+    <ul class="daftar yud">${k.butir.map(b => `<li class="${b.berkas.length ? 'ada' : b.wajib ? 'kurang' : ''}"><div class="isi">
+      <span class="tanda-yud">${b.berkas.length ? '✓ ada' : b.wajib ? 'belum' : 'opsional'}</span> ${esc(b.label)}
+      ${b.keterangan ? `<div class="meta">${esc(b.keterangan)}</div>` : ''}${b.berkas.map(berkas).join('')}</div></li>`).join('')}</ul>
+    ${ubah ? `<div class="unggah">${pilihan('u_jenis')}
+      <input type="file" id="u_berkas" multiple accept=".pdf,.jpg,.jpeg,.png">
+      <button class="b" id="b_unggah">Unggah</button><span class="msg" id="m_berkas" role="status"></span></div>
+      <p class="ket">PDF, JPG, atau PNG (berkas Word/Excel disimpan sebagai PDF dulu).</p>
+      <details class="tautan-yud"><summary>Berkas terlalu besar untuk diunggah? Tempel tautan Google Drive</summary>
+        <div class="unggah">${pilihan('t_jenis')}
+          <input id="t_url" type="url" maxlength="500" placeholder="https://drive.google.com/…" aria-label="Tautan Google Drive">
+          <input id="t_nama" maxlength="200" placeholder="Nama berkas, mis. Bebas plagiasi.pdf" aria-label="Nama berkas">
+          <button class="b" id="b_tautan">Simpan tautan</button><span class="msg" id="m_tautan" role="status"></span></div>
+        <p class="ket">Simpan berkasnya di Google Drive kampus, lalu bagikan supaya admin prodi bisa membukanya
+          (Bagikan › Siapa saja yang memiliki link › Pelihat). Berkas di Drive Anda tidak diubah atau dihapus oleh situs.</p></details>`
+      : '<span class="msg" id="m_berkas" role="status"></span>'}`;
+}
+async function tempelTautan(){
+  const url = $('t_url').value.trim();
+  if (!/^https:\/\/(drive|docs)\.google\.com\/\S+$/.test(url)) return tulis('m_tautan', 'buruk', 'Tempelkan tautan Google Drive (diawali https://drive.google.com/).');
+  $('b_tautan').disabled = true;
+  try {
+    const { error } = await sb.rpc('mhs_tautan_berkas', { p_token: TOKEN, p_jenis: $('t_jenis').value, p_nama: $('t_nama').value.trim(), p_url: url });
+    if (error) throw new Error(error.message);
+    await simpanDiam(); await muat(); halamanSaya(); tulis('m_berkas', 'ok', 'Tautan tersimpan.');
+  } catch (e) { tulis('m_tautan', 'buruk', e.message); $('b_tautan').disabled = false; }
+}
+
+// Halaman digambar ulang setelah unggah/buang berkas: isian yang sedang diketik disimpan dulu supaya tidak hilang.
+// Isian pengajuan disimpan hanya bila sudah sah; laporan selesai selalu (sebagai draf).
+async function simpanDiam(){
+  try {
+    if ($('frmSelesai')) await sb.rpc('mhs_ubah_selesai', { p_token: TOKEN, p_data: bacaSelesai() });
+    if ($('frmUbah')) { const x = bacaIsian(P.jenis);
+      if (!periksaIsian(P.jenis, x).length) await sb.rpc('mhs_ubah', { p_token: TOKEN, p_nama: x.nama, p_pembimbing: x.pembimbing, p_data: x.data }); }
+  } catch { /* tidak menghalangi unggah */ }
+}
+
+async function simpanSelesai(){
+  const ds = bacaSelesai(), g = periksaSelesai(ds);
+  const { error } = await sb.rpc('mhs_ubah_selesai', { p_token: TOKEN, p_data: ds });
+  if (error) { tulis('m_simpanS', 'buruk', error.message); return false; }
+  tulis('m_simpanS', g.length ? '' : 'ok', g.length ? 'Tersimpan sebagai draf. Belum lengkap: ' + g.join(' ') : 'Tersimpan.');
+  return !g.length;
+}
+async function kirimSelesai(){
+  $('b_kirimS').disabled = true;
+  try {
+    // KP susulan selesai (106): isian KP (instansi, pembimbing) disimpan dulu karena dikirim bersama laporan selesai.
+    if ($('frmUbah') && !(await simpan())) throw new Error('Periksa isian KP di bawah dulu.');
+    if (!(await simpanSelesai())) throw new Error('Lengkapi laporan selesai di atas dulu.');
+    const { error } = await sb.rpc('mhs_kirim_selesai', { p_token: TOKEN });
+    if (error) throw new Error(error.message);
+    await muat(); halamanSaya();
+  } catch (e) { tulis('m_kirimS', 'buruk', e.message); $('b_kirimS').disabled = false; }
+}
+
+// Jawaban instansi (107).
+async function tolakInstansi(){
+  const alasan = $('t_alasan').value.trim();
+  if (alasan.length < 5) return tulis('m_tolak', 'buruk', 'Tulis alasan singkat penolakan dari instansi.');
+  if (!confirm('Laporkan bahwa ' + (P.data?.instansi || 'instansi') + ' menolak? Pengajuan ini ditutup; Anda lalu membuat pengajuan baru.')) return;
+  $('b_tolak').disabled = true;
+  try {
+    const { error } = await sb.rpc('mhs_tolak_instansi', { p_token: TOKEN, p_alasan: alasan });
+    if (error) throw new Error(error.message);
+    await muat(); halamanSaya();
+  } catch (e) { tulis('m_tolak', 'buruk', e.message); $('b_tolak').disabled = false; }
+}
+async function terimaInstansi(){
+  const mulai = $('j_mulai').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(mulai)) return tulis('m_terima', 'buruk', 'Isi tanggal mulai KP.');
+  if (!P.berkas.some(b => b.jenis === 'surat_balasan')) return tulis('m_terima', 'buruk', 'Unggah surat balasan instansi dulu (bagian Berkas).');
+  $('b_terima').disabled = true;
+  try {
+    const { error } = await sb.rpc('mhs_terima_instansi', { p_token: TOKEN, p_mulai: mulai });
+    if (error) throw new Error(error.message);
+    await muat(); halamanSaya();
+  } catch (e) { tulis('m_terima', 'buruk', e.message); $('b_terima').disabled = false; }
+}
+
+async function buka(id, tombol){
+  tombol.disabled = true;
+  try { bukaIsi(await appsScript({ kind: 'mhs_buka', t: TOKEN, berkas: id })); }
+  catch (e) { tulis('m_berkas', 'buruk', e.message); }
+  finally { tombol.disabled = false; }
+}
+async function buang(id, tombol){
+  if (!confirm('Buang berkas ini?')) return;
+  tombol.disabled = true;
+  try { await appsScript({ kind: 'mhs_buang', t: TOKEN, berkas: id }); await simpanDiam(); await muat(); halamanSaya(); }
+  catch (e) { tulis('m_berkas', 'buruk', e.message); tombol.disabled = false; }
+}
+async function unggah(){
+  const fs = [...$('u_berkas').files], jenis = $('u_jenis').value;
+  if (!fs.length) return tulis('m_berkas', 'buruk', 'Pilih berkas dulu.');
+  $('b_unggah').disabled = true;
+  try {
+    for (let i = 0; i < fs.length; i++) {
+      tulis('m_berkas', '', `Mengunggah ${i + 1}/${fs.length}: ${fs[i].name}…`);
+      await appsScript({ kind: 'mhs_unggah', t: TOKEN, jenis_berkas: jenis, filename: fs[i].name, data: await keB64(fs[i]) });
+    }
+    await simpanDiam(); await muat(); halamanSaya(); tulis('m_berkas', 'ok', 'Berkas terunggah.');
+  } catch (e) {
+    // 122: berkas yudisium yang melebihi batas unggah boleh berupa tautan Google Drive.
+    const saran = P.jenis === 'yudisium' && /lebih dari|terlalu besar|too large/i.test(e.message)
+      ? ' Pakai "Tempel tautan Google Drive" di bawah untuk berkas ini.' : '';
+    tulis('m_berkas', 'buruk', e.message + saran); $('b_unggah').disabled = false;
+    if (saran) document.querySelector('.tautan-yud')?.setAttribute('open', '');
+  }
+}
+async function simpan(){
+  const x = bacaIsian(P.jenis), g = periksaIsian(P.jenis, x);
+  if (g.length) { tulis('m_simpan', 'buruk', g.join(' ')); return false; }
+  const { error } = await sb.rpc('mhs_ubah', { p_token: TOKEN, p_nama: x.nama, p_pembimbing: x.pembimbing, p_data: x.data });
+  if (error) { tulis('m_simpan', 'buruk', error.message); return false; }
+  tulis('m_simpan', 'ok', 'Tersimpan.');
+  return true;
+}
+async function kirim(){
+  $('b_kirim').disabled = true;
+  try {
+    if (!(await simpan())) throw new Error('Periksa isian di atas dulu.');
+    if (P.jenis === 'yudisium') { const k = kelengkapanYudisium(YUD, P.berkas);
+      if (k.kurang.length) throw new Error('Berkas wajib belum lengkap: ' + k.kurang.join(', ') + '.'); }
+    const { error } = await sb.rpc('mhs_kirim', { p_token: TOKEN });
+    if (error) throw new Error(error.message);
+    await muat(); halamanSaya();
+  } catch (e) { tulis('m_kirim', 'buruk', e.message); $('b_kirim').disabled = false; }
+}
+
+// Konfirmasi email alternatif dari tautan di email kampus (104).
+async function konfirmasiAlt(){
+  $('isi').innerHTML = '<p class="kosong">Mengaktifkan email alternatif…</p>';
+  history.replaceState(null, '', location.pathname);   // token tidak tertinggal di riwayat peramban
+  const out = await appsScript({ kind: 'mhs_email_alt_konfirmasi', token: ALT });
+  $('isi').innerHTML = `<div class="kotak"><p><b>Email alternatif ${esc(out.email || '')} sudah aktif.</b></p>
+    <p>Mulai sekarang tautan dan kabar pengajuan dikirim ke email kampus dan email alternatif ini.
+      Pemberitahuan juga dikirim ke kedua alamat.</p><p><a href="pengajuan.html">Ke halaman pengajuan</a></p></div>`;
+}
+
+// Contoh tautan pribadi: penggambar asli (halamanSaya) + data fiktif; semua isian dan tombol nonaktif, kecuali tautan.
+function halamanContoh(){
+  P = contohPengajuan(CONTOH);
+  halamanSaya();
+  const kini = CONTOH_PENGAJUAN.find(([k]) => k === CONTOH) || CONTOH_PENGAJUAN[0];
+  document.querySelectorAll('#isi button, #isi input, #isi select, #isi textarea').forEach(x => { x.disabled = true; });
+  document.querySelectorAll('#isi form').forEach(f => { f.onsubmit = e => e.preventDefault(); });
+  const pita = document.createElement('div');
+  pita.className = 'contoh-pita'; pita.setAttribute('role', 'note');
+  pita.innerHTML = `<b>CONTOH, data fiktif.</b> Begini halaman yang terbuka dari tautan di email kampus Anda; tombol di contoh ini tidak berfungsi.
+    <nav aria-label="Pilih contoh">${CONTOH_PENGAJUAN.map(([k, l]) => k === kini[0] ? `<b>${esc(l)}</b>`
+      : `<a href="pengajuan.html?contoh=${k}">${esc(l)}</a>`).join(' · ')}</nav>
+    <div class="ket">${esc(kini[2])}</div>
+    <a class="b utama" href="pengajuan.html">Kembali: buat pengajuan</a>`;
+  $('isi').prepend(pita);
+  const lencana = document.createElement('div');
+  lencana.className = 'lencana-contoh'; lencana.textContent = 'CONTOH'; lencana.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(lencana);
+}
+
+async function mulai(){
+  const D = await fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  if (D.prodi) document.title = document.title.split(' — ')[0] + ' — ' + ['Program Studi ' + D.prodi, D.institusi].filter(Boolean).join(' ');
+  $('hProdi').textContent = [D.prodi, D.institusi].filter(Boolean).join(' · '); SARAN = saranInstansi(D); isiSaran();
+  KK = D.situs?.kelompok_keahlian || [];
+  // Pilihan pembimbing TA menurut KK (110); tanpa patch 110: tahap Pengajuan pembimbing tidak ditawarkan.
+  const ta = await sb.rpc('pembimbing_pilihan_ta');
+  DOSEN_TA = ta.error ? null : (ta.data || []);
+  const yd = await sb.rpc('yudisium_berkas_daftar');
+  if (!yd.error && Array.isArray(yd.data) && yd.data.length) YUD = yd.data;
+  if (CONTOH) return halamanContoh();
+  if (!window.UPLOAD_URL) throw new Error('Layanan unggah belum disiapkan admin.');
+  const { data, error } = await sb.rpc('pembimbing_pilihan');
+  if (error) throw new Error(/pembimbing_pilihan/.test(error.message) ? 'Layanan pengajuan belum dibuka admin prodi.' : error.message);
+  DOSEN = data || [];
+  if (ALT) return konfirmasiAlt();
+  if (!TOKEN) return LAPOR ? halamanLapor() : halamanBaru();
+  await muat();
+  halamanSaya();
+}
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">${esc(e.message)}</p>
+  ${TOKEN ? '<p><a href="pengajuan.html">Minta tautan baru</a></p>' : ''}`; });
+</script>
+</body>
+</html>

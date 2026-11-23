@@ -1,0 +1,155 @@
+# =====================================================================
+#  Pemeliharaan untuk repo publik (pemilik 2026-11-05). Tiga tugas:
+#   1. jaga-hidup: memanggil database tiap 3 hari agar proyek Supabase
+#                  gratis tidak ter-pause karena tidak ada aktivitas.
+#   2. cadangkan:  tiap hari (sejak 2026-11-23; panel Kesehatan sistem menunggu
+#                  cadangan tiap 26 jam), seluruh tabel di config.yaml menjadi
+#                  satu zip di folder cadangan Google Drive prodi. Juga tiap push
+#                  yang mengubah config.yaml atau berkas ini. Apps Script memindah
+#                  cadangan > 35 hari ke Sampah Drive, kecuali cadangan tanggal 01.
+#   3. arsip:      tiap 1 September, arsip tahunan ke tempat yang sama. TIDAK
+#                  menghapus apa pun.
+#
+#  Cadangan memuat data pribadi dosen, jadi TIDAK PERNAH di-commit ke repo
+#  ini dan tidak disimpan sebagai artifact Actions: repo publik membuat
+#  keduanya bisa dibuka siapa saja.
+#
+#  Tanda aktif: GitHub mematikan jadwal repo publik setelah 60 hari tanpa
+#  aktivitas. Karena situs terbit tanpa commit, cadangkan menulis satu baris
+#  tanggal ke .github/aktivitas.txt tanggal 1 tiap bulan dan bila gagal (bukan
+#  tiap hari, supaya repo tidak penuh commit).
+#  Berkas itu hanya memuat tanggal dan status.
+# =====================================================================
+
+name: Pemeliharaan basis data
+
+on:
+  schedule:
+    - cron: '17 2 */3 * *'   # jaga-hidup: tiap 3 hari, 02:17 UTC
+    - cron: '40 18 * * *'    # cadangkan: tiap hari 18:40 UTC (01:40 WIB)
+    - cron: '0 19 31 8 *'    # arsip: 31 Agustus 19:00 UTC = 1 September 02:00 WIB
+  push:                      # cadangkan: daftar tabel bisa berubah
+    branches: [main]
+    paths:
+      - 'config.yaml'
+      - '.github/workflows/pemeliharaan.yml'
+  workflow_dispatch:
+    inputs:
+      tugas:
+        description: 'Tugas selain jaga-hidup'
+        type: choice
+        options: [cadangkan, arsip]
+        default: cadangkan
+
+jobs:
+
+  jaga-hidup:
+    if: vars.NAMA_PRODI != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Panggil database
+        run: |
+          kode=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/dosen?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
+          echo "Status: $kode"
+          if [ "$kode" != "200" ]; then
+            echo "::error::Database tidak merespons dengan benar (HTTP $kode)."
+            exit 1
+          fi
+      - name: Lapor kesehatan sistem
+        # instal-lengkap.sql: panel Kesehatan sistem di Dasbor. Tidak pernah menggagalkan pekerjaan.
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -s -o /dev/null -w "status_sistem jaga_hidup: HTTP %{http_code}\n" -X POST "$SUPABASE_URL/rest/v1/status_sistem?on_conflict=kunci" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "{\"kunci\":\"jaga_hidup\",\"waktu\":\"$(date -u +%FT%TZ)\",\"ok\":${{ job.status == 'success' }},\"isi\":{}}"
+
+  cadangkan:
+    if: vars.NAMA_PRODI != '' && (github.event.schedule == '40 18 * * *' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tugas == 'cadangkan'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Pasang pustaka
+        run: pip install requests pyyaml numpy openpyxl
+      - name: Cadangkan seluruh tabel
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python supabase_archive.py backup
+      - name: Hapus jejak perubahan lebih dari 3 tahun
+        continue-on-error: true   # gagal di sini tidak boleh menghalangi penyimpanan cadangan
+        # instal-lengkap.sql, keputusan pemilik 2026-11-12. HTTP 404 = patch belum
+        # dijalankan: dicatat, cadangan tetap dianggap berhasil.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          kode=$(curl -s -o jejak.txt -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/bersihkan_jejak"             -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY"             -H "Content-Type: application/json" -d '{}')
+          echo "bersihkan_jejak: HTTP $kode, dihapus: $(cat jejak.txt)"
+          rm -f jejak.txt
+          [ "$kode" = 200 ] || [ "$kode" = 404 ]
+      - name: Kirim ke Google Drive
+        env:
+          CADANGAN_TOKEN: ${{ secrets.CADANGAN_TOKEN }}
+        run: python supabase_archive.py send cadangan
+      - name: Tulis tanda aktif
+        # Tanggal 1 tiap bulan, atau bila gagal: cukup untuk batas 60 hari GitHub.
+        if: always()
+        run: |
+          rm -rf cadangan
+          if [ "$(date -u +%d)" != "01" ] && [ "${{ job.status }}" = "success" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Bukan tanggal 1: tanda aktif tidak ditulis."; exit 0
+          fi
+          echo "$(date -u +%Y-%m-%d) cadangan: ${{ job.status }}" > .github/aktivitas.txt
+          git config user.name  "github-actions"
+          git config user.email "actions@github.com"
+          git add .github/aktivitas.txt
+          git diff --staged --quiet || git commit -m "Tanda aktif $(date -u +%Y-%m-%d)"
+          git pull --rebase
+          git push
+      - name: Lapor kesehatan sistem
+        # instal-lengkap.sql: panel Kesehatan sistem di Dasbor. Tidak pernah menggagalkan pekerjaan.
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -s -o /dev/null -w "status_sistem cadangan: HTTP %{http_code}\n" -X POST "$SUPABASE_URL/rest/v1/status_sistem?on_conflict=kunci" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "{\"kunci\":\"cadangan\",\"waktu\":\"$(date -u +%FT%TZ)\",\"ok\":${{ job.status == 'success' }},\"isi\":{}}"
+
+  arsip:
+    if: vars.NAMA_PRODI != '' && (github.event.schedule == '0 19 31 8 *' || (github.event_name == 'workflow_dispatch' && inputs.tugas == 'arsip'))
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Jakarta        # nama folder arsip memakai tanggal WIB (1 September)
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Pasang pustaka
+        run: pip install requests pyyaml numpy openpyxl
+      - name: Arsip tahunan (tanpa menghapus)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python supabase_archive.py archive
+      - name: Kirim ke Google Drive
+        env:
+          CADANGAN_TOKEN: ${{ secrets.CADANGAN_TOKEN }}
+        run: python supabase_archive.py send arsip

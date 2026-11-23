@@ -1,0 +1,637 @@
+# Konfigurasi run_cpl.py (analisis CPL) dan supabase_archive.py (cadangan,
+# arsip tahunan, pemangkasan; bagian supabase di bawah).
+# Path mesin (folder berkas nilai dan folder laporan) ada di config.local.yaml
+# di folder yang sama; contohnya config.local.yaml.contoh.
+# Tiap kunci: arti, satuan, nilai yang sah, asal.
+
+thresholds:
+  # Skor CPL minimal (skala 0-100) agar seorang mahasiswa dihitung mencapai
+  # CPL itu. 45 = batas nilai C.
+  # Nilai sah: angka 0-100. Asal: keputusan pemilik 2026-10-09.
+  student: 45
+  # Persen mahasiswa (0-100) yang harus mencapai thresholds.student agar CPL
+  # dinyatakan TERCAPAI di satu kelas atau satu semester. Di bawahnya: bahan
+  # evaluasi semester/tahun berikutnya.
+  # Nilai sah: angka 0-100. Asal: keputusan pemilik 2026-10-09.
+  class_pct: 60
+
+# Urutan semester dalam satu tahun akademik, untuk mengurutkan progres.
+# Kunci = isian Info "Semester" pada berkas (huruf besar/kecil diabaikan),
+# nilai = urutan dalam tahun akademik. Isian lain membuat berkas ditolak.
+# Nilai sah: bilangan bulat >= 1, tidak ada yang kembar.
+# Asal: isian templat (Ganjil/Genap); Pendek = semester pendek sesudah Genap tahun
+# akademik yang sama (keputusan pemilik 2026-11-14). Berkas nilai akhir semester pendek
+# ditaruh di folder <tahun>_pendek (mis. 2025_pendek = 2025/2026 Pendek) atau diberi
+# akhiran -3; kelas templat CPL perlu patch 73 (cpl_kelas.semester menerima Pendek).
+semester_order:
+  Ganjil: 1
+  Genap: 2
+  Pendek: 3
+
+# Versi templat yang diterima (Info "Versi templat", sel B13).
+# Nilai sah: daftar teks. Asal: templat induk cv-data/templates (2026-10-09).
+template_versions:
+  - CPL-2026.10.09
+
+# Mahasiswa yang mengulang MK yang sama: percobaan mana yang dipakai untuk CPL
+# kumulatif. Progres per semester tetap memakai semua percobaan di semesternya.
+# Nilai sah: best_total_co (satu percobaan utuh dengan Total CO tertinggi;
+# bila sama, yang terbaru). Asal: keputusan pemilik 2026-10-09.
+retake: best_total_co
+
+# Bobot tiap MK saat menggabung skor CPL lintas MK per mahasiswa.
+# Nilai sah: indicator (jumlah bobot indikator MK itu ke CPL tersebut, dari
+# lembar Bobot_Indikator; SKS tidak dipakai). Asal: keputusan pemilik 2026-10-09.
+course_weight: indicator
+
+# Sumber berkas nilai untuk run_cpl.py (pemilik 2026-11-11, pilihan 2).
+# site   = unduh berkas terbaru tiap kelas dari Drive privat prodi lewat Apps Script
+#          (Code.gs kind 'cpl_unduh'; dosen mengunggah di situs, nilai-cpl.html), dengan
+#          kunci CPL_KUNCI dari env atau rahasia.env; disimpan ke
+#          paths.input_dir/_dari_situs (dikosongkan tiap kali) lalu dihitung.
+# folder = baca berkas yang ditaruh sendiri di paths.input_dir (cara awal 2026-10-09).
+# Nilai sah: site, folder. Penimpa sementara: python run_cpl.py --source folder.
+# Asal: keputusan pemilik 2026-11-11.
+source: site
+
+# Angkatan mahasiswa dibaca dari NIM, untuk grafik jaring laba-laba per angkatan
+# (Monitoring, agregat tanpa NIM) dan radar per mahasiswa (radar_mahasiswa.html,
+# lokal, memuat NIM).
+cohort:
+  # Posisi digit tahun angkatan di NIM, mulai 1, inklusif: [5, 6] -> 104122xxx = 2022
+  # (tahun = 2000 + dua digit). Nilai sah: dua bilangan bulat >= 1, awal <= akhir.
+  # Asal: keputusan pemilik 2026-11-13.
+  digits: [5, 6]
+  # Angkatan dengan mahasiswa lebih sedikit dari angka ini tidak ditampilkan per CPL
+  # di ringkasan situs (rata-rata kelompok kecil bisa menebak nilai perorangan).
+  # Nilai sah: bilangan bulat >= 1. Asal: usulan Claude 2026-11-13.
+  min_students: 5
+
+# Estimasi capaian CPL dari NILAI AKHIR MK (pemilik 2026-11-13), untuk semester
+# sebelum templat CPL rinci dipakai. Aktif bila paths.final_grades_dir diisi di
+# config.local.yaml (folder berkas ekspor kampus "Nilai_Detail_Kelas_...csv", satu
+# per kelas; memuat NIM, jadi di luar repo). Hasil bertanda estimasi di laporan dan
+# ringkasan. Cara kerja dan daftar_berkas.csv: cpl/final_grades.py.
+final_grades:
+  # Kurikulum per tahun akademik kelas: aturan pertama yang "until"-nya >= tahun
+  # kelas dipakai. Kelas sesudah aturan terakhir ditolak sampai aturan ditambah.
+  # Nilai sah: daftar {until: 'YYYY/YYYY', curriculum: K + 2 angka}, urut naik.
+  # Asal: keputusan pemilik 2026-11-13 (semua kelas s.d. 2025/2026 = K21).
+  curriculum_by_year:
+    - until: 2025/2026
+      curriculum: K21
+  # Mahasiswa dengan nilai 0 di semua komponen tidak dihitung (dianggap tidak
+  # mengikuti/mundur); jumlahnya dicatat di laporan. Nilai sah: true, false.
+  # Asal: keputusan pemilik 2026-11-13.
+  exclude_all_zero: true
+  # Hanya mahasiswa prodi yang dihitung: awal NIM, mis. ["1041"]. Daftar kosong = semua
+  # NIM dihitung. Nilai sah: daftar teks angka. Isi dengan awal NIM prodi Anda.
+  student_id_prefixes: []
+  # Ujian khusus (UK, berkas bernama "<MK> UK"): nilai UK paling tinggi angka ini (45 =
+  # batas C) lalu digabung ke kelas reguler MK yang sama; nilai tertinggi yang dipakai.
+  # Satuan: skala 0-100. Nilai sah: 0-100. Asal: keputusan pemilik 2026-11-13.
+  uk_cap: 45
+  # Padanan nama MK di ekspor kampus yang berbeda dari Data prodi, per kurikulum:
+  # nama di berkas -> kode MK, mis. {K21: {"Matematika Teknik": "41107"}}. Dipakai bila
+  # nama tidak cocok langsung; daftar_berkas.csv tetap menang.
+  course_aliases: {}
+  # Bobot satu MK untuk satu CPL saat menggabung lintas MK: sks_share = SKS MK x
+  # porsi CPL dalam MK (porsi = bobot / jumlah bobot; bobot kosong = 1, jadi rata).
+  # Nilai sah: sks_share. Asal: keputusan pemilik 2026-11-13.
+  course_weight: sks_share
+  # Folder CSV ref_mata_kuliah dan ref_mk_cpl (daftar MK dan peta MK-CPL dari situs).
+  # Bawaan cadangan/ di repo (diisi workflow Pemeliharaan, tugas cadangkan); relatif
+  # terhadap repo atau path mutlak. Nilai sah: folder yang memuat kedua CSV.
+  # Asal: usulan Claude 2026-11-13 (satu sumber = Data prodi di situs).
+  reference_dir: cadangan
+
+# Halaman profil CPL per mahasiswa (pemilik 2026-11-14): radar_mahasiswa.html (semua) dan
+# perwalian/<wali>.html (hanya mahasiswa perwaliannya) di paths.output_dir. Lokal, MEMUAT NIM:
+# dibagikan lewat Drive privat, tidak diunggah ke situs. Hal. 1 foto + grafik, hal. 2 daftar data
+# (seperti SKPI), hal. 3 dst. nilai dan CPL per semester (hanya pada "Cetak perkembangan").
+# Masukan opsional di config.local.yaml paths: student_info_csv, advisors_csv,
+# student_activities_csv, photos_dir (lihat config.local.yaml.contoh).
+student_record:
+  # Skala nilai angka (0-100) -> huruf dan bobot, untuk huruf mutu, IPS, IPK, dan SKS lulus.
+  # Daftar {min, letter, point}: nilai >= min mendapat huruf itu (dicocokkan dari min terbesar).
+  # Kosong = huruf, IPS, IPK, SKS lulus tidak ditampilkan (nilai angka tetap tampil).
+  # Nilai sah: min 0-100 (tidak kembar), letter teks, point 0-4.
+  # Asal: tabel evaluasi hasil belajar Pedoman Akademik UPer, dikirim pemilik 2026-11-14. Baris
+  # 45 <= X < 55 bobot 2 tertulis "C+" di tabel (salah ketik; C+ = 55-60) dan ditulis C di sini.
+  # T (komponen tidak lengkap) tidak berupa angka, jadi tidak ada di skala.
+  grade_scale:
+    - {min: 80, letter: A, point: 4.0}
+    - {min: 75, letter: A-, point: 3.7}
+    - {min: 70, letter: B+, point: 3.3}
+    - {min: 65, letter: B, point: 3.0}
+    - {min: 60, letter: B-, point: 2.7}
+    - {min: 55, letter: C+, point: 2.3}
+    - {min: 45, letter: C, point: 2.0}
+    - {min: 35, letter: D, point: 1.0}
+    - {min: 0, letter: E, point: 0.0}
+  # Bobot minimal agar MK dihitung lulus (SKS lulus). Wajib bila grade_scale diisi.
+  # Nilai sah: angka 0-4. Asal: kolom Kategori tabel yang sama (C lulus; D, E tidak lulus), 2026-11-14.
+  pass_min_point: 2.0
+  # MK yang diulang, percobaan mana yang masuk IPK: best (bobot tertinggi) atau latest (terakhir).
+  # Wajib bila grade_scale diisi. Asal: keputusan pemilik 2026-11-14 (nilai terbaik).
+  gpa_retake: best
+  # MK tidak lulus (bobot < pass_min_point) ikut dihitung dalam IPS/IPK: true atau false.
+  # Wajib bila grade_scale diisi. Asal: keputusan pemilik 2026-11-14 (D/E ikut dihitung).
+  gpa_include_failed: true
+  # Semester pendek: di profil tampil sebagai blok sendiri (dengan IPS sendiri) tetapi tidak
+  # dihitung sebagai "semester berdata nilai". Nilai sah: daftar kunci semester_order.
+  # Asal: keputusan pemilik 2026-11-14.
+  short_semesters: [Pendek]
+  # Status baris prestasi (lkps_prestasi_mahasiswa) dan karya (karya) di cadangan/ yang ditampilkan.
+  # Nilai sah: daftar teks status situs. Asal: usulan Claude 2026-11-14 (hanya yang sudah diverifikasi).
+  record_statuses: [terverifikasi]
+  # Sisi terpanjang foto setelah diperkecil (piksel; perlu Pillow, tanpa Pillow foto disisipkan utuh).
+  # Nilai sah: bilangan bulat 100-2000. Asal: usulan Claude 2026-11-14 (cukup untuk cetak 3x4 cm).
+  photo_max_px: 400
+  # SKS minimal lulus sarjana per kurikulum, untuk tile "SKS lulus / SKS sarjana" di rapor.
+  # Pemetaan kurikulum -> bilangan bulat SKS, mis. {K21: 144, K26: 144}; kurikulum yang tidak
+  # disebut = tile hanya "SKS lulus". Asal: pemilik 2026-11-14 ("beda per kurikulum"; K26 = 145).
+  # K21: [PERLU DILENGKAPI] (data kurikulum: wajib K21 122 SKS, sisanya pilihan).
+  degree_credits: {K26: 145}
+  # Rencana pencapaian CPL di rapor (pemilik 2026-11-14): untuk tiap CPL di bawah ambang
+  # thresholds.student, MK wajib yang belum lulus (urut semester kurikulum) dan MK yang perlu
+  # diulang, dari ref_mk_cpl. Jumlah MK paling banyak per CPL; bilangan bulat 1-10.
+  # Asal: usulan Claude 2026-11-14 (muat satu baris per CPL).
+  plan_max_courses: 4
+  # Bila semua CPL sudah di atas ambang: sebanyak ini CPL dengan skor terendah tetap diberi
+  # rencana (untuk dipertahankan). Bilangan bulat 0-12; 0 = tidak ada. Asal: usulan Claude 2026-11-14.
+  plan_lowest: 3
+  # Kop dan tanda tangan halaman 2. Teks kosong = baris itu tidak dicetak. Rapor: tanda tangan
+  # orang tua/wali dan dosen wali; cetak resmi: dosen wali dan head_title (pemilik 2026-11-14).
+  # Asal: university dan programme fakta (prodi pemilik repo ini); sisanya [PERLU DILENGKAPI] oleh pemilik.
+  header:
+    university: ""
+    faculty: ""
+    programme: ""
+    # Jenjang, mis. "Sarjana (S1)".
+    degree: ""
+    # Kota tempat tanda tangan, mis. "Jakarta".
+    city: ""
+    head_title: Ketua Program Studi
+    head_name: ""
+
+# ---------------------------------------------------------------------------
+# supabase_archive.py: cadangan harian (sejak 2026-11-20), arsip tahunan, pemangkasan.
+# Kunci rahasia TIDAK di sini: dibaca dari env SUPABASE_URL dan
+# SUPABASE_SERVICE_KEY (GitHub Secrets) atau dari rahasia.env (komputer build).
+supabase:
+  # Tabel yang dicadangkan dan diarsipkan, dengan kolom urut (dipisah koma)
+  # untuk mengambil data per 1000 baris secara stabil. Tabel yang tidak ada
+  # di sini TIDAK tercadangkan: tambahkan setiap kali membuat tabel baru.
+  # Kolom urut diambil dari kolom yang dipakai site/*.html dan bangun.py; belum
+  # diverifikasi sebagai primary key, jadi skrip memeriksa sendiri bahwa
+  # jumlah baris cocok dan tidak ada baris kembar.
+  # Asal: tabel yang dipakai kode situs dan bangun.py (diperiksa 2026-10-10;
+  # ref_kategori_publikasi tidak dipakai lagi dan dikeluarkan).
+  tables:
+    dosen: id
+    karya: id
+    karya_penulis: karya_id,dosen_id
+    karya_mahasiswa: karya_id,nim
+    karya_mitra: karya_id,institusi,negara
+    # Sitasi per tahun (patch 42, pemilik 2026-11-10); primary key karya_id,tahun.
+    karya_sitasi: karya_id,tahun
+    pengaturan: kunci
+    ref_kelompok_dana: kode
+    ref_skema_dana: kode
+    # Tabel patch 13-17 (2026-11-03); kolom urut = primary key id
+    # (terverifikasi di supabase/13..17-patch-*.sql).
+    dokumen: id
+    karya_bukti: id
+    butir_bukti: id
+    ajuan_hapus: id
+    # Ajuan perubahan karya/profil (patch 20, pemilik 2026-11-04).
+    ajuan_ubah: id
+    lkps_mahasiswa_ta: id
+    lkps_kohort_lulusan: id
+    lkps_tracer_lulusan: id
+    lkps_kerjasama: id
+    lkps_bkd: id
+    lkps_prestasi_mahasiswa: id
+    # Ajuan perubahan prestasi (patch 38, pemilik 2026-11-06).
+    ajuan_prestasi: id
+    # Ajuan perubahan BKD (patch 39, pemilik 2026-11-06).
+    ajuan_bkd: id
+    lkps_publikasi_mahasiswa: id
+    lkps_luaran_mahasiswa: id
+    lkps_kepuasan_pengguna: id   # patch 21 (butir 52), pemilik 2026-11-04
+    lkps_bukti: id
+    # Institusi dan UPPS (patch 27, pemilik 2026-11-04).
+    lkps_vmts: id
+    lkps_prodi_upps: id
+    lkps_penggunaan_dana: id
+    lkps_tendik: id
+    # Sarana, prasarana, K3L (patch 28, pemilik 2026-11-04).
+    lkps_prasarana: id
+    lkps_dokumen_k3l: id
+    lkps_fasilitas_k3l: id
+    # Tahap PPEPP SPMI (patch 30, pemilik 2026-11-04).
+    lkps_spmi_ppepp: id
+    # Target IKU/IKT (patch 34, pemilik 2026-11-05).
+    lkps_target_kinerja: id
+    # Dokumen peta jalan penelitian/PkM, bukti per unsur butir 22/24 (patch 43, pemilik 2026-11-10).
+    lkps_peta_jalan: id
+    # Narasi LED tersimpan (patch 33, pemilik 2026-11-05).
+    led_narasi: kunci
+    # Pembagian bagian Narasi LED antar admin (patch 35, pemilik 2026-11-05).
+    led_penugasan: kelompok
+    led_tim: id
+    # Tabel rujukan yang dibaca karya.html; kolom kunci menurut pemilik
+    # 2026-11-03 (skrip tetap memeriksa tidak ada baris kembar).
+    # ref_mata_kuliah: id sejak patch 70 (2026-11-13; kode tidak lagi unik: sama di K21 dan K26).
+    ref_mata_kuliah: id
+    ref_kata_visi: kata
+    # Tema peta jalan penelitian/PkM (patch 25, pemilik 2026-11-04); kunci = id.
+    ref_tema_peta_jalan: id
+    # Tabel 2026-11-11 (pemilik); kolom urut = primary key id (supabase/50..57-patch-*.sql).
+    tautan_ami: id        # patch 50: tautan Monitoring untuk bukti AMI
+    ami_temuan: id        # patch 51: temuan AMI dan tindak lanjut
+    potret_skor: id       # patch 52: potret skor akreditasi berkala
+    survei: id            # patch 54: survei kepuasan daring (pertanyaan, token)
+    survei_jawaban: id    # patch 54: jawaban survei; bisa memuat nama/NIM/email bila survei meminta
+    cpl_ringkasan: id     # patch 56: ringkasan CPL tanpa NIM
+    cpl_kelas: id         # patch 57: daftar kelas wajib unggah berkas nilai CPL
+    cpl_berkas: id        # patch 57: riwayat unggahan berkas nilai CPL (tautan Drive privat)
+    hibah_panggilan: id   # patch 58: panggilan hibah (call for proposal)
+    hibah_ajuan: id       # patch 58: proposal hibah dosen (judul, status, dana, tenggat)
+    hibah_tim: ajuan_id,dosen_id   # patch 58: tim proposal (ketua/anggota)
+    ref_bidang_keahlian: id   # patch 61: bidang daftar keahlian baku
+    ref_topik_keahlian: id    # patch 61: topik daftar keahlian baku (dosen memilih di profil)
+    rapat: id                 # patch 62: rapat (agenda, pembahasan, status, token daftar hadir)
+    rapat_peserta: id         # patch 62: peserta rapat (dosen/tamu; tamu bisa memuat nama dan instansi)
+    rapat_tindak: id          # patch 62: keputusan dan tindak lanjut rapat (PJ, tenggat, status)
+    templat_email: kunci      # patch 63: templat email pengingat (subjek, isi)
+    kegiatan: id              # patch 64: kegiatan prodi manual untuk kalender (diisi admin)
+    target_baku: tahun,jabatan,indikator   # patch 66: target kinerja baku per jabatan per tahun
+    target_dosen: tahun,dosen_id,indikator # patch 66: target khusus per dosen per tahun
+    spmi_standar: id          # patch 67: butir standar SPMI (dari rekap standar SPM)
+    spmi_capaian: standar_id,tahun_ts      # patch 67: target, capaian, bukti, rencana per butir per TS
+    spmi_standar_revisi: id   # patch 67: riwayat revisi standar (tahap Peningkatan)
+    evaluasi_mk: id           # patch 68: EDOM per dosen per MK per semester, refleksi RPS dan metode
+    evaluasi_tindak: id       # patch 68: tindak lanjut evaluasi pembelajaran (PJ, tenggat, status, hasil)
+    ref_cpl: id               # patch 71: CPL per kurikulum (K21, K26)
+    ref_mk_cpl: id            # patch 71: peta MK-CPL per kurikulum (sub-indikator, bobot; kosong = dibagi rata)
+    ref_cpl_korelasi: id      # patch 71: korelasi CPL antar kurikulum (setara | sebagian, usulan | disetujui)
+    pengumuman_mahasiswa: id  # patch 77: pengumuman teks untuk mahasiswa (judul, isi, berlaku sampai)
+    masukan_mahasiswa: id     # patch 78: pertanyaan/masukan mahasiswa; bisa memuat nama/email bila diisi
+    tanya_jawab: id           # patch 78: tanya-jawab publik yang disusun admin (topik, urutan)
+    ref_profil_lulusan: id    # patch 79: profil lulusan per kurikulum (halaman publik Kurikulum)
+    kabar_kegiatan: id        # patch 81: kabar kegiatan prodi untuk situs publik (judul, ringkasan, foto)
+    laboratorium: id          # patch 82: profil laboratorium untuk situs publik (ringkasan, layanan, foto)
+    profil_prodi: id          # patch 84: sejarah dan sambutan untuk halaman Profil
+    pengelola_prodi: id       # patch 84: pengelola prodi (jabatan, dosen/nama, urutan)
+    # patch 90: pengajuan KP/lomba mahasiswa (NIM, nama, email kampus; token disimpan sebagai hash).
+    # layanan_kunci sengaja TIDAK dicadangkan: berisi kunci layanan Apps Script.
+    # pemakaian_halaman (patch 133) sengaja TIDAK dicadangkan: hanya catatan halaman ruang kerja yang dibuka, disimpan
+    #   180 hari untuk menilai fitur; keputusan pemilik 2026-11-21.
+    pengajuan_mahasiswa: id
+    pengajuan_berkas: id      # patch 90: tautan berkas Drive (privat) per pengajuan
+    pengajuan_riwayat: id     # patch 90: jalur proses (status, pemeriksa, catatan)
+    jadwal_ta: id             # patch 94: jadwal seminar/sidang TA (nama, NIM, judul, pembimbing, penguji)
+    koordinator: id           # patch 97: penugasan koordinator prodi (jabatan, periode, nomor SK)
+    mk_struktur: kurikulum,kode_mk   # patch 102: CPMK, Sub-CPMK, butir asesmen, bobot per MK per kurikulum (OBE O2)
+    mk_struktur_riwayat: id   # patch 102: salinan tiap simpan struktur CPMK (jejak perubahan)
+    portofolio_berkas: id     # patch 103: berkas portofolio MK (soal, kunci, rubrik, contoh jawaban, presensi, BAP, materi)
+    mhs_email_alt: nim        # patch 104: email alternatif mahasiswa (aktif + calon menunggu konfirmasi)
+    mhs_email_alt_riwayat: id # patch 104: jejak diminta/aktif/dicabut email alternatif
+    kp_instansi_keputusan: kunci  # patch 105: instansi KP bukan mitra: diusulkan menjadi mitra atau tidak
+    kp_tolak_instansi: id         # patch 106: surat pengantar KP ditolak instansi (instansi, alasan, tanggal)
+    kp_kuota: id                  # patch 107: kuota pembimbing KP per TS (dosen_id kosong = bawaan); keputusan pemilik 2026-11-18
+    ta_kk_dekat: kk_a,kk_b        # patch 110: pasangan kelompok keahlian berdekatan untuk pembimbing 1 TA; keputusan pemilik 2026-11-18
+    ta_kuota: id                  # patch 110: kuota pembimbing TA per TS (dosen_id kosong = bawaan); keputusan pemilik 2026-11-18
+    yudisium_berkas: kode         # patch 122: daftar berkas yudisium (label, wajib, urutan; diubah admin); keputusan pemilik 2026-11-20
+    peringatan_keamanan: id       # patch 126: antrean email peringatan tindakan sensitif ke admin; keputusan pemilik 2026-11-20
+    status_sistem: kunci          # patch 125: kapan tiap pekerjaan otomatis terakhir berjalan (panel Kesehatan sistem); keputusan pemilik 2026-11-20
+    mk_rps: kurikulum,kode_mk     # patch 111: RPS K26 per MK (bagian A, C, D, E; bagian B di mk_struktur); keputusan pemilik 2026-11-18
+    mk_rps_riwayat: id            # patch 111: salinan tiap simpan RPS (jejak perubahan)
+    mk_rps_pengesahan: id         # patch 112: pengajuan dan pengesahan RPS oleh Kaprodi (daftar revisi); keputusan pemilik 2026-11-18
+    mk_rps_ttd: id                # patch 113: RPS bertanda tangan Dekan = bukti akreditasi (riwayat unggahan); keputusan pemilik 2026-11-19
+    ref_mk_padanan: id            # patch 115: padanan MK kurikulum lama -> baru (tinjauan RPS MK K21 -> RPS K26); keputusan pemilik 2026-11-19
+    mk_rps_tinjauan: id           # patch 115: tinjauan RPS per MK per semester (butir 15 unsur 5-8); keputusan pemilik 2026-11-19
+    mk_rps_tinjauan_log: id       # patch 115: pengajuan dan persetujuan tinjauan RPS oleh Kaprodi
+    mk_rps_review: id             # patch 118: review sejawat RPS (penunjukan, skor, catatan, kesimpulan); keputusan pemilik 2026-11-19
+    mk_silabus: kurikulum,kode_mk # patch 129: silabus per MK untuk lampiran dokumen kurikulum (dua bahasa); keputusan pemilik 2026-11-20
+    mk_silabus_log: id            # patch 129: impor, pengajuan, dan pengesahan silabus oleh Kaprodi
+    jadwal_slot: id               # patch 132: slot jam kuliah (diatur admin); keputusan pemilik 2026-11-20
+    jadwal_hari: hari             # patch 132: hari kuliah yang dipakai (1 = Senin ... 7 = Minggu)
+    dosen_berhalangan: id         # patch 132: slot mingguan dosen berhalangan per semester (jenis, alasan)
+    dosen_berhalangan_tgl: id     # patch 132: dosen berhalangan pada tanggal tertentu
+    dosen_berhalangan_rentang: id # patch 135: dosen berhalangan pada rentang tanggal, hari dan slot tertentu; keputusan pemilik 2026-11-21
+    kelas_kuliah: id              # patch 136: penyusunan kelas per semester (satu MK boleh beberapa kelas); keputusan pemilik 2026-11-21
+    kelas_dosen: kelas_id,dosen_id # patch 136: dosen per kelas, team teaching (satu koordinator kelas + anggota)
+    hari_libur: tanggal           # patch 139: hari libur nasional/cuti bersama/kampus (satu baris per tanggal); keputusan pemilik 2026-11-21
+    berhalangan_konfirmasi: dosen_id,tahun_akademik,semester # patch 140: dosen menandai isian berhalangan semester itu lengkap; keputusan pemilik 2026-11-21
+    mk_padanan_sah: kurikulum_lama,kurikulum_baru # patch 134: pengesahan tabel ekuivalensi MK (Kaprodi lalu Dekan) + versi terbit; keputusan pemilik 2026-11-21
+    mk_padanan_sah_log: id        # patch 134: sahkan, tetapkan, kembalikan, berubah
+    kunjungan_publik: tanggal,halaman,rujukan,peristiwa # patch 142: jumlah kunjungan situs publik per hari/halaman/asal/peristiwa (tanpa data pengunjung); keputusan pemilik 2026-11-21
+    testimoni: id                 # patch 141: testimoni alumni/mahasiswa (tampil hanya bila persetujuan dicatat); keputusan pemilik 2026-11-21
+    kalender_akademik: id         # patch 148: kalender akademik prodi untuk Layanan mahasiswa (diisi admin per semester); keputusan pemilik 2026-11-22
+    jadwal_kuliah: kelas_id       # patch 150: hari, jam, ruang tiap kelas (ruang dari universitas diisi prodi); keputusan pemilik 2026-11-22
+    jadwal_kuliah_sah: tahun_akademik,semester # patch 150: periode jadwal kuliah yang disahkan Kaprodi
+    dosen_ampu_ts: dosen_id,tahun_akademik # patch 154: centang manual dosen mengampu MK pada TS; keputusan pemilik 2026-11-22
+
+  # Pemangkasan data lama dari Supabase (setelah ada di arsip tahunan).
+  # Tabel yang tidak disebut di sini tidak pernah dihapus, termasuk karya
+  # dosen (riwayat CV dosen; keputusan pemilik 2026-10-10).
+  retention:
+    # karya_mahasiswa memuat NIM dan nama mahasiswa. Baris dihapus bila tahun
+    # karyanya < tahun berjalan - years. Satuan: tahun. Nilai sah: bilangan
+    # bulat >= 1. Asal: keputusan pemilik 2026-10-10 (8 tahun).
+    karya_mahasiswa:
+      years: 8
+      # Tahun diambil dari tabel lain: karya.tahun lewat karya_mahasiswa.karya_id = karya.id.
+      year_from: {table: karya, key: karya_id, ref_key: id, column: tahun}
+    # Data pribadi di bawah ini disimpan 5 tahun (satu siklus akreditasi), lalu dihapus
+    # dalam pemangkasan tahunan; masa ini juga tampil di halaman privasi.html.
+    # Asal: keputusan pemilik 2026-11-16. Tahun = tahun kalender kolom tanggal
+    # (year_from ke tabel itu sendiri). only_if_any: hanya baris yang salah satu
+    # kolomnya terisi; only_if_empty: hanya baris yang semua kolomnya kosong.
+    # Kotak pertanyaan/masukan mahasiswa (patch 78): semua kiriman.
+    masukan_mahasiswa:
+      years: 5
+      year_from: {table: masukan_mahasiswa, key: id, ref_key: id, column: dikirim}
+    # Pengajuan KP/lomba mahasiswa (patch 90); berkas dan riwayatnya ikut terhapus (on delete cascade).
+    # Prestasi yang sudah tercatat (lkps_prestasi_mahasiswa) tidak ikut. Berkas di Drive tidak terhapus.
+    pengajuan_mahasiswa:
+      years: 5
+      year_from: {table: pengajuan_mahasiswa, key: id, ref_key: id, column: dibuat}
+    # Jadwal seminar/sidang TA (patch 94): nama dan NIM; 5 tahun sejak tanggal seminar/sidang.
+    jadwal_ta:
+      years: 5
+      year_from: {table: jadwal_ta, key: id, ref_key: id, column: tanggal}
+    # Jawaban survei yang memuat identitas (patch 54); jawaban anonim tidak dihapus.
+    survei_jawaban:
+      years: 5
+      year_from: {table: survei_jawaban, key: id, ref_key: id, column: diisi}
+      only_if_any: [nama, nim, email]
+    # Tamu rapat (patch 62: dosen_id kosong, memuat nama dan instansi); kehadiran dosen tetap.
+    rapat_peserta:
+      years: 5
+      year_from: {table: rapat_peserta, key: id, ref_key: id, column: waktu}
+      only_if_empty: [dosen_id]
+
+  # Batas umur arsip (hari) yang boleh dipakai sebagai dasar penghapusan.
+  # Arsip yang lebih tua dianggap tidak lagi mewakili isi Supabase.
+  # Nilai sah: bilangan bulat 1-90. Asal: usulan Claude 2026-10-10.
+  prune_max_archive_age_days: 30
+
+# Pemeriksaan situs dengan Selenium dan video (run_site_check.py; permintaan pemilik
+# 2026-11-05). Keluaran dan profil login: paths.site_check_dir dan
+# paths.site_check_profile di config.local.yaml.
+# Halaman publik situs (bangun.py -> data.json; pemilik 2026-11-16).
+public_site:
+  # Alamat email untuk permintaan akses, perbaikan, atau penghapusan data pribadi,
+  # tampil di privasi.html. Nilai sah: satu alamat email, atau null (halaman lalu
+  # mengarahkan ke formulir masukan di Layanan mahasiswa). Asal: keputusan pemilik
+  # 2026-11-16 (email prodi); alamat belum diberikan pemilik.
+  privacy_contact_email: null
+  # Alamat situs terbit, tanpa garis miring di akhir; dipakai sitemap.xml, robots.txt, dan
+  # alamat kanonik halaman dosen (halaman_publik.py). Ganti saat pindah ke subdomain kampus.
+  # Nilai sah: URL https, atau null (sitemap tidak dibuat). Asal: situs prodi (2026-11-16).
+  base_url: null
+  # Jumlah minimal alumni yang mengisi tracer study sebelum sebaran jawabannya (status, kesesuaian,
+  # tingkat, jenis instansi, provinsi, kompetensi) tampil di alumni.html; di bawahnya hanya jumlah
+  # pengisi. Satuan: orang. Nilai sah: bilangan bulat 1-100, atau null (sebaran tidak pernah
+  # ditampilkan, hanya jumlah pengisi). Asal: keputusan pemilik 2026-11-17
+  # (angka agregat saja, tampil setelah minimal 5 responden).
+  alumni_min_respondents: 5
+  # Isi beranda (index.html). Setiap null atau daftar kosong = bagian itu tidak ditampilkan.
+  # Asal: keputusan pemilik 2026-11-16 (beranda menyampaikan kegiatan dan kinerja prodi). Teks
+  # diringkas dari halaman resmi program studi;
+  # ubah bila prodi memakai rumusan lain.
+  # Satu kalimat ciri khas prodi di bawah judul beranda; teks, maks. 200 huruf.
+  tagline: null
+  # Tagline bahasa Inggris untuk english.html (pemilik 2026-11-21); teks maks. 200 huruf, atau null (memakai tagline).
+  # Asal: terjemahan Claude 2026-11-21 dari tagline di atas.
+  tagline_en: null
+  # Nama prodi bahasa Inggris (judul english.html, "<nama> Study Program"); teks maks. 120 huruf, atau null
+  # (english.html tidak dibuat). Gelar lulusan; teks maks. 120 huruf, atau null. Asal: Dokumen Kurikulum K26 Bab 1
+  # (gelar Sarjana Teknik, S.T.); nama Inggris Claude 2026-11-21.
+  programme_name_en: null
+  degree: null
+  # Prospek karier lulusan: daftar; teks maks. 120 huruf. Asal: "Proyeksi Lulusan" di halaman resmi prodi.
+  careers: []
+  # Kelompok keahlian (KK) dosen, dalam urutan tampil di daftar dosen publik (instal-lengkap.sql).
+  # Tiap baris: code = kode yang disimpan di dosen.kelompok_keahlian (huruf besar/angka, 2-12), name = nama
+  # tampil (teks 1-120 huruf). Admin memilih KK tiap dosen di Kelola dosen. null atau [] = tanpa pengelompokan.
+  # Asal: keputusan pemilik 2026-11-17 (urutan Struktur, SDA, Transportasi, Geoteknik, Manajemen Konstruksi;
+  # nama mengikuti bidang keahlian baku, material digabung ke struktur).
+  # scope (opsional, teks 1-200 huruf) = cakupan yang ditampilkan di Untuk calon mahasiswa dan hasil kuis minat; tanpa
+  # scope dipakai cakupan bidang keahlian baku berkode sama (daftar umum, bisa tidak sesuai MK prodi). Asal scope:
+  # nama MK wajib dan pilihan K26 per bidang (Daftar MK K26 untuk Situs, 2026-11-20); pemilik 2026-11-21: tanpa
+  # "air bersih/irigasi" (tidak ada MK-nya), sebut tenaga air (hydropower).
+  # name_en, scope_en (opsional, teks 1-120 / 1-200 huruf) = nama dan cakupan di english.html; terjemahan Claude
+  # 2026-11-21 dari name dan scope.
+  expertise_groups: []
+  # Laboratorium: daftar nama; teks maks. 120 huruf. Asal: halaman Fasilitas prodi.
+  laboratories: []
+  # Kontak di kaki halaman dan halaman Kontak (kontak.html): alamat (teks), telepon (teks), email, jam layanan (teks),
+  # masing-masing atau null. Halaman resmi prodi tidak memuat kontak khusus prodi; pemilik 2026-11-22 memilih memakai
+  # KONTAK UNIVERSITAS dulu, dari kaki halaman universitaspertamina.ac.id/prodi/teknik-sipil (dibaca 2026-11-22):
+  # alamat rektorat, info@, Pusat Informasi. Ganti dengan kontak prodi bila sudah ada. hours: tidak ada di sumber resmi.
+  contact:
+    address: null
+    phone: null
+    email: null
+    hours: null
+  # Media sosial: nama -> URL https lengkap, atau null. instagram_himpunan = akun himpunan
+  # mahasiswa; akun resmi prodi diisi pemilik.
+  # instagram: akun resmi prodi (pemilik 2026-11-21); juga masuk data terstruktur (sameAs) beranda dan calon mahasiswa.
+  social:
+    instagram: null
+    instagram_himpunan: null
+    youtube: null
+    linkedin: null
+  # Pendaftaran mahasiswa baru: URL https, atau null. Dipakai tombol Pendaftaran (kerangka.js) dan halaman
+  # calon-mahasiswa.html. Asal: pemilik 2026-11-20 (halaman admisi PMB; parameter pelacak _gl dibuang, src=203 dipertahankan).
+  # Sebelumnya https://pmb.universitaspertamina.ac.id/?ps=10 (tombol di halaman resmi prodi).
+  admission_url: null
+  # Konsultasi pendaftaran lewat WhatsApp: URL https (wa.me/...), atau null. Pemilik 2026-11-16:
+  # tidak dipakai (pemilik nomor di halaman resmi tidak jelas); beranda fokus ke pendaftaran PMB.
+  admission_whatsapp: null
+  # Halaman Biaya dan beasiswa (biaya-beasiswa.html) untuk calon mahasiswa (pemilik 2026-11-22): HANYA tautan ke halaman
+  # resmi universitas, tanpa angka biaya (angka berubah tiap tahun). Daftar {title: teks 1-120 huruf, url: https,
+  # note: teks 1-300 huruf atau null}; [] / null = halaman tidak dibuat dan menu tidak tampil.
+  # Isi: pemilik 2026-11-22 memilih "3 tautan resmi". Semua dicek status 200 pada 2026-11-22. Usulan awal
+  # https://pmb.universitaspertamina.ac.id/aperti (beasiswa APERTI) ternyata 404, diganti Daftar Beasiswa universitas.
+  # Keterangan (note) diringkas dari isi halaman itu pada 2026-11-22.
+  costs_scholarships: []
+  # Kalender akademik resmi universitas: URL https, atau null. Ditautkan di bagian Kalender akademik layanan-mahasiswa.html
+  # (kegiatan prodi diisi admin di Data prodi › Kalender akademik, patch 148). Asal: menu "Kalender Akademik" situs resmi
+  # universitas, status 200 dicek 2026-11-22; pemilik 2026-11-22 memilih kalender diisi admin + tautan resmi.
+  academic_calendar_url: null
+  # Pertanyaan umum calon mahasiswa di calon-mahasiswa.html (pemilik 2026-11-20): daftar {question, answer}, atau
+  # [] / null (bagian tidak tampil). question teks 1-200 huruf, answer teks 1-1500 huruf (baris baru = paragraf baru).
+  # Diisi pemilik; jangan diisi dugaan (biaya, beasiswa, jalur masuk: arahkan ke halaman PMB universitas).
+  faq: []
+  # Kuis minat di calon-mahasiswa.html (pemilik 2026-11-21): "Bidang mana yang cocok untukmu?". Daftar
+  # {question, options: [{text, groups}]}; question teks 1-200 huruf, 2-8 pilihan per soal, text teks 1-160 huruf,
+  # groups = kode expertise_groups (di atas) yang dihitung bila pilihan itu dipilih. Hasil = kelompok dengan skor
+  # tertinggi (seri: semua yang tertinggi), beserta cakupan dan dosennya. Jawaban tidak disimpan atau dikirim.
+  # [] / null = kuis tidak tampil.
+  interest_quiz: []
+  # Peminatan MK pilihan selain kelompok keahlian di atas. Kode MK pilihan per peminatan diisi di Data prodi >
+  # Mata kuliah, kolom "Peminatan" (instal-lengkap.sql); kodenya = code di expertise_groups atau di sini.
+  # code: A-Z/0-9, 2-12, tidak sama dengan expertise_groups; name: teks 1-120 huruf. [] / null = tidak ada.
+  # Asal: Tabel 4-17 Dokumen Kurikulum K26 ("Peminatan Bidang Sipil Umum": 41419), diisi 2026-11-22 atas permintaan pemilik.
+  elective_other_groups: []
+  # Aturan MK pilihan kurikulum terbaru, tampil di kurikulum.html, calon-mahasiswa.html, dan halaman bidang.
+  # Nilai sah: teks 1-300 huruf, atau null (tidak ditampilkan). Asal: Dokumen Kurikulum K26 Tabel 4-17 ("wajib
+  # mengambil 2 mata kuliah sesuai bidang peminatan topik TA"); dipilih pemilik 2026-11-22 atas kalimat lain di
+  # dokumen yang sama ("12 sks menurut kelompok keahlian mulai semester VI").
+  elective_rule: null
+  # Tahap belajar per semester, tampil sebagai lencana pertama di "Perjalanan N semester" (calon-mahasiswa.html).
+  # semesters = nomor semester (bilangan 1-14, tiap semester hanya di satu tahap); label = teks 1-60 huruf.
+  # [] / null = lencana tahap ditebak dari data (semester yang didominasi MK universitas: "Dasar sains dan umum").
+  # Asal: pemilik 2026-11-22 (1-2 sains dasar, 3-4 dasar teknik, "dan seterusnya"); label 5-6 dan 7-8 usulan Claude.
+  semester_stages:
+    - {semesters: [1, 2], label: "Sains dasar"}
+    - {semesters: [3, 4], label: "Dasar teknik"}
+    - {semesters: [5, 6], label: "Keahlian dan perancangan"}
+    - {semesters: [7, 8], label: "Penerapan"}
+  # Nama lembaga akreditasi prodi (mis. LAM Teknik atau BAN-PT), tampil di samping peringkat.
+  # Peringkat, nomor SK, dan masa berlaku diisi di Data prodi > Prodi di UPPS (baris "prodi ini").
+  # Nilai sah: teks 1-120 huruf, atau null (nama lembaga tidak ditampilkan). Asal: Dokumen Kurikulum K26 Bab 1
+  # (Keputusan LAM Teknik No. 0443/SK/LAM Teknik/AS/XII/2023), diisi 2026-11-21 atas permintaan pemilik.
+  accreditation_body: null
+  # Berita prodi: URL https halaman berita, atau null. Asal: halaman resmi prodi.
+  news_url: null
+site_check:
+  # Alamat situs terbit. Nilai sah: URL http/https. Asal: situs prodi.
+  url: https://GANTI-ORG.github.io/cv-site
+  # Browser yang dijalankan Selenium. Nilai sah: edge, chrome. Asal: usulan Claude 2026-11-05.
+  browser: edge
+  # Tanpa jendela; hanya berlaku bila tanpa login (--no-login). Nilai sah: true, false.
+  headless: true
+  # Ukuran layar video. Satuan: piksel. Nilai sah: 800-3840 dan 600-2160. Asal: usulan Claude.
+  width: 1280
+  height: 800
+  # Tunggu halaman selesai memuat data. Satuan: detik. Nilai sah: angka >= 0. Asal: usulan Claude.
+  wait_seconds: 4
+  # Lama tiap layar di video. Satuan: detik. Nilai sah: 0,5-10. Asal: usulan Claude.
+  seconds_per_screen: 2.5
+  # Lama tiap layar di video --demo, cukup untuk membaca keterangan. Satuan: detik.
+  # Nilai sah: 0,5-10. Asal: usulan Claude 2026-11-05.
+  demo_seconds_per_screen: 4
+  # Layar terbanyak yang digulir per halaman. Nilai sah: bilangan bulat 1-30. Asal: usulan Claude.
+  max_screens: 4
+  # Halaman yang dibuka, berurutan. path: alamat relatif; title: nama di video dan laporan;
+  # must_contain: teks yang wajib ada (opsional); note: keterangan di video --demo.
+  pages:
+    - {path: "index.html", title: "Beranda", note: "beranda program studi untuk umum", must_contain: ['Dosen']}
+    - {path: "kinerja.html", title: "Kinerja", note: "rekap kinerja prodi untuk umum", must_contain: ['Dosen']}
+    - {path: "dosen.html", title: "Daftar dosen", note: "profil dan karya tiap dosen"}
+    - {path: "mitra.html", title: "Mitra", note: "daftar mitra kerja sama"}
+    - {path: "daftar.html", title: "Daftar karya", note: "publikasi, penelitian, PkM, dan luaran terverifikasi"}
+    - {path: "ruang-kerja.html", title: "Ruang kerja", note: "halaman awal setelah masuk"}
+    - {path: "karya.html", title: "Karya dosen", note: "dosen mengisi karya dan buktinya; admin memverifikasi"}
+    - {path: "profil.html", title: "Profil saya", note: "data dosen untuk LKPS; perubahan disetujui admin"}
+    - {path: "monitoring.html", title: "Pemantauan kinerja", note: "kinerja per tahun, per dosen, dan syarat unggul"}
+    - {path: "grafik.html", title: "Grafik untuk LED", note: "grafik siap tempel untuk LED dan laporan"}
+    - {path: "skor.html", title: "Skor akreditasi dan LED", note: "perkiraan skor; unduh draf LED, tabel LKPS, indeks bukti", must_contain: ['Unduh dokumen akreditasi']}
+    - {path: "rincian.html?butir=23", title: "Rincian butir", note: "data di balik angka tiap butir"}
+    - {path: "narasi-led.html", title: "Narasi LED", note: "isi narasi per butir; tersimpan dan masuk draf LED"}
+    - {path: "kelengkapan.html", title: "Kelengkapan LED", note: "daftar periksa otomatis yang sudah dan belum terisi"}
+    - {path: "input-butir.html", title: "Isian butir", note: "butir kualitatif dan bukti per butir"}
+    - {path: "kelola-dosen.html", title: "Kelola dosen", note: "daftar dosen dan peran akun"}
+    - {path: "panduan.html", title: "Panduan", note: "langkah pemakaian untuk dosen dan admin"}
+    - {path: "data-prodi.html?tab=tracer", title: "Data prodi: Tracer study", note: "data lulusan untuk tabel 6.f dan 6.g"}
+    - {path: "data-prodi.html?tab=kerjasama", title: "Data prodi: Kerja sama", note: "kerja sama induk, dengan contoh manfaat"}
+    - {path: "data-prodi.html?tab=mk", title: "Data prodi: Mata kuliah", note: "kurikulum, RPS, dan capstone"}
+    - {path: "data-prodi.html?tab=target", title: "Data prodi: Target IKU/IKT", note: "target dan capaian untuk LED"}
+    - {path: "data-prodi.html?tab=dokumen", title: "Data prodi: Dokumen", note: "pustaka: satu dokumen tersimpan sekali, ditautkan ke banyak bukti"}
+
+# Coba situs di komputer sendiri dengan data contoh, tanpa Supabase/GitHub/Google
+# (python coba_lokal.py di repo templat; pemilik 2026-11-12).
+coba_lokal:
+  # Port localhost untuk situs coba (http://localhost:<port>/). Nilai sah: bilangan
+  # bulat 1024-65535 yang tidak dipakai program lain. Asal: usulan Claude 2026-11-12.
+  port: 8790
+
+uji_asap:
+  # Uji asap tools/uji_asap.py (pemilik 2026-11-12): situs coba lokal dibuka per halaman per peran,
+  # galat JavaScript, "Halaman gagal dimuat", "Memuat…" yang tak selesai, dan geser mendatar dicatat.
+  # Semua nilai di bawah usulan Claude 2026-11-12; ubah bebas.
+  # Port localhost situs coba selama uji. Nilai sah: bilangan bulat 1024-65535 yang tidak dipakai program lain.
+  port: 8798
+  # Peran yang diuji: nama -> email di data contoh (tools/coba/seed.py); 'tamu' = tanpa login.
+  peran:
+    admin: admin@contoh.ac.id
+    pimpinan: pimpinan@contoh.ac.id
+    dosen: adi@contoh.ac.id
+    asesor: asesor@contoh.ac.id
+    tamu: tamu
+  # Lebar layar, piksel. Komputer untuk semua peran; ponsel hanya untuk peran di ponsel_untuk.
+  lebar_komputer: 1280
+  lebar_ponsel: 390
+  ponsel_untuk: [admin, dosen, tamu]
+  # Batas tunggu satu halaman sampai tulisan "Memuat…" hilang, detik (bilangan 1-60).
+  batas_muat_detik: 10
+  # Jeda setelah halaman selesai dimuat sebelum diperiksa, detik (0-10).
+  tunggu_detik: 1.0
+  # Gambar layar: semua (tiap halaman, tiap peran, tiap lebar) atau masalah (hanya yang bermasalah).
+  gambar: masalah
+
+rps_import:
+  # Impor RPS dari Word formulir K26 (pemilik 2026-11-19): tools/rps_dari_word.py menulis usulan ke folder ini,
+  # pemilik meninjau laporan .md, mengubah "siap": true di berkas .json, lalu menjalankan tools/impor_rps.py.
+  # Folder usulan, relatif terhadap akar repo. Nilai sah: nama folder. Asal: usulan Claude 2026-11-19.
+  folder: impor-rps
+  # true = RPS/struktur yang sudah ada di situs untuk MK itu boleh ditimpa (hanya bila RPS masih draf).
+  # false = MK yang sudah punya isian dilewati. Nilai sah: true/false. Asal: usulan Claude 2026-11-19 (aman: false).
+  timpa: false
+
+# Cadangan berkas Google Drive prodi ke komputer/hard disk prodi (run_cadangan_drive.py; pemilik 2026-11-20).
+# Folder tujuan di config.local.yaml paths.drive_backup_dir (di luar repo). Kunci CADANGAN_DRIVE_KUNCI di rahasia.env.
+drive_backup:
+  # Ukuran satu potongan unduhan, MB. Apps Script membatasi ukuran jawaban (isi dikirim base64, +33%), jadi potongan
+  # besar bisa gagal. Nilai sah: bilangan bulat 1-20 (Apps Script menolak > 20). Asal: default Claude 2026-11-20.
+  chunk_mb: 8
+  # true = versi lama berkas yang berubah di Drive disalin ke _versi_lama/<tanggal>/ sebelum ditimpa (melindungi dari
+  # berkas yang diganti isinya, sengaja atau tidak). false = hanya versi terbaru. Nilai sah: true/false.
+  # Asal: default Claude 2026-11-20.
+  keep_old_versions: true
+
+# Penyusunan jadwal kuliah (run_jadwal.py; rencana pemilik 2026-11-21, aturan pemilik 2026-11-22). Masukan = berkas
+# "jadwal_masukan_<TA>_<semester>.json" yang diunduh dari situs (Jadwal kuliah > Unduh masukan penjadwalan) ke folder
+# config.local.yaml paths.schedule_dir; hasil ditulis di folder yang sama lalu diimpor kembali di situs.
+# Ruang TIDAK ditempatkan penjalan: ruang dari universitas diisi prodi di situs (pemilik 2026-11-22).
+schedule:
+  # Lama tatap muka per sks per minggu, menit; dibulatkan ke atas ke ukuran slot jam di situs (30 menit):
+  # 2 sks = 100 -> 120 menit, 3 sks = 150 menit. Nilai sah: bilangan bulat 10-120. Asal: pemilik 2026-11-22.
+  minutes_per_sks: 50
+  # Jeda minimal antara dua kelas berlabel sama (mis. kelas A) dalam satu semester paket dan kurikulum yang sama pada
+  # hari yang sama, menit. Kelas berlabel sama tidak pernah bentrok (wajib). Nilai sah: bilangan bulat 0-180.
+  # Asal: pemilik 2026-11-22 ("label sama tidak bentrok ... istirahat 30 menit sebelum kelas berikutnya").
+  same_label_break_minutes: 30
+  # true = semua MK pilihan satu kurikulum tidak saling bentrok (wajib), supaya mahasiswa bisa mengambil beberapa
+  # pilihan; false = MK pilihan hanya dicek bentrok dosen. Nilai sah: true/false. Asal: pemilik 2026-11-22.
+  electives_no_overlap: true
+  # Jam yang WAJIB kosong. day: 1 = Senin ... 7 = Minggu, atau "all" = semua hari; start/end "HH:MM" (WIB).
+  # Asal: pemilik 2026-11-22 (Jumat 11.30-13.00 untuk salat Jumat).
+  blocked:
+    - {day: 5, start: "11:30", end: "13:00"}
+  # Jam yang DIHINDARI bila bisa (anjuran; boleh dipakai bila jadwal tidak muat). Bentuk sama dengan blocked.
+  # Asal: rencana 2026-11-21 yang diterima pemilik, ditegaskan pemilik 2026-11-22 ("hindari bila bisa").
+  avoid:
+    - {day: all, start: "12:00", end: "13:00"}
+  # Batas jam mengajar satu dosen per hari (anjuran), jam; null = tanpa batas. Nilai sah: angka 1-12 atau null.
+  # Asal: pemilik 2026-11-22.
+  lecturer_daily_max_hours: 6
+  # Bobot anjuran dalam fungsi tujuan (makin besar makin dihindari). Satuan: per slot 30 menit, kecuali
+  # dated_unavailability = per pertemuan yang terkena berhalangan bertanggal (tanggal tertentu / rentang tanggal).
+  # Berhalangan MINGGUAN selalu wajib dihindari. Nilai sah: angka >= 0. Asal: usulan Claude 2026-11-22, boleh diubah.
+  weights:
+    avoid: 10
+    lecturer_overload: 20
+    dated_unavailability: 5
+    # Pemecah seri kecil: mulai lebih pagi sedikit lebih disukai, supaya hasil stabil dari run ke run.
+    earlier_start: 0.01
+  # Batas waktu pemecah (HiGHS), detik. Bila habis, jadwal terbaik yang ditemukan dipakai dan ditandai di laporan.
+  # Nilai sah: bilangan bulat 10-3600. Asal: usulan Claude 2026-11-22.
+  time_limit_seconds: 120

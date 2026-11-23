@@ -1,0 +1,61 @@
+# Hitung CPL otomatis (pemilik 2026-11-17, OBE tahap O4): run_cpl.py yang sama dengan di komputer admin,
+# lewat tools/cpl_otomatis.py.
+#   - jadwal harian 18:30 UTC (01:30 WIB): hanya menghitung bila ada berkas nilai atau masukan baru;
+#   - workflow_dispatch: tombol "Hitung ulang sekarang" di Berkas nilai CPL (Apps Script kind cpl_hitung) atau
+#     tab Actions; selalu menghitung.
+# Berkas nilai dan laporan memuat NIM: diunduh ke RUNNER_TEMP (di luar repo), keluaran run_cpl.py tidak ditampilkan
+# di log, laporan disimpan ke Drive privat prodi. TIDAK ADA artefak yang diunggah ke GitHub.
+# Secret repo: SUPABASE_URL, SUPABASE_SERVICE_KEY (sudah dipakai Bangun situs), CPL_KUNCI (sama dengan Script
+# Property CPL_KUNCI di Apps Script).
+name: Hitung CPL
+
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      # Tetap didefinisikan karena tombol situs (Apps Script cplHitung_) mengirim inputs.paksa; GitHub menolak
+      # input yang tidak didefinisikan. Jalan manual selalu menghitung, apa pun nilainya.
+      paksa:
+        description: 'Hitung walau tidak ada berkas nilai baru (jalan manual selalu menghitung)'
+        type: boolean
+        default: true
+
+concurrency:
+  group: hitung-cpl
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  hitung:
+    # Repo prodi baru: diam sampai Variable NAMA_PRODI terisi (Sipil sudah punya).
+    if: vars.NAMA_PRODI != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Pasang paket
+        run: pip install requests pandas numpy openpyxl pyyaml
+      - name: Hitung CPL
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          CPL_KUNCI: ${{ secrets.CPL_KUNCI }}
+        # Jalan manual selalu menghitung: tools/cpl_otomatis.py membaca GITHUB_EVENT_NAME sendiri.
+        run: python tools/cpl_otomatis.py
+
+      - name: Lapor kesehatan sistem
+        # instal-lengkap.sql (pemilik 2026-11-20): panel Kesehatan sistem di Dasbor dan email mingguan.
+        # Tidak pernah menggagalkan pekerjaan ini (tabel belum ada = dicatat di log saja).
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -s -o /dev/null -w "status_sistem hitung_cpl: HTTP %{http_code}\n" -X POST "$SUPABASE_URL/rest/v1/status_sistem?on_conflict=kunci"             -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Content-Type: application/json"             -H "Prefer: resolution=merge-duplicates,return=minimal"             -d "{\"kunci\":\"hitung_cpl\",\"waktu\":\"$(date -u +%FT%TZ)\",\"ok\":${{ job.status == 'success' }},\"isi\":{}}"

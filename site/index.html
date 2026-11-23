@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Program Studi</title>
+<meta name="description" content="Kurikulum, dosen dan kepakaran, penelitian, pengabdian kepada masyarakat, dan layanan mahasiswa program studi.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Program Studi">
+<meta property="og:description" content="Kurikulum, dosen dan kepakaran, penelitian, pengabdian kepada masyarakat, dan layanan mahasiswa.">
+<!-- Pratinjau tautan (2026-11-21): alamat lengkap, og:url, canonical, dan url + sameAs JSON-LD diisi
+     `python bangun.py --beranda <folder situs>` sesudah site/ disalin, dari alamat situs (CNAME) dan data.json. -->
+<meta property="og:image" content="bagikan.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollegeOrUniversity","name":"Program Studi"}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--biru-2)}
+  .kotak{max-width:1180px;margin:0 auto;padding:0 20px}
+
+  /* Pita pengumuman (77, 76): 3 terbaru yang masih berlaku; kosong = tersembunyi */
+  .pita{background:var(--merah);color:#fff;font-size:14px}
+  .pita-in{max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:14px;align-items:center}
+  .pita .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;background:rgba(0,0,0,.18);padding:2px 8px;flex:none}
+  .pita ul{list-style:none;margin:0;padding:0;display:flex;gap:18px;flex:1;min-width:0;overflow:hidden}
+  .pita li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pita a{color:#fff}
+  @media(max-width:700px){.pita li:not(:first-child){display:none}}
+
+  /* Bagian utama */
+  .hero{position:relative;color:#fff;background:
+     linear-gradient(100deg,rgba(var(--biru-gelap-rgb),.96) 0%,rgba(var(--biru-rgb),.88) 50%,rgba(var(--biru-rgb),.55) 100%),
+     repeating-linear-gradient(135deg,#1d5aa6 0 22px,#16509a 22px 44px)}
+  .hero-in{max-width:1180px;margin:0 auto;padding:70px 20px 56px;display:grid;grid-template-columns:1.3fr .7fr;gap:44px;align-items:center}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--biru-m2)}
+  .hero h1{font-family:var(--judul);font-size:clamp(34px,5.4vw,58px);line-height:1.04;margin:12px 0 16px;font-weight:700;letter-spacing:-.01em}
+  .hero h1 span{display:block;font-size:.46em;color:var(--biru-m4);font-weight:600;letter-spacing:0;margin-top:8px}
+  .hero p.lead{font-size:18px;max-width:600px;color:var(--biru-m5);margin:0 0 24px}
+  .tombol{display:flex;flex-wrap:wrap;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;font-weight:600;font-size:15px;text-decoration:none;border-radius:2px}
+  .btn.utama{background:var(--aksen);color:var(--biru-gelap)}
+  .btn.utama:hover{filter:brightness(1.06)}
+  .btn.garis{border:1px solid rgba(255,255,255,.55);color:#fff}
+  .btn.garis:hover, .btn.garis:focus-visible{background:var(--aksen);border-color:var(--aksen);color:var(--biru-gelap)}
+  .akses{background:#fff;color:var(--ink);border-top:4px solid var(--aksen);box-shadow:0 18px 40px rgba(0,0,0,.25);padding:22px 24px}
+  .akses h2{font-family:var(--judul);font-size:20px;color:var(--biru);margin:0 0 10px}
+  .akses ul{list-style:none;margin:0;padding:0}
+  .akses li a{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-weight:500}
+  .akses li:last-child a{border-bottom:0}
+  .akses li a:hover{color:var(--biru-2)}
+  .akses li a span{color:var(--biru-3)}
+  .akses li a small{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+  @media(max-width:860px){.hero-in{grid-template-columns:1fr;padding:48px 20px 40px;gap:28px}}
+
+  /* Cari data publik (cari.js) */
+  .cari-umum{position:relative;margin-top:26px;max-width:600px}
+  .cari-umum input{width:100%;font:inherit;font-size:15px;padding:11px 14px;border-radius:2px;border:1px solid rgba(255,255,255,.4);
+    background:rgba(255,255,255,.12);color:#fff}
+  .cari-umum input::placeholder{color:rgba(255,255,255,.7)}
+  .cari-umum input:focus{outline:none;background:#fff;color:var(--ink)}
+  .hasil-umum{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;max-height:60vh;overflow:auto;background:#fff;
+    color:var(--ink);border:1px solid var(--line);border-radius:2px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px}
+  .hasil-umum h4{margin:8px 8px 2px;font:600 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .hasil-umum a{display:block;padding:6px 8px;border-radius:2px;color:var(--ink);text-decoration:none}
+  .hasil-umum a b{display:block;font-weight:600;color:var(--biru-2)}
+  .hasil-umum a span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hasil-umum a:hover,.hasil-umum a.aktif{background:var(--line-soft)}
+  .hasil-umum p{margin:8px;color:var(--muted);font-size:13px}
+
+  /* Angka */
+  .angka{background:var(--biru);border-top:1px solid rgba(255,255,255,.12)}
+  .angka-in{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+  .angka a{display:block;padding:20px 20px 22px;color:#fff;text-decoration:none;border-right:1px solid rgba(255,255,255,.1)}
+  .angka a:last-child{border-right:0}
+  .angka a:hover{background:rgba(255,255,255,.06)}
+  .angka b{display:block;font-family:var(--mono);font-size:30px;font-weight:400;line-height:1}
+  .angka span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--biru-m2);margin-top:8px}
+  @media(max-width:900px){.angka-in{grid-template-columns:repeat(3,1fr)}.angka a:nth-child(3n){border-right:0}}
+  @media(max-width:480px){.angka-in{grid-template-columns:repeat(2,1fr)}.angka a{border-right:0}}
+
+  /* Bagian isi */
+  section{padding:64px 0 0}
+  .kepala-bag{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .kepala-bag h2{font-family:var(--judul);font-size:clamp(25px,3vw,33px);font-weight:700;color:var(--biru);margin:6px 0 0;letter-spacing:-.005em}
+  .kepala-bag .eyebrow{color:var(--biru-3);border-bottom:2px solid var(--aksen);padding-bottom:3px;display:inline-block}
+  .kepala-bag a.lagi{font-weight:600;text-decoration:none;white-space:nowrap}
+  .kepala-bag p{margin:6px 0 0;color:var(--muted);max-width:640px}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.g3,.g4{grid-template-columns:1fr}}
+  .kartu{display:block;border:1px solid var(--line);background:#fff;padding:20px 22px;text-decoration:none;color:var(--ink);transition:box-shadow .15s,transform .15s;border-radius:2px}
+  a.kartu:hover{box-shadow:0 10px 26px rgba(var(--biru-rgb),.13);transform:translateY(-2px)}
+  .kartu h3{font-family:var(--judul);font-size:18px;margin:0 0 6px;color:var(--biru);line-height:1.3}
+  .kartu p{margin:0;font-size:14px;color:var(--muted)}
+  .kartu .meta{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--biru-m8);color:var(--biru);margin-right:6px}
+  .tag.pkm{background:var(--merah-m3);color:var(--merah)}
+  .bidang .kartu{border-top:3px solid var(--aksen)}
+  @media(prefers-reduced-motion:reduce){.kartu{transition:none}a.kartu:hover{transform:none}}
+
+  .latar{background:var(--bg);padding:64px 0}
+  .latar section{padding:0}
+  .dua{display:grid;grid-template-columns:1.5fr 1fr;gap:36px}
+  @media(max-width:900px){.dua{grid-template-columns:1fr}}
+  .dua .grid2{grid-template-columns:1fr 1fr}
+  @media(max-width:560px){.dua .grid2{grid-template-columns:1fr}}
+  ul.pub{list-style:none;margin:0;padding:0}
+  ul.pub li{padding:12px 0;border-bottom:1px solid var(--line)}
+  ul.pub a{color:var(--ink);text-decoration:none;font-weight:500}
+  ul.pub a:hover{color:var(--biru-2)}
+  ul.pub small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+  .dosen{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:900px){.dosen{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.dosen{grid-template-columns:repeat(2,1fr)}}
+  .dosen a{text-align:center;padding:22px 14px}
+  .avatar{width:76px;height:76px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:var(--biru-m8);color:var(--biru);
+          font-family:var(--judul);font-size:25px;font-weight:700;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+  .dosen h3{font-size:15.5px}
+  .dosen p{font-size:12.5px}
+
+  .mhs .kartu{padding:26px}
+  .mhs .ikon{width:44px;height:44px;border-radius:50%;background:var(--biru-m8);color:var(--biru);display:grid;place-items:center;margin-bottom:14px}
+  .mhs .panah{display:inline-block;margin-top:14px;font-weight:600;color:var(--biru-2)}
+
+  /* Karier, laboratorium, berita, ajakan (pemilik 2026-11-16): isi dari config.yaml public_site */
+  .dua-kolom{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:760px){.dua-kolom{grid-template-columns:1fr}}
+  .daftar-cek{list-style:none;margin:0;padding:0}
+  .daftar-cek li{position:relative;padding:10px 0 10px 30px;border-bottom:1px solid var(--line)}
+  .daftar-cek li:last-child{border-bottom:0}
+  .daftar-cek li::before{content:'';position:absolute;left:4px;top:15px;width:12px;height:7px;border-left:2.5px solid var(--biru-3);border-bottom:2.5px solid var(--biru-3);transform:rotate(-45deg)}
+  .avatar.foto{object-fit:cover;padding:0}
+  .berita-band{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;background:var(--biru-m11);border:1px solid var(--line);border-left:4px solid var(--aksen);padding:22px 26px}
+  .berita-band h3{font-family:var(--judul);font-size:22px;color:var(--biru);margin:0 0 4px}
+  .berita-band p{margin:0;color:var(--muted)}
+  /* Akreditasi dan kabar kegiatan (pemilik 2026-11-16; instal-lengkap.sql) */
+  .lencana[hidden]{display:none}   /* tanpa ini display:inline-flex menimpa hidden: kotak kosong bila belum terakreditasi */
+  .lencana{display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;padding:6px 12px;background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.3);border-left:4px solid var(--aksen);font-size:13.5px;color:#fff;border-radius:2px}
+  .lencana b{font-family:var(--judul);font-size:16px;letter-spacing:.01em}
+  .lencana span{color:var(--biru-m4)}
+  .kabar .kartu{padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .kabar img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--biru-m10)}
+  .kabar .isi{padding:16px 18px 18px}
+  .kabar .isi h3{font-size:18px;margin:6px 0 6px}
+  .kabar .isi p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  /* Prestasi mahasiswa (pemilik 2026-11-16; instal-lengkap.sql) */
+  .pres{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:900px){.pres{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.pres{grid-template-columns:1fr}}
+  .pres .kartu{padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .pres img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--biru-m10)}
+  /* Tanpa foto: pita tipis, bukan kotak kosong (pemilik 2026-11-16). */
+  .pres .tanpa-foto, .kabar .tanpa-foto{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--biru);color:#fff;
+    border-bottom:3px solid var(--aksen);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .pres .tanpa-foto span, .kabar .tanpa-foto span{font-size:22px;letter-spacing:0}
+  .pres .isi{padding:16px 18px 18px}
+  .pres .isi h3{font-size:20px;margin:6px 0 2px}
+  .pres .lomba{font-weight:600;color:var(--ink);font-size:14.5px}
+  .pres .siapa{margin-top:8px;font-size:13px;color:var(--muted)}
+  .tag.int{background:var(--aksen);color:var(--biru-gelap)}
+
+  /* Beranda ringkas di ponsel (pemilik 2026-11-19, tahap 2): dari ~12 layar ke ~5. Kartu prestasi, kegiatan,
+     riset, dan dosen jadi lajur geser ke samping (kartu berikutnya terlihat sebagian sebagai petunjuk);
+     bidang jadi chip; kartu mahasiswa satu baris; jarak antarbagian diperkecil. Desktop tidak berubah. */
+  @media(max-width:560px){
+    section{padding-top:38px}
+    .latar{padding:38px 0}
+    .kepala-bag{margin-bottom:14px}
+    .kepala-bag p{display:none}
+    .hero-in{padding:34px 20px 30px;gap:22px}
+    .hero p.lead{font-size:16px;margin-bottom:18px}
+    .akses{padding:16px 18px}
+    .akses li a{padding:7px 2px}
+    .akses li a small{display:none}
+    .geser{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:82%;gap:12px;overflow-x:auto;
+      scroll-snap-type:x mandatory;margin:0 -20px;padding:2px 20px 8px;scroll-padding-left:20px;overscroll-behavior-x:contain}
+    .geser>*{scroll-snap-align:start}
+    .geser.dosen{grid-auto-columns:44%}
+    .dua .geser{grid-template-columns:none}
+    .dua>section{min-width:0}   /* item grid: tanpa ini lajur geser melebarkan kolom */
+    .bidang{display:flex;flex-wrap:wrap;gap:8px}
+    .bidang .kartu{padding:7px 12px;border-top-width:1px;border-left:3px solid var(--aksen)}
+    .bidang .kartu h3{font-size:14.5px;margin:0}
+    .bidang .kartu p{display:none}
+    #lab{display:flex;flex-wrap:wrap;gap:6px}
+    #lab li{padding:4px 10px;border:1px solid var(--line);border-radius:2px}
+    #lab li::before{display:none}
+    .dua-kolom{gap:12px}
+    .dua-kolom .kartu{padding:14px 16px}
+    .daftar-cek li{padding:6px 0 6px 28px}
+    .daftar-cek li::before{top:11px}
+    .mhs .kartu{display:flex;align-items:center;gap:14px;padding:12px 16px}
+    .mhs .ikon{margin:0;flex:none;width:38px;height:38px}
+    .mhs .kartu h3{margin:0;font-size:16.5px}
+    .mhs .kartu p,.mhs .panah{display:none}
+    .grid.mhs{gap:10px}
+    .berita-band{padding:16px 18px}
+  }
+</style>
+</head>
+<body>
+<div class="pita" id="pita" hidden></div>
+
+<main id="utama">
+  <div class="hero">
+    <div class="hero-in">
+      <div>
+        <div class="lencana" id="hLencana" hidden></div>
+        <div class="eyebrow" id="hInst">Nama Institusi</div>
+        <h1><b id="hProdi" style="font-weight:700">Nama Prodi</b><span>Program Studi</span></h1>
+        <p class="lead" id="hLead">Pendidikan, penelitian, dan pengabdian kepada masyarakat.</p>
+        <div class="tombol" id="hTombol">
+          <!-- Tiga tombol bergaya sama (pemilik 2026-11-16); tidak mengulang isi Akses cepat. -->
+          <a class="btn garis" href="prestasi.html">Prestasi mahasiswa</a>
+          <a class="btn garis" href="daftar.html?jenis=dosen">Dosen</a>
+          <a class="btn garis" href="daftar.html?jenis=penelitian">Penelitian dan pengabdian</a>
+        </div>
+        <div class="cari-umum"><input type="search" id="cariUmum" autocomplete="off" aria-label="Cari di situs program studi"
+          placeholder="Cari dosen, publikasi, penelitian, pengabdian, mitra…"><div class="hasil-umum" id="hasilUmum" hidden></div></div>
+      </div>
+      <aside class="akses" aria-labelledby="jAkses">
+        <h2 id="jAkses">Akses cepat</h2>
+        <ul id="akses">
+          <!-- Halaman profil, laboratorium, dan kerja sama ikut ditautkan (pemilik 2026-11-16). -->
+          <li><a href="profil-prodi.html"><div>Profil program studi<small>Visi, misi, pengelola, sejarah</small></div><span>&rarr;</span></a></li>
+          <li><a href="kurikulum.html"><div>Kurikulum<small>Profil lulusan, CPL, dan mata kuliah</small></div><span>&rarr;</span></a></li>
+          <li><a href="laboratorium.html"><div>Laboratorium<small>Fasilitas, peralatan, layanan pengujian</small></div><span>&rarr;</span></a></li>
+          <li><a href="layanan-mahasiswa.html"><div>Layanan mahasiswa<small>Pengumuman, berkas, calon pembimbing TA</small></div><span>&rarr;</span></a></li>
+          <li><a href="kerja-sama.html"><div>Kerja sama<small>Mitra dan kerja sama resmi</small></div><span>&rarr;</span></a></li>
+          <li><a href="kinerja.html"><div>Kinerja program studi<small>Angka dan grafik kinerja</small></div><span>&rarr;</span></a></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+  <nav class="angka" aria-label="Angka program studi"><div class="angka-in" id="angka"></div></nav>
+
+  <!-- Prestasi mahasiswa terverifikasi, dari isian dosen (pemilik 2026-11-16). -->
+  <div class="kotak">
+    <section aria-labelledby="jPres" id="bPres" hidden>
+      <div class="kepala-bag"><div><div class="eyebrow">Prestasi mahasiswa</div><h2 id="jPres">Prestasi terbaru</h2></div>
+        <a class="lagi" href="prestasi.html">Semua prestasi &rarr;</a></div>
+      <div class="grid pres geser" id="pres" tabindex="0" aria-label="Prestasi terbaru, geser ke samping"></div>
+    </section>
+  </div>
+
+  <!-- Kegiatan prodi terbaru dengan foto (pemilik 2026-11-17): kabar kegiatan terbit (kuliah tamu, kuliah lapangan,
+       seminar, penelitian, pengabdian, ...). Penelitian/PkM dosen tetap di bagian "Riset dan pengabdian" di bawah. -->
+  <div class="kotak">
+    <section aria-labelledby="jKabar" id="bKabar" hidden>
+      <div class="kepala-bag"><div><div class="eyebrow">Kegiatan program studi</div><h2 id="jKabar">Kegiatan prodi terbaru</h2></div>
+        <a class="lagi" href="kabar.html">Semua kegiatan &rarr;</a></div>
+      <div class="grid g3 kabar geser" id="kabar" tabindex="0" aria-label="Kegiatan terbaru, geser ke samping"></div>
+    </section>
+  </div>
+
+  <!-- Kegiatan dan kinerja program studi langsung di bawah angka (pemilik 2026-11-16). -->
+  <div class="latar" id="bRiset" hidden>
+    <div class="kotak dua">
+      <section aria-labelledby="jRiset">
+        <div class="kepala-bag"><div><div class="eyebrow">Riset dan pengabdian</div><h2 id="jRiset">Penelitian dan pengabdian terbaru</h2></div>
+          <a class="lagi" href="daftar.html?jenis=penelitian">Semua &rarr;</a></div>
+        <div class="grid grid2 geser" id="riset" tabindex="0" aria-label="Penelitian dan pengabdian terbaru, geser ke samping"></div>
+      </section>
+      <section aria-labelledby="jPub">
+        <div class="kepala-bag"><div><div class="eyebrow">Publikasi</div><h2 id="jPub">Terbitan terbaru</h2></div>
+          <a class="lagi" href="daftar.html?jenis=publikasi">Semua &rarr;</a></div>
+        <ul class="pub" id="pub"></ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="kotak">
+    <section aria-labelledby="jBidang" id="bBidang" hidden>
+      <div class="kepala-bag"><div><div class="eyebrow">Bidang keahlian</div><h2 id="jBidang">Bidang yang kami tekuni</h2>
+        <p>Bidang keahlian dosen program studi.</p></div>
+        <a class="lagi" href="keahlian.html" id="lKepakaran">Kepakaran dosen &rarr;</a></div>
+      <div class="grid g4 bidang" id="bidang"></div>
+    </section>
+
+    <section aria-labelledby="jDosen" id="bDosen" hidden>
+      <div class="kepala-bag"><div><div class="eyebrow">Dosen</div><h2 id="jDosen">Pengajar dan peneliti</h2></div>
+        <a class="lagi" href="daftar.html?jenis=dosen">Semua dosen &rarr;</a></div>
+      <div class="grid dosen geser" id="dosen" tabindex="0" aria-label="Dosen, geser ke samping"></div>
+    </section>
+
+    <section aria-labelledby="jKarier" id="bKarier" hidden>
+      <div class="kepala-bag"><div><div class="eyebrow">Prospek dan fasilitas</div><h2 id="jKarier">Setelah lulus, dan selama belajar</h2></div></div>
+      <div class="dua-kolom">
+        <div class="kartu" id="kKarier" hidden><h3>Prospek karier lulusan</h3><ul class="daftar-cek" id="karier"></ul></div>
+        <div class="kartu" id="kLab" hidden><h3>Laboratorium</h3><ul class="daftar-cek" id="lab"></ul></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="jMhs">
+      <div class="kepala-bag"><div><div class="eyebrow">Mahasiswa</div><h2 id="jMhs">Untuk mahasiswa dan calon mahasiswa</h2></div></div>
+      <div class="grid g4 mhs" id="mhs"></div>
+    </section>
+    <section id="bBerita" hidden>
+      <div class="berita-band"><div><h3>Berita program studi</h3>
+        <p>Berita resmi program studi di laman berita universitas. Kegiatan prodi ada di bagian Kegiatan prodi terbaru.</p></div>
+        <a class="btn utama" id="lBerita" href="#" rel="noopener">Baca berita &#8599;</a></div>
+    </section>
+  </div>
+
+</main>
+
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// Beranda program studi (pemilik 2026-11-16). Data dari data.json (bangun.py); pita dari RPC publik.
+// Isi yang belum ada (config.yaml public_site: tagline, kontak, media sosial, PMB) tidak ditampilkan.
+// Dasbor kinerja yang dulu di sini pindah ke kinerja.html.
+import { pasangKerangka, isiKerangka } from './kerangka.js?v=2026-11-22-866c27';
+import { halamanAktif } from './fitur.js?v=2026-11-22-866c27';
+pasangKerangka({ aktif: '' });
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+const rapi = s => String(s || '').replace(/_/g, ' ');
+const inisial = n => String(n).replace(/,.*$/, '').split(/\s+/).filter(w => /^[A-Z]/.test(w)).slice(0, 2).map(w => w[0]).join('') || String(n).slice(0, 1);
+const IKON = {
+  mhs: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>',
+  kur: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h11a3 3 0 0 1 3 3v12H7a3 3 0 0 1-3-3z"/><path d="M8 9h6M8 13h6"/></svg>',
+  pres: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>',
+};
+
+// Pita pengumuman: teks (77) dan berkas berjenis pengumuman (76), REST RPC dengan kunci publik.
+function muatPita(){
+  if (!window.SB_URL || !window.SB_KEY) return;
+  const rpc = f => fetch(window.SB_URL + '/rest/v1/rpc/' + f, { method: 'POST',
+    headers: { apikey: window.SB_KEY, 'Content-Type': 'application/json' }, body: '{}' })
+    .then(r => r.ok ? r.json() : []).catch(() => []);
+  Promise.all([rpc('pengumuman_mahasiswa_aktif'), rpc('dokumen_mahasiswa')]).then(([teks, dok]) => {
+    const xs = [...(Array.isArray(teks) ? teks : []), ...(Array.isArray(dok) ? dok : []).filter(d => d.jenis === 'pengumuman')]
+      .sort((a, b) => String(b.diperbarui).localeCompare(String(a.diperbarui)));
+    if (!xs.length) return;
+    const tgl = s => String(s || '').slice(0, 10).split('-').reverse().join('/');
+    $('pita').innerHTML = `<div class="pita-in"><span class="lbl">Pengumuman</span><ul>${xs.slice(0, 3).map(x =>
+      `<li><a href="layanan-mahasiswa.html#pengumuman">${esc(x.judul || 'Pengumuman')}</a>${x.berlaku_sampai
+        ? ` <small>s.d. ${esc(tgl(x.berlaku_sampai))}</small>` : ''}</li>`).join('')}</ul>
+      <a href="layanan-mahasiswa.html#pengumuman" style="color:#fff;white-space:nowrap">${xs.length > 1 ? `Semua (${xs.length})` : 'Lihat'} &rarr;</a></div>`;
+    $('pita').hidden = false;
+  });
+}
+
+function gambar(d){
+  isiKerangka(d);
+  if (d.prodi) {
+    $('hProdi').textContent = d.prodi;
+    document.title = ['Program Studi ' + d.prodi, d.institusi].filter(Boolean).join(' ');
+  }
+  if (d.institusi) $('hInst').textContent = d.institusi;
+  const situs = d.situs || {};
+  if (situs.tagline) $('hLead').textContent = situs.tagline;
+  if (!halamanAktif('keahlian.html')) $('lKepakaran').remove();
+
+  const ta = (d.akreditasi?.ta || [])[0];
+  const mitra = new Set([...(d.publikasi || []), ...(d.kegiatan || [])]
+    .flatMap(x => (x.mitra || []).map(m => String(m?.nama || '').trim().toLowerCase())).filter(Boolean));
+  const angka = [
+    // Termasuk dosen tetap yang sedang tugas belajar (pemilik 2026-11-22); dtps.jumlah = DTPS untuk akreditasi.
+    [d.dtps?.dosen_tetap ?? d.dtps?.jumlah ?? (d.dosen || []).length, 'Dosen tetap', 'daftar.html?jenis=dosen'],
+    [d.dtps?.doktor, 'Bergelar doktor', 'daftar.html?jenis=dosen'],
+    [ta?.mahasiswa_aktif || null, `Mahasiswa aktif ${ta?.ta || ''}`, 'kinerja.html'],
+    [(d.publikasi || []).length, 'Publikasi', 'daftar.html?jenis=publikasi'],
+    [(d.kegiatan || []).length, 'Penelitian dan PkM', 'daftar.html?jenis=penelitian'],
+    [mitra.size, 'Institusi mitra', 'kerja-sama.html'],
+  ].filter(([v]) => v != null);
+  $('angka').innerHTML = angka.map(([v, l, h]) => `<a href="${h}"><b>${esc(v)}</b><span>${esc(l)}</span></a>`).join('');
+
+  // Pendaftaran (PMB), karier, laboratorium, berita, dan ajakan penutup (pemilik 2026-11-16).
+  // Bagian kosong tidak tampil. "Mengapa memilih kami" dan peminatan dihapus pemilik 2026-11-16:
+  // beranda menyampaikan kegiatan dan kinerja program studi.
+  // Status akreditasi (Data prodi > Prodi di UPPS, baris "prodi ini"): hanya bila masih berlaku.
+  const ak = d.akreditasi_prodi || {};
+  if (ak.peringkat) {
+    const sampai = ak.berlaku_sampai ? new Date(ak.berlaku_sampai + 'T00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    $('hLencana').innerHTML = `<b>Terakreditasi ${esc(ak.peringkat)}</b>${ak.lembaga ? `<span>${esc(ak.lembaga)}</span>` : ''}${sampai ? `<span>berlaku s.d. ${esc(sampai)}</span>` : ''}`;
+    $('hLencana').hidden = false;
+  }
+
+  // Kegiatan prodi terbaru dengan foto (pemilik 2026-11-17): kabar kegiatan terbit, terbaru dulu;
+  // 3 kartu sejak beranda ringkas (pemilik 2026-11-19), sisanya di kabar.html.
+  const JENIS_KABAR = { kuliah_tamu: 'Kuliah tamu', kunjungan_lapangan: 'Kuliah/kunjungan lapangan', seminar: 'Seminar',
+    penelitian: 'Penelitian', pengabdian: 'Pengabdian', kerja_praktik: 'Kerja praktik', kompetisi: 'Kompetisi', kerja_sama: 'Kerja sama',
+    lainnya: 'Kegiatan' };
+  const kabar = [...(d.kabar || [])].sort((a, b) => String(b.tanggal || '').localeCompare(String(a.tanggal || ''))).slice(0, 3);
+  if (kabar.length) {
+    $('kabar').innerHTML = kabar.map(x => `<a class="kartu" href="kabar.html#kabar-${esc(x.id)}">
+      ${x.foto?.length ? `<img src="${esc(x.foto[0])}" alt="${esc(x.judul)}" loading="lazy">`
+        : `<div class="tanpa-foto"><span aria-hidden="true">&#128247;</span>${esc(JENIS_KABAR[x.jenis] || 'Kegiatan')}</div>`}
+      <div class="isi"><div class="meta"><span class="tag${x.jenis === 'pengabdian' ? ' pkm' : ''}">${esc(JENIS_KABAR[x.jenis] || 'Kegiatan')}</span>${esc(String(x.tanggal || '').split('-').reverse().join('/'))}</div>
+      <h3>${esc(x.judul)}</h3><p>${esc(x.ringkasan)}</p></div></a>`).join('');
+    $('bKabar').hidden = false;
+  }
+
+  // Nama mahasiswa (pemilik 2026-11-16; sama dengan halaman_publik.nama_tim): 1 nama; 2 nama dengan "dan";
+  // 3 atau lebih "nama pertama dkk."; tanpa persetujuan tampil nama: "Tim mahasiswa".
+  const namaTim = xs => { xs = (xs || []).filter(Boolean);
+    return !xs.length ? 'Tim mahasiswa' : xs.length === 1 ? xs[0] : xs.length === 2 ? `${xs[0]} dan ${xs[1]}` : `${xs[0]} dkk.`; };
+  // Prestasi mahasiswa terbaru (data.json prestasi): 3 terakhir menurut tahun dan bulan (pemilik 2026-11-16).
+  const TINGKAT = { internasional: 'Internasional', nasional: 'Nasional', wilayah_lokal: 'Wilayah/lokal' };
+  const pres = [...(d.prestasi || [])].sort((a, b) => (b.tahun || 0) - (a.tahun || 0)
+    || (b.bulan || 0) - (a.bulan || 0)).slice(0, 3);
+  if (pres.length) {
+    $('pres').innerHTML = pres.map(x => `<a class="kartu" href="prestasi.html">
+      ${x.foto?.length ? `<img src="${esc(x.foto[0])}" alt="Dokumentasi ${esc(x.kegiatan)}" loading="lazy">` : `<div class="tanpa-foto"><span aria-hidden="true">&#127942;</span>${esc(TINGKAT[x.tingkat] || 'Prestasi')}</div>`}
+      <div class="isi"><div class="meta">${x.foto?.length ? `<span class="tag${x.tingkat === 'internasional' ? ' int' : ''}">${esc(TINGKAT[x.tingkat] || x.tingkat || '')}</span>` : ''}${esc(x.tahun || '')}</div>
+      <h3>${esc(x.capaian || 'Prestasi')}</h3><div class="lomba">${esc(x.kegiatan)}</div>
+      <div class="siapa">${esc(namaTim(x.mahasiswa))}</div></div></a>`).join('');
+    $('bPres').hidden = false;
+  }
+
+  if (situs.karier?.length) { $('karier').innerHTML = situs.karier.map(x => `<li>${esc(x)}</li>`).join(''); $('kKarier').hidden = false; }
+  // Laboratorium: profil dari tabel laboratorium (patch 82) bila ada, selain itu nama dari config.yaml.
+  const labs = (d.laboratorium || []).length ? d.laboratorium.map(x => `<li><a href="laboratorium.html#lab-${esc(x.id)}">${esc(x.nama)}</a></li>`)
+    : (situs.laboratorium || []).map(x => `<li><a href="laboratorium.html">${esc(x)}</a></li>`);
+  if (labs.length) { $('lab').innerHTML = labs.join(''); $('kLab').hidden = false; }
+  $('bKarier').hidden = !(situs.karier?.length || labs.length);
+  if (situs.berita) { $('lBerita').href = situs.berita; $('bBerita').hidden = false; }
+
+  // Bidang keahlian dari topik baku yang dipilih dosen (kode topik -> bidang); tanpa jumlah dosen
+  // karena belum semua dosen memilih topik (2026-11-16).
+  const kb = d.keahlian_baku;
+  const bidangTopik = kb ? Object.fromEntries(kb.topik.map(t => [t.kode, t.bidang])) : {};
+  const namaBidang = kb ? Object.fromEntries(kb.bidang.map(b => [b.kode, b])) : {};
+  const bidangDosen = x => x.bidang_keahlian || [...new Set((x.topik_keahlian || []).map(k => bidangTopik[k]).filter(Boolean))]
+    .map(k => namaBidang[k]?.nama).filter(Boolean).slice(0, 2).join(' · ');
+  if (kb) {
+    const dipakai = {};
+    for (const x of d.dosen || []) for (const b of new Set((x.topik_keahlian || []).map(k => bidangTopik[k]).filter(Boolean))) dipakai[b] = (dipakai[b] || 0) + 1;
+    const bersih = s => String(s || '').replace(/\s*\([^)]*ditambahkan[^)]*\)/gi, '');
+    const xs = kb.bidang.filter(b => dipakai[b.kode]).sort((a, b) => dipakai[b.kode] - dipakai[a.kode]).slice(0, 8);
+    if (xs.length) {
+      $('bidang').innerHTML = xs.map(b => `<a class="kartu" href="${halamanAktif('keahlian.html') ? 'keahlian.html' : 'daftar.html?jenis=dosen'}">
+        <h3>${esc(b.nama)}</h3><p>${esc(bersih(b.cakupan))}</p></a>`).join('');
+      $('bBidang').hidden = false;
+    }
+  }
+
+  const riset = [...(d.kegiatan || [])].sort((a, b) => b.tahun - a.tahun).slice(0, 4);
+  const pub = [...(d.publikasi || [])].sort((a, b) => b.tahun - a.tahun).slice(0, 3);   // 3 terbaru (2026-11-19)
+  if (riset.length || pub.length) {
+    $('riset').innerHTML = riset.map(k => `<a class="kartu" href="daftar.html?jenis=${k.kategori === 'pkm' ? 'pkm' : 'penelitian'}&q=${encodeURIComponent(String(k.judul).slice(0, 40))}">
+        <div class="meta"><span class="tag${k.kategori === 'pkm' ? ' pkm' : ''}">${k.kategori === 'pkm' ? 'Pengabdian' : 'Penelitian'}</span>${esc(k.tahun)} · ${esc(rapi(k.tingkat))}</div>
+        <h3>${esc(k.judul)}</h3><p>${esc(k.skema || '')}</p></a>`).join('');
+    $('pub').innerHTML = pub.map(p => {
+      const nama = (p.penulis || []).map(a => a?.nama || a);
+      return `<li><a href="${p.doi ? 'https://doi.org/' + esc(p.doi) : 'daftar.html?jenis=publikasi'}"${p.doi ? ' rel="noopener"' : ''}>${esc(p.judul)}</a>
+        <small>${esc(nama.slice(0, 3).join(', '))}${nama.length > 3 ? ' dkk.' : ''} · ${esc(p.terbitan || '')} · ${esc(p.tahun)}</small></li>`;
+    }).join('');
+    $('bRiset').hidden = false;
+  }
+
+  if ((d.dosen || []).length) {
+    $('dosen').innerHTML = d.dosen.map(x => `<a class="kartu" href="dosen/${encodeURIComponent(x.slug)}.html">
+        ${x.foto ? `<img class="avatar foto" src="${esc(x.foto)}" alt="Foto ${esc(x.nama)}" width="76" height="76" loading="lazy">`
+          : `<div class="avatar" aria-hidden="true">${esc(inisial(x.nama))}</div>`}<h3>${esc(x.nama_gelar || x.nama)}</h3><p>${esc(bidangDosen(x))}</p></a>`).join('');
+    $('bDosen').hidden = false;
+  }
+
+  const k = (d.kurikulum || [])[0];
+  const wajib = k ? k.mk.filter(m => m.sifat !== 'pilihan') : [];
+  const sks = wajib.reduce((a, m) => a + (Number(m.sks) || 0), 0);
+  const prestasi = (d.prestasi_agregat || []).reduce((a, p) => a + (p.jumlah || 0), 0);
+  // Kartu pertama: halaman calon mahasiswa (pemilik 2026-11-20; calon-mahasiswa.html dari halaman_publik.py).
+  $('mhs').innerHTML = `
+    <a class="kartu" href="calon-mahasiswa.html"><div class="ikon">${IKON.pres}</div><h3>Untuk calon mahasiswa</h3>
+      <p>Bidang yang dipelajari, perjalanan kuliah, laboratorium, prestasi, prospek karier, dan pendaftaran.</p><span class="panah">Mulai di sini &rarr;</span></a>
+    <a class="kartu" href="layanan-mahasiswa.html"><div class="ikon">${IKON.mhs}</div><h3>Layanan mahasiswa</h3>
+      <p>Pengumuman, berkas panduan dan formulir, tanya-jawab, serta kotak pertanyaan dan masukan.</p><span class="panah">Buka &rarr;</span></a>
+    <a class="kartu" href="kurikulum.html"><div class="ikon">${IKON.kur}</div><h3>Kurikulum ${esc(k?.kode || '')}</h3>
+      <p>${k ? `${k.cpl.length} capaian pembelajaran lulusan dan ${wajib.length} mata kuliah wajib (${sks} sks), ditambah mata kuliah pilihan.` : 'Kurikulum dan capaian pembelajaran lulusan.'}</p><span class="panah">Lihat kurikulum &rarr;</span></a>
+    <a class="kartu" href="prestasi.html"><div class="ikon">${IKON.pres}</div><h3>Prestasi mahasiswa</h3>
+      <p>${prestasi ? `${prestasi} prestasi mahasiswa yang telah diverifikasi program studi.` : 'Prestasi mahasiswa yang telah diverifikasi program studi.'}</p><span class="panah">Lihat prestasi &rarr;</span></a>`;
+}
+
+function pasangCari(D){
+  import('./cari.js?v=2026-11-22-866c27').then(m => {
+    const idx = m.indeksPublik(D, k => !(window.FITUR_MATI || []).includes(k));
+    const kotak = $('cariUmum'), panel = $('hasilUmum');
+    let aktif = -1;
+    const tampil = () => {
+      const q = kotak.value.trim();
+      if (!q) { panel.hidden = true; return; }
+      const g = m.kelompokkan(m.cari(idx, q));
+      panel.innerHTML = g.length ? g.map(x => `<h4>${esc(x.label)}</h4>` + x.entri.map(r =>
+        `<a href="${esc(r.href)}"><b>${esc(r.judul)}</b>${r.ket ? `<span>${esc(r.ket)}</span>` : ''}</a>`).join('')).join('')
+        : `<p>Tidak ada yang cocok dengan "${esc(q)}".</p>`;
+      panel.hidden = false; aktif = -1;
+    };
+    const tandai = i => { const xs = [...panel.querySelectorAll('a')]; aktif = Math.max(-1, Math.min(i, xs.length - 1));
+      xs.forEach((a, j) => a.classList.toggle('aktif', j === aktif)); xs[aktif]?.scrollIntoView({ block: 'nearest' }); };
+    kotak.addEventListener('input', tampil);
+    kotak.addEventListener('focus', tampil);
+    kotak.addEventListener('keydown', ev => {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); tandai(aktif + 1); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); tandai(aktif - 1); }
+      else if (ev.key === 'Enter') { const a = panel.querySelectorAll('a')[Math.max(aktif, 0)]; if (a) location.href = a.getAttribute('href'); }
+      else if (ev.key === 'Escape') { panel.hidden = true; kotak.blur(); }
+    });
+    document.addEventListener('click', ev => { if (!kotak.parentElement.contains(ev.target)) panel.hidden = true; });
+  }).catch(() => { document.querySelector('.cari-umum')?.remove(); });
+}
+
+muatPita();
+fetch('data.json', {cache: 'no-cache'})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { gambar(d); pasangCari(d); })
+  .catch(() => { document.querySelector('.cari-umum')?.remove(); });
+</script>
+</body>
+</html>

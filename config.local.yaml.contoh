@@ -1,0 +1,43 @@
+# SALIN (jangan rename) berkas ini menjadi "config.local.yaml" lalu isi.
+# config.local.yaml berisi path mesin ini saja dan tidak ter-commit.
+
+paths:
+  # Folder berkas nilai .xlsx (satu per kelas per semester; subfolder ikut
+  # dibaca). Harus di luar repo: berkasnya memuat NIM. Dengan source: site
+  # (config.yaml), run_cpl.py mengunduh ke subfolder _dari_situs di sini.
+  input_dir: D:/CPL/berkas_nilai
+  # Folder laporan run_cpl.py (laporan_cpl.xlsx, run_cpl.log). Harus di luar
+  # repo: laporan memuat NIM.
+  output_dir: D:/CPL/laporan
+  # Opsional: folder berkas nilai akhir per kelas dari kampus (Nilai_Detail_Kelas_...csv)
+  # untuk estimasi CPL semester lama (config.yaml final_grades). Di luar repo: memuat NIM.
+  # Hapus atau kosongkan baris ini bila tidak dipakai.
+  final_grades_dir: D:/CPL/nilai_akhir
+  # Opsional, halaman profil CPL per mahasiswa (config.yaml student_record). Semua di luar
+  # repo (memuat NIM). Hapus tanda # di depan baris yang dipakai.
+  # Identitas dari SIAKAD, kolom: nim, nama, tempat_lahir, tanggal_lahir, tanggal_masuk, status.
+  # student_info_csv: D:/CPL/mahasiswa/identitas.csv
+  # Perwalian, kolom: nim, email_wali (email login situs; nama dicari di Data dosen), nama_wali opsional.
+  # advisors_csv: D:/CPL/mahasiswa/perwalian.csv
+  # Sertifikat, organisasi, magang, kolom: nim, jenis, nama, peran, penyelenggara, tahun.
+  # student_activities_csv: D:/CPL/mahasiswa/kegiatan.csv
+  # Folder foto <NIM>.jpg atau <NIM>.png.
+  # photos_dir: D:/CPL/mahasiswa/foto
+  # MK yang disetujui dihapus per mahasiswa, kolom: nim, kode_mk, tahun_akademik, semester, keterangan.
+  # tahun_akademik + semester kosong = semua percobaan MK itu dihapus. Keluar dari daftar nilai, IPK,
+  # SKS, dan CPL mahasiswa itu; capaian kelas/angkatan tidak berubah.
+  # course_removals_csv: D:/CPL/mahasiswa/hapus_mk.csv
+  # Folder video dan laporan run_site_check.py. Harus di luar repo: video yang
+  # direkam sesudah login bisa memuat data pribadi.
+  site_check_dir: D:/Cek_situs/hasil
+  # Profil browser khusus Selenium; sesi login tersimpan di sini. Jangan dibagikan.
+  site_check_profile: D:/Cek_situs/profil
+  # Folder cadangan berkas Google Drive prodi (run_cadangan_drive.py), mis. di hard disk eksternal. Harus di luar
+  # repo: berkasnya memuat data pribadi mahasiswa dan dosen.
+  drive_backup_dir: E:/Cadangan/drive-prodi
+  # Folder hasil kartu Instagram (run_kartu_instagram.py): satu subfolder per tanggal, PNG 1080x1350. Di luar repo.
+  instagram_cards_dir: D:/Prodi/kartu_instagram
+  # Folder jadwal kuliah (run_jadwal.py): taruh di sini berkas jadwal_masukan_<TA>_<semester>.json yang diunduh dari
+  # situs (Jadwal kuliah > Unduh masukan penjadwalan); hasil (berkas impor, Excel, laporan) ditulis ke subfolder hasil_*.
+  # Di luar repo.
+  schedule_dir: D:/Prodi/jadwal_kuliah

@@ -1,0 +1,132 @@
+# =====================================================================
+#  Bangun dan terbitkan situs prodi. Satu repo publik (pemilik 2026-11-05):
+#    1. bangun.py membaca Supabase -> data.json
+#    2. halaman dari site/ disalin ke folder situs/ di mesin Actions
+#    3. folder itu diterbitkan GitHub Pages; tidak ada yang di-commit
+#
+#  Syarat: Settings > Pages > Source = GitHub Actions.
+#
+#  Dipicu oleh:
+#    - jadwal tiap jam (menit ke-23);
+#    - push ke main yang mengubah site/, bangun.py, halaman_publik.py, config.yaml, atau berkas ini;
+#    - manual: Actions > Bangun situs > Run workflow.
+#
+#  Diam sampai Variable NAMA_PRODI terisi, supaya repo baru tidak gagal
+#  sebelum pemasangan selesai. Rahasia dan variabel: README.md langkah 6.
+#  Kunci rahasia hanya di GitHub Secrets, tidak pernah di repo ini.
+# =====================================================================
+
+name: Bangun situs
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'bangun.py'
+      - 'halaman_publik.py'
+      - 'config.yaml'
+      - '.github/workflows/bangun-situs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Satu run pada satu waktu; run yang menunggu tidak dibatalkan, jadi data
+# terbaru tetap terbit.
+concurrency:
+  group: bangun-situs
+  cancel-in-progress: false
+
+jobs:
+  bangun:
+    if: vars.NAMA_PRODI != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Jakarta        # tanggal "diperbarui" di data.json memakai WIB
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pastikan install.py sudah dijalankan
+        run: |
+          if grep -q GANTI_DENGAN_PUBLISHABLE_KEY site/config.js; then
+            echo "::error::site/config.js belum diisi. Jalankan python install.py, lalu commit dan push."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Pasang pustaka
+        # pyyaml: bangun.py membaca config.yaml (2026-11-16).
+        run: pip install requests pandas openpyxl pyyaml
+
+      - name: Cap versi halaman
+        run: python stamp_versions.py
+
+      - name: Bangun data.json
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SITUS_DIR: ${{ github.workspace }}/situs
+          NAMA_PRODI: ${{ vars.NAMA_PRODI }}
+          NAMA_INSTITUSI: ${{ vars.NAMA_INSTITUSI }}
+        run: python bangun.py
+
+      - name: Salin halaman dari site/
+        run: cp -r site/. situs/
+
+      - name: Lengkapi beranda (pratinjau tautan, data terstruktur)
+        # index.html disalin dari site/ di langkah sebelumnya; alamat situs dari CNAME atau config.
+        run: python bangun.py --beranda situs
+
+      - uses: actions/configure-pages@v5
+
+      # Hanya folder situs/ yang terbit; laporan-internal.html dan
+      # arsip/prodi.sqlite yang dibuat bangun.py berada di luar folder ini.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: situs
+
+      - name: Lapor kesehatan sistem
+        # instal-lengkap.sql: panel Kesehatan sistem di Dasbor. Tidak pernah menggagalkan pekerjaan.
+        if: always()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -s -o /dev/null -w "status_sistem bangun_situs: HTTP %{http_code}\n" -X POST "$SUPABASE_URL/rest/v1/status_sistem?on_conflict=kunci" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "{\"kunci\":\"bangun_situs\",\"waktu\":\"$(date -u +%FT%TZ)\",\"ok\":${{ job.status == 'success' }},\"isi\":{}}"
+
+  terbit:
+    needs: bangun
+    if: vars.NAMA_PRODI != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.terbit.outputs.page_url }}
+    steps:
+      - id: terbit
+        uses: actions/deploy-pages@v5
+
+      - name: Lapor kesehatan sistem
+        # instal-lengkap.sql: panel Kesehatan sistem di Dasbor. Tidak pernah menggagalkan pekerjaan.
+        if: success()
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -s -o /dev/null -w "status_sistem situs_terbit: HTTP %{http_code}\n" -X POST "$SUPABASE_URL/rest/v1/status_sistem?on_conflict=kunci" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "{\"kunci\":\"situs_terbit\",\"waktu\":\"$(date -u +%FT%TZ)\",\"ok\":true,\"isi\":{}}"

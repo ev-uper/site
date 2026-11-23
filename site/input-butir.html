@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>Isian butir dan dokumen — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--biru-2)}
+  /* daftar periksa bukti per butir (rencana-bukti.js) */
+  details.rencana-bukti{margin:10px 0;border-left:3px solid var(--emas);
+    background:#FFFBEF;padding:6px 12px;font-size:13.5px}
+  details.rencana-bukti summary{cursor:pointer;font-weight:600;color:var(--biru)}
+  details.rencana-bukti ul{margin:6px 0;padding-left:20px}
+  details.rencana-bukti p{margin:6px 0}
+  details.rencana-bukti .rb-ket{font-size:12.5px;color:var(--muted)}
+  details.rencana-bukti .rb-kos{color:var(--merah);font-size:12px}
+  #form-dok select{width:100%;padding:7px 8px;font:inherit;border:1px solid var(--line);background:#fff}
+  #form-dok input[type=text], #form-dok input[type=number]{width:100%}
+  .gulir{overflow-x:auto}
+  table.dok-t{width:100%;border-collapse:collapse;font-size:13px}
+  table.dok-t th, table.dok-t td{border-bottom:1px solid var(--line-soft);padding:5px 6px;text-align:left;vertical-align:top}
+  table.dok-t th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  button.kecil{font-size:12px;padding:3px 8px}
+  .pb{margin:10px 0;padding:8px 12px;border:1px solid var(--line);background:#FAFBFA;font-size:13.5px}
+  .pb-j{font-weight:600;color:var(--biru);margin-bottom:4px}
+  .pb-l{margin:4px 0 8px;padding-left:20px}
+  .pb-l li{margin:3px 0}
+  /* Bukti per unsur (unsur-butir.js, pemilik 2026-11-10). */
+  .pb-tu,.tu{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 8px}
+  .pb-tu td,.pb-tu th,.tu td,.tu th{border-bottom:1px solid var(--line-soft);padding:4px 6px;text-align:left;vertical-align:top}
+  .pb-tu tr.ada td:last-child,.tu tr.ada td:last-child{color:var(--hijau);font-weight:600}
+  .pb-tu tr.belum td,.tu tr.belum td{color:var(--muted)}
+  .tu small.contoh,.pb-tu small.contoh{color:var(--muted);font-size:11.5px}
+  .pb-unsur{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;background:#ECE6F5;color:var(--ungu);padding:1px 6px;border-radius:2px}
+  .pb-l .kn{margin-left:6px}
+  .pb-a{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .pb-a select, .pb-a input[type=text], .pb-a input[type=url]{flex:1 1 220px;padding:6px 8px;font:inherit;border:1px solid var(--line);background:#fff}
+  /* Teks unsur penilaian panjang: kotak pilihan menyempit di ponsel, tidak melebarkan halaman (uji asap 2026-11-12). */
+  .pb-a > label{min-width:0;max-width:100%} .pb-a select{min-width:0;max-width:100%}
+  .pb-ket{font-size:12px;color:var(--muted);margin-left:4px}
+  .pb-kos{color:var(--merah);font-size:12px}
+  .pb-m{font-size:12.5px;margin-top:6px} .pb-m.ok{color:var(--hijau)} .pb-m.buruk{color:var(--merah)}
+  .hero{background:var(--biru);color:#fff;border-bottom:4px solid var(--merah)}
+  .hero-in{max-width:960px;margin:0 auto;padding:26px 20px 24px}
+  .balik{display:inline-flex;gap:7px;align-items:center;text-decoration:none;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--biru-m2);margin-bottom:16px}
+  .balik:hover{color:#fff}
+  h1{font-family:var(--serif);font-size:clamp(21px,3.4vw,28px);font-weight:600;
+     margin:0;color:#fff}
+  .sub{color:var(--biru-m4);font-size:14px;margin-top:6px}
+  h2{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--biru);
+     margin:32px 0 0;border-bottom:2px solid var(--biru);padding-bottom:8px}
+  .b{background:var(--panel);border:1px solid var(--line);border-radius:2px;
+     padding:16px 18px;margin-top:12px}
+  .b-kep{display:flex;gap:12px;align-items:baseline}
+  .b-no{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+        text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .b-jd{font-weight:600;flex:1;min-width:0;line-height:1.35}
+  .b-sk{font-family:var(--mono);font-size:20px;line-height:1;white-space:nowrap}
+  .b-sk.kos{color:var(--muted);font-size:13px}
+  .b-sk.n4{color:var(--hijau)}
+  .b-ket{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .b-rm{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+        background:var(--bg);border:1px solid var(--line-soft);
+        padding:7px 10px;border-radius:2px;margin-top:10px;overflow-x:auto}
+  .fld{margin-top:12px}
+  .fld label{display:block;font-size:13px;margin-bottom:4px}
+  .fld .kn{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  input[type=number],input[type=url]{width:100%;padding:8px 10px;
+    border:1px solid var(--line);border-radius:2px;font-family:var(--mono);
+    font-size:13px;background:#fff}
+  input[type=number]{max-width:130px}
+  input.salah{border-color:var(--merah);background:var(--merah-m5)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);
+       border-top:1px solid var(--line);box-shadow:0 -2px 12px rgba(var(--biru-rgb),.07);
+       padding:12px 20px;display:flex;gap:14px;align-items:center;
+       justify-content:center;flex-wrap:wrap}
+  .bar button{padding:10px 20px;border:0;background:var(--biru);color:#fff;
+    font-family:var(--mono);font-size:12px;letter-spacing:.07em;
+    text-transform:uppercase;cursor:pointer;border-radius:2px}
+  .bar button:disabled{background:var(--line);color:var(--muted);cursor:default}
+  .bar .st{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .bar .st.baik{color:var(--hijau)} .bar .st.buruk{color:var(--merah)}
+  .unggah{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-size:12.5px}
+  .unggah button{font:inherit;font-size:12px;padding:5px 11px;cursor:pointer}
+  .unggah label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .unggah .msg-unggah{color:var(--muted)}
+  .unggah .msg-unggah.ok{color:var(--hijau)} .unggah .msg-unggah.buruk{color:var(--merah)}
+  .kosong{color:var(--muted);font-size:13.5px}
+  .awas{background:var(--merah-m5);border:1px solid var(--merah-m1);border-left:3px solid var(--merah);
+        padding:12px 16px;border-radius:2px;margin-top:22px;font-size:13.5px}
+  .masuk{max-width:420px;margin:60px auto;background:var(--panel);
+         border:1px solid var(--line);border-top:3px solid var(--biru);padding:26px}
+  .masuk input{width:100%;padding:9px 11px;border:1px solid var(--line);
+               border-radius:2px;font-family:var(--mono);font-size:13px;margin-top:10px}
+  .masuk button{margin-top:12px;padding:9px 16px;border:0;background:var(--biru);
+                color:#fff;font-family:var(--mono);font-size:12px;
+                letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border-radius:2px}
+</style>
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+</head>
+<body>
+
+<div class="hero" role="region" aria-label="Pembuka halaman">
+  <div class="hero-in">
+    <div class="hero-inst" data-identitas></div>
+    <h1 id="hJudul">Isian butir dan dokumen</h1>
+    <div class="sub" id="hSub">Memuat&hellip;</div>
+  </div>
+</div>
+
+<main class="wrap" id="isi"></main>
+
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { BUTIR_MANUAL, SEKSI_MANUAL, kunciButir, kunciBuktiButir, skorManual }
+  from './butir-manual.js?v=2026-11-22-866c27';
+import { BUTIR_DATA } from './butir-data.js?v=2026-11-22-866c27';
+import { htmlRencana, JENIS_DOKUMEN, infoJenis, buktiButir } from './rencana-bukti.js?v=2026-11-22-866c27';
+import { htmlPanel, pasangPanel } from './panel-bukti.js?v=2026-11-22-866c27';
+import { buangBerkas, PESAN_SAMPAH } from './hapus-berkas.js?v=2026-11-22-866c27';
+import { pasangYatim } from './berkas-yatim.js?v=2026-11-22-866c27';
+import { unggahKePustaka, labelDokumen } from './pustaka-dokumen.js?v=2026-11-22-866c27';
+import { pasangMenu } from './menu.js?v=2026-11-22-866c27';
+import { dosenLogin } from './dosen-login.js?v=2026-11-22-866c27';
+import { jabatanSaya } from './koordinator.js?v=2026-11-22-866c27';
+import { UNSUR_BUTIR, skorKunci, pihakButir } from './unsur-butir.js?v=2026-11-22-866c27';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f2 = n => Number(n).toLocaleString('id-ID',
+  {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const $ = id => document.getElementById(id);
+
+const SB_URL = window.SB_URL || '', SB_KEY = window.SB_KEY || '';
+if (!SB_URL || !SB_KEY || SB_URL.includes('xxxx')){
+  $('isi').innerHTML = `<div class="b"><p class="kosong"><b>config.js belum
+    diisi.</b></p></div>`;
+  throw new Error('config.js belum diisi');
+}
+const sb = createClient(SB_URL, SB_KEY);
+
+// Unggah bukti butir ke Google Drive prodi lewat Apps Script
+// (apps-script/Code.gs, jenis 'butir' -> data-lkps/butir-manual/butir-NN/).
+// Pengaturan dari config.js; tanpa UPLOAD_URL tombol unggah tidak tampil.
+const UNGGAH = (() => {
+  const url = String(window.UPLOAD_URL || '').trim();
+  if (!url) return null;
+  const ext = String(window.UPLOAD_EXT || '').toLowerCase().split(',')
+    .map(s => s.trim()).filter(Boolean);
+  return { url, ext, maxMb: Number(window.UPLOAD_MAX_MB) || 0,
+           accept: ext.map(x => '.' + x).join(',') };
+})();
+
+const NILAI = {};   // kunci -> string, keadaan di Supabase saat dimuat
+let siap = false;
+// Dokumen bernama (tabel `dokumen`, supabase/instal-lengkap.sql).
+let DOK = [], DOK_GAGAL = '', SAYA = null;
+// Bukti per butir (tabel `butir_bukti`, supabase/instal-lengkap.sql).
+let BB = [], BB_GAGAL = '';
+// TS berjalan: 1 Sep–31 Agu, ditulis tahun akhirnya (sama dengan skor.html).
+const tsBerjalan = () => { const d = new Date(); return d.getMonth() >= 8 ? d.getFullYear() + 1 : d.getFullYear(); };
+async function muatDokumen(){
+  const { data, error } = await sb.from('dokumen').select('*')
+    .order('jenis').order('tahun', { ascending: false });
+  DOK_GAGAL = error ? error.message : '';
+  DOK = data || [];
+  const b = await sb.from('butir_bukti').select('*').order('dibuat');
+  BB_GAGAL = b.error ? b.error.message : '';
+  BB = b.data || [];
+}
+const opsiBukti = () => ({ dokumen: DOK, butirBukti: BB, ts: tsBerjalan() });
+
+const SEKSI_URUT = ['vmts', 'kerjasama', 'pendidikan', 'dosen',
+                    'sarana', 'mahasiswa', 'mutu', 'kembang'];
+const JUDUL_SEKSI = {
+  ...SEKSI_MANUAL,
+  kerjasama: 'Tata pamong, kerja sama, dan keuangan',
+  pendidikan: 'Pendidikan, penelitian, dan PkM',
+  dosen: 'Sumber daya manusia (DTPS)',
+  mahasiswa: 'Mahasiswa dan luaran',
+};
+
+async function mulai(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return layarMasuk();
+
+  const { data: saya } = await dosenLogin(sb, session, 'id,nama,email,peran');
+  if (!saya){
+    $('hSub').textContent = 'Tidak terdaftar';
+    $('isi').innerHTML = `<div class="b"><p class="kosong">Email
+      <code>${esc(session.user.email)}</code> belum terdaftar.</p></div>`;
+    return;
+  }
+  pasangMenu(sb);
+  // Halaman ini MENULIS nilai yang masuk dokumen akreditasi, jadi dibatasi
+  // ke admin. Pembatasan di sini hanya menyembunyikan formulir; yang
+  // benar-benar menahan penulisan adalah kebijakan RLS di Supabase.
+  // GKM (instal-lengkap.sql) juga mengisi butir dan pustaka dokumen.
+  if (saya.peran !== 'admin' && !(await jabatanSaya(sb, saya.id)).includes('gkm')){
+    $('hSub').textContent = `Masuk sebagai ${saya.nama} (${saya.peran || 'dosen'})`;
+    $('isi').innerHTML = `<div class="b"><p class="kosong">Hanya admin yang
+      dapat mengubah nilai butir. Anda tetap bisa melihat hasilnya di
+      <a href="skor.html">halaman skor</a>.</p></div>`;
+    return;
+  }
+
+  const { data, error } = await sb.from('pengaturan').select('kunci,nilai');
+  if (error){
+    $('isi').innerHTML = `<div class="b"><p class="kosong">Gagal membaca tabel
+      <code>pengaturan</code>: ${esc(error.message)}</p></div>`;
+    return;
+  }
+  (data || []).forEach(r => NILAI[r.kunci] = r.nilai == null ? '' : String(r.nilai));
+  SAYA = saya;
+  await muatDokumen();
+  $('hSub').textContent = `Masuk sebagai ${saya.nama} (admin) · `
+    + `${Object.keys(NILAI).length} kunci tersimpan`;
+  render();
+  siap = true;
+}
+
+const bacaAngka = k => {
+  const v = (NILAI[k] ?? '').trim();
+  if (!v) return null;
+  const n = +v.replace(',', '.');
+  return Number.isFinite(n) ? n : null;
+};
+
+function render(){
+  const bagian = SEKSI_URUT.map(sk => {
+    const isi = BUTIR_MANUAL.filter(b => b.seksi === sk);
+    if (!isi.length) return '';
+    return `<h2>${esc(JUDUL_SEKSI[sk] || sk)}</h2>`
+      + isi.map(kartu).join('');
+  }).join('');
+
+  const bagianData = `<h2>Bukti butir berumus</h2>
+    <div class="b-ket" style="margin-bottom:10px">Skor butir ini dihitung dari data
+    (halaman skor). Di sini cukup unggah atau tempel bukti pendukungnya, mis. SK
+    dosen (27, 28), laporan tracer (49–51), rekap PDDikti (40, 41).</div>`
+    + BUTIR_DATA.map(kartuData).join('');
+
+  const bagianDok = `<h2>Dokumen</h2>
+    <div class="b-ket" style="margin-bottom:10px">Dokumen bukti bernama: statuta,
+    renstra, kurikulum, SK, notulen, laporan, dan sebagainya. Tautannya otomatis
+    muncul di butir terkait, kartu skor, dan draf LED. Jenis <b>tunggal</b>
+    (statuta, kurikulum, …): tahun sama = <b>mengganti</b> (versi lama ke folder
+    <code>_arsip</code>), tahun beda = versi lain. Jenis <b>banyak</b> (SK,
+    notulen, …): isi judul/nomor; judul dan tahun sama = mengganti. Satu entri =
+    satu berkas; dokumen yang terdiri dari beberapa berkas diunggah sebagai entri
+    terpisah atau digabung menjadi satu PDF. Publikasi,
+    penelitian, PkM, HKI, dan rekognisi tetap lewat form karya dosen.</div>
+    ${formDokumen()}
+    <div class="b" id="daftar-dok"></div>
+    <h2>Berkas tak terpakai di Drive</h2>
+    <div class="b" id="yatim"></div>`;
+
+  $('isi').innerHTML = bagianDok + bagian + bagianData + `
+    <div class="awas"><b>Nilai di halaman ini adalah penilaian sendiri.</b>
+    Ia masuk ke ringkasan skor bersama butir yang terhitung dari data, dan
+    ikut menjadi bahan dokumen akreditasi. Isi hanya butir yang sudah benar
+    dinilai terhadap matriks; biarkan kosong bila belum — kartu akan
+    menampilkan &ldquo;belum diisi&rdquo;, bukan angka nol yang tampak sah.</div>
+    <div class="bar">
+      <span class="st" id="st">Belum ada perubahan.</span>
+      <button id="simpan" disabled>Simpan perubahan</button>
+    </div>`;
+
+  $('isi').addEventListener('input', e => {
+    const el = e.target;
+    if (!el.dataset.kunci) return;
+    NILAI[el.dataset.kunci] = el.value;
+    periksaSatu(el);
+    perbaruiSkor(el.closest('.b'));
+    tandaiUbah();
+  });
+  $('isi').addEventListener('click', e => {
+    const h = e.target.closest('[data-hapus-dok]');
+    if (h) hapusDokumen(+h.dataset.hapusDok);
+  });
+  // Panel bukti per butir (panel-bukti.js): tautkan, unggah, tautan, lepas.
+  pasangPanel({ sb, keadaan: keadaanPanel, oleh: () => SAYA && SAYA.email,
+                muatUlang: muatDokumen, segarkan: segarkanRencana });
+  pasangFormDokumen();
+  pasangYatim(sb, $('yatim'));
+  gambarDaftarDokumen();
+  $('simpan').onclick = simpan;
+  BUTIR_MANUAL.forEach(b => perbaruiSkor(document.getElementById('b-' + b.no)));
+}
+
+function kartu(b){
+  const kunci = kunciButir(b);
+  const label = b.hitung ? b.hitung.label
+              : b.komponen ? ['I. ' + b.komponen[0], 'II. ' + b.komponen[1]]
+              : ['Skor hasil penilaian matriks (0–4)'];
+  const rumus = b.hitung ? b.hitung.rumus
+              : b.rumus || 'Skor diisi langsung dari matriks penilaian (0–4).';
+  const kb = kunciBuktiButir(b);
+  // Butir kualitatif dinilai dari bukti per unsur, tanpa isian angka (pemilik 2026-11-10).
+  const dariBukti = !b.hitung;
+  // Butir berumus (18, 30, 52) hanya dari data, tanpa isian angka (pemilik 2026-11-10).
+  const dariData = !!b.hitung;
+  const sumber = { '18': ['data-prodi.html?tab=mk', 'Data prodi › Mata kuliah (SKS kuliah/seminar/praktikum)'],
+    '30': ['data-prodi.html?tab=bkd', 'BKD terverifikasi (Input › BKD saya, Data prodi › Beban kerja dosen)'],
+    '52': ['data-prodi.html?tab=kepuasan', 'Data prodi › Kepuasan pengguna'] }[b.no];
+  return `<div class="b" id="b-${esc(b.no)}">
+    <div class="b-kep">
+      <span class="b-no">Butir ${esc(b.no)}</span>
+      <span class="b-jd">${esc(b.judul)}</span>
+      <span class="b-sk kos" data-sk="${esc(b.no)}">—</span>
+    </div>
+    ${b.ket ? `<div class="b-ket">${esc(b.ket)}</div>` : ''}
+    ${b.tabel ? `<div class="b-ket">${esc(b.tabel)}</div>` : ''}
+    ${pihakButir(b.no) ? `<div class="b-ket"><b>Penanggung jawab:</b> ${esc(pihakButir(b.no))}</div>` : ''}
+    ${dariData ? `<div class="b-rm">${esc(rumus)}. Dihitung dari ${sumber ? `<a href="${sumber[0]}">${esc(sumber[1])}</a>` : 'data'};
+        skor terhitung di halaman Skor.</div>`
+      : dariBukti ? `<div class="b-rm">${['20', '22', '24'].includes(b.no)
+        ? `Skor dari bukti per unsur di <a href="data-prodi.html?tab=${b.no === '20' ? 'mk' : 'peta_dok'}">Data prodi › ${
+            b.no === '20' ? 'Mata kuliah (centang capstone)' : 'Dokumen peta jalan'}</a>; skor terhitung di halaman Skor.`
+        : 'Skor dari bukti per unsur: pilih unsur di panel bukti, lalu unggah atau tautkan. Tanpa bukti = 0.'}</div>`
+      : `<div class="b-rm">${esc(rumus)}</div>
+    ${kunci.map((k, i) => `<div class="fld">
+      <label for="i-${esc(k)}">${esc(label[i])}
+        <span class="kn">· ${esc(k)}</span></label>
+      <input type="number" id="i-${esc(k)}" data-kunci="${esc(k)}"
+             value="${esc(NILAI[k] ?? '')}" placeholder="kosongkan bila belum ada data">
+    </div>`).join('')}`}
+    ${blokBukti(b.no)}
+  </div>`;
+}
+
+// Kartu bukti untuk butir berumus (butir-data.js): skornya dihitung dari
+// data di skor.html, di sini hanya tautan dan unggah bukti.
+function kartuData(b){
+  return `<div class="b" id="bd-${esc(b.no)}">
+    <div class="b-kep">
+      <span class="b-no">Butir ${esc(b.no)}</span>
+      <span class="b-jd">${esc(b.judul)}</span>
+    </div>
+    ${blokBukti(b.no)}
+  </div>`;
+}
+
+// Daftar periksa + panel bukti (panel-bukti.js) + tautan folder lama.
+// Unggah berkas/folder kini lewat panel: tiap berkas jadi satu bukti.
+const keadaanPanel = () => ({ ...opsiBukti(), gagal: BB_GAGAL, unggah: UNGGAH });
+function blokBukti(no){
+  const kb = `bukti_b${no}`;
+  return htmlRencana(no, opsiBukti()) + htmlPanel(no, keadaanPanel()) + `<div class="fld">
+      <label for="i-${esc(kb)}">Tautan folder bukti (lama, opsional) <span class="kn">· ${esc(kb)}</span></label>
+      <input type="url" id="i-${esc(kb)}" data-kunci="${esc(kb)}"
+             value="${esc(NILAI[kb] ?? '')}" placeholder="https://…">
+    </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Dokumen bernama (tabel `dokumen`). Formulir: jenis, tahun, judul (jenis
+//  banyak), butir, berkas. Berkas ke Drive lewat Apps Script (kind
+//  'dokumen'), lalu barisnya di-upsert pada (jenis, tahun, judul): sama =
+//  mengganti, beda tahun = versi lain (pemilik 2026-11-03).
+// ---------------------------------------------------------------------
+function formDokumen(){
+  if (DOK_GAGAL) return `<div class="b"><p class="kosong">Tabel <code>dokumen</code>
+    belum bisa dibaca (${esc(DOK_GAGAL)}). Jalankan
+    <code>supabase/instal-lengkap.sql</code> di Supabase SQL Editor.</p></div>`;
+  if (!UNGGAH) return '';
+  const opsi = tunggal => JENIS_DOKUMEN.filter(j => j.tunggal === tunggal)
+    .map(j => `<option value="${esc(j.id)}">${esc(j.nama)}</option>`).join('');
+  return `<div class="b" id="form-dok">
+    <div class="fld"><label for="dok-jenis">Jenis dokumen (bertanda privat: tanpa tautan publik)</label>
+      <select id="dok-jenis">
+        <optgroup label="Tunggal (satu per tahun)">${opsi(true)}</optgroup>
+        <optgroup label="Banyak (isi judul/nomor)">${opsi(false)}</optgroup>
+      </select></div>
+    <div class="fld"><label for="dok-tahun">Tahun dokumen (tahun terbit/penetapan)</label>
+      <input type="number" id="dok-tahun" min="1990" max="2100" value="${new Date().getFullYear()}"></div>
+    <div class="fld" id="dok-judul-w"><label for="dok-judul">Judul/nomor</label>
+      <input type="text" id="dok-judul" maxlength="120"></div>
+    <div class="unggah">
+      <input type="file" id="dok-file" accept="${esc(UNGGAH.accept)}">
+      <button type="button" id="dok-unggah">Unggah</button>
+    </div>
+    <div class="msg-unggah" id="dok-msg"></div>
+  </div>`;
+}
+
+
+function pasangFormDokumen(){
+  const jenis = $('dok-jenis');
+  if (!jenis) return;
+  const tahun = $('dok-tahun'), judul = $('dok-judul');
+  const ket = () => {
+    const j = infoJenis(jenis.value);
+    const t = +tahun.value, jd = j.tunggal ? '' : judul.value.trim();
+    const ada = DOK.find(r => r.jenis === j.id && r.tahun === t && (r.judul || '') === jd);
+    const lain = DOK.filter(r => r.jenis === j.id && r.tahun !== t).map(r => r.tahun);
+    const m = $('dok-msg');
+    m.className = 'msg-unggah' + (ada ? ' buruk' : '');
+    m.textContent = ada ? `Sudah ada ${j.nama}${jd ? ' "' + jd + '"' : ''} tahun ${t}: unggahan akan MENGGANTI versi itu (yang lama ke _arsip).`
+      : lain.length && j.tunggal ? `Versi tahun lain sudah ada (${[...new Set(lain)].join(', ')}); ini akan menjadi versi ${t}.`
+      : '';
+  };
+  const gantiJenis = () => {
+    const j = infoJenis(jenis.value);
+    $('dok-judul-w').hidden = j.tunggal;
+    judul.placeholder = j.contoh ? 'mis. ' + j.contoh : '';
+    ket();
+  };
+  jenis.onchange = gantiJenis;
+  tahun.oninput = ket;
+  judul.oninput = ket;
+  $('dok-unggah').onclick = e => unggahDokumen(e.target);
+  gantiJenis();
+}
+
+// Satu modul unggah pustaka dengan Data prodi (pustaka-dokumen.js): kunci
+// jenis + tahun + judul sama = mengganti; berkas yang sama persis sudah
+// tersimpan = tidak diunggah ulang (instal-lengkap.sql).
+async function unggahDokumen(tombol){
+  const msg = $('dok-msg');
+  const tulis = (cls, t) => { msg.className = 'msg-unggah' + (cls ? ' ' + cls : ''); msg.textContent = t; };
+  tombol.disabled = true;
+  try {
+    const d = await unggahKePustaka(sb, UNGGAH, { jenis: $('dok-jenis').value, tahun: $('dok-tahun').value,
+      judul: $('dok-judul').value, berkas: [...$('dok-file').files], oleh: SAYA && SAYA.email,
+      progres: s => tulis('', s) });
+    await muatDokumen();
+    gambarDaftarDokumen();
+    segarkanRencana();
+    $('dok-file').value = '';
+    tulis('ok', d._ada === 'pustaka' ? `Berkas yang sama sudah ada di pustaka sebagai ${labelDokumen(d)}; tidak diunggah ulang.`
+      : d._ada === 'bukti' ? `Berkas yang sama sudah tersimpan sebagai bukti lain; ${labelDokumen(d)} dicatat dengan berkas itu, tanpa unggah ulang.`
+      : `${labelDokumen(d)} tersimpan.`);
+  } catch (err) {
+    tulis('buruk', err.message || String(err));
+  } finally {
+    tombol.disabled = false;
+  }
+}
+
+function gambarDaftarDokumen(){
+  const box = $('daftar-dok');
+  if (!box) return;
+  if (DOK_GAGAL) { box.hidden = true; return; }
+  if (!DOK.length) { box.innerHTML = '<p class="kosong">Belum ada dokumen.</p>'; return; }
+  const urut = id => { const i = JENIS_DOKUMEN.findIndex(j => j.id === id); return i < 0 ? 999 : i; };
+  const xs = DOK.slice().sort((a, b) => urut(a.jenis) - urut(b.jenis) || b.tahun - a.tahun
+                                     || String(a.judul).localeCompare(String(b.judul)));
+  box.innerHTML = `<div class="gulir"><table class="dok-t"><thead><tr>
+      <th>Jenis</th><th>Tahun</th><th>Judul/nomor</th><th>Dipakai di butir</th><th>Berkas</th>
+      <th>Diperbarui</th><th></th></tr></thead><tbody>${xs.map(r => `<tr>
+      <td>${esc(infoJenis(r.jenis).nama)}</td><td>${esc(r.tahun)}</td><td>${esc(r.judul || '—')}</td>
+      <td>${esc(butirPemakai(r).join(', ') || '—')}</td>
+      <td><a href="${esc(r.url)}" target="_blank" rel="noopener nofollow">buka</a></td>
+      <td>${esc(String(r.diperbarui || '').slice(0, 10))}</td>
+      <td><button type="button" class="kecil" data-hapus-dok="${esc(r.id)}">Hapus</button></td>
+    </tr>`).join('')}</tbody></table></div>
+    <p class="b-ket">Hapus menghapus catatan di sini dan memindah berkasnya ke Sampah Drive prodi
+      (bisa dipulihkan 30 hari). Butir yang menautkan dokumen ini kehilangan buktinya.</p>`;
+}
+
+async function hapusDokumen(id){
+  const r = DOK.find(x => x.id === id);
+  if (!r || !confirm(`Hapus ${infoJenis(r.jenis).nama}${r.judul ? ' "' + r.judul + '"' : ''} ${r.tahun}? ${PESAN_SAMPAH}`)) return;
+  try { await buangBerkas(sb, r.url); }
+  catch (err) { alert('Gagal membuang berkas: ' + (err.message || err)); return; }
+  const { error } = await sb.from('dokumen').delete().eq('id', id);
+  if (error) { alert('Gagal menghapus: ' + error.message); return; }
+  await muatDokumen();
+  gambarDaftarDokumen();
+  segarkanRencana();
+}
+
+// Perbarui daftar periksa dan panel bukti tiap kartu butir setelah
+// dokumen atau bukti butir berubah.
+function segarkanRencana(){
+  document.querySelectorAll('.b[id^="b-"], .b[id^="bd-"]').forEach(k => {
+    const no = k.id.replace(/^bd?-/, '');
+    const lama = k.querySelector('details.rencana-bukti');
+    if (lama) {
+      const buka = lama.open;
+      lama.outerHTML = htmlRencana(no, opsiBukti());
+      if (buka) k.querySelector('details.rencana-bukti').open = true;
+    }
+    const pb = $('pb-' + no);
+    if (pb) pb.outerHTML = htmlPanel(no, keadaanPanel());
+    if (k.id.startsWith('b-')) perbaruiSkor(k);
+  });
+  gambarDaftarDokumen();
+}
+
+// Butir yang menautkan sebuah entri dokumen (langsung atau lewat jenisnya).
+const butirPemakai = r => [...new Set(BB.filter(b => b.dokumen_id === r.id || b.jenis_dokumen === r.jenis)
+  .map(b => b.butir))].sort((a, b) => a - b);
+
+function periksaSatu(el){
+  const v = el.value.trim();
+  let salah = false;
+  if (el.type === 'url')
+    salah = !!v && !/^https?:\/\//i.test(v);
+  else if (v !== ''){
+    const n = +v.replace(',', '.');
+    salah = !Number.isFinite(n)
+            || (!el.hasAttribute('max') ? false : n < 0 || n > 4);
+  }
+  el.classList.toggle('salah', salah);
+  return !salah;
+}
+
+function perbaruiSkor(kartuEl){
+  // Kartu bukti butir berumus (id "bd-NN") tidak punya skor di halaman ini.
+  if (!kartuEl || !kartuEl.id.startsWith('b-')) return;
+  const no = kartuEl.id.slice(2);
+  const b = BUTIR_MANUAL.find(x => x.no === no);
+  if (!b) return;
+  const el = kartuEl.querySelector('[data-sk]');
+  // Butir berunsur: dari bukti tersimpan (BB); 20/22/24 dihitung di halaman Skor.
+  const unsur = BB.filter(x => x.unsur).map(x => ({ tabel: 'butir', baris_id: x.butir, unsur: x.unsur }));
+  const { skor } = UNSUR_BUTIR[no] ? skorManual(b, k => skorKunci(k, unsur))
+                 : { skor: null };
+  el.textContent = skor == null ? '—' : f2(skor);
+  el.className = 'b-sk' + (skor == null ? ' kos' : skor >= 4 ? ' n4' : '');
+}
+
+function tandaiUbah(){
+  const semuaSah = [...document.querySelectorAll('input[data-kunci]')]
+    .every(periksaSatu);
+  $('simpan').disabled = !semuaSah;
+  $('st').textContent = semuaSah
+    ? 'Ada perubahan yang belum disimpan.'
+    : 'Ada isian yang belum sah — perbaiki dulu.';
+  $('st').className = 'st' + (semuaSah ? '' : ' buruk');
+}
+
+async function simpan(){
+  const el = [...document.querySelectorAll('input[data-kunci]')];
+  if (!el.every(periksaSatu)) return;
+
+  // Kunci berisi nilai dikirim; kunci yang dikosongkan DIHAPUS, bukan
+  // ditulis sebagai string kosong — supaya kartu skor menampilkan
+  // "belum diisi", bukan nol.
+  const isi = [], hapus = [];
+  el.forEach(x => {
+    const v = x.value.trim();
+    if (v) isi.push({kunci: x.dataset.kunci, nilai: v});
+    else if ((NILAI[x.dataset.kunci] ?? '') !== '' || x.defaultValue)
+      hapus.push(x.dataset.kunci);
+  });
+
+  $('simpan').disabled = true;
+  $('st').textContent = 'Menyimpan…'; $('st').className = 'st';
+  try {
+    if (isi.length){
+      const { error } = await sb.from('pengaturan')
+        .upsert(isi, { onConflict: 'kunci' });
+      if (error) throw error;
+    }
+    if (hapus.length){
+      const { error } = await sb.from('pengaturan').delete().in('kunci', hapus);
+      if (error) throw error;
+    }
+    isi.forEach(r => NILAI[r.kunci] = r.nilai);
+    hapus.forEach(k => delete NILAI[k]);
+    el.forEach(x => x.defaultValue = x.value);
+    $('st').textContent = `Tersimpan — ${isi.length} kunci diisi, `
+      + `${hapus.length} dikosongkan.`;
+    $('st').className = 'st baik';
+  } catch (e) {
+    $('st').textContent = 'Gagal menyimpan: ' + (e.message || e);
+    $('st').className = 'st buruk';
+    $('simpan').disabled = false;
+  }
+}
+
+function layarMasuk(){
+  $('hSub').textContent = 'Perlu masuk';
+  $('isi').innerHTML = `<div class="masuk">
+    <p>Masukkan email kampus Anda — tautan masuk dikirim tanpa kata sandi.</p>
+    <input id="em" type="email" placeholder="nama@kampus.ac.id" autocomplete="email">
+    <button id="kirim">Kirim tautan masuk</button>
+    <p class="b-ket" id="pesan"></p></div>`;
+  $('kirim').onclick = async () => {
+    const em = $('em').value.trim();
+    if (!em) return;
+    const { error } = await sb.auth.signInWithOtp({ email: em,
+      options: { emailRedirectTo: location.href } });
+    $('pesan').textContent = error ? 'Gagal: ' + error.message
+      : 'Tautan masuk sudah dikirim. Periksa kotak masuk email Anda.';
+  };
+}
+
+addEventListener('beforeunload', e => {
+  if (!siap) return;
+  const ada = [...document.querySelectorAll('input[data-kunci]')]
+    .some(x => x.value !== x.defaultValue);
+  if (ada){ e.preventDefault(); e.returnValue = ''; }
+});
+
+sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_IN' && !siap) mulai(); });
+mulai().catch(e => {
+  $('isi').innerHTML = `<div class="b"><p class="kosong">${esc(e.message)}</p></div>`;
+});
+</script>
+</body>
+</html>

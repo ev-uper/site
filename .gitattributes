@@ -1,0 +1,4 @@
+# cmd.exe misreads .bat/.cmd files with LF-only line endings
+# (lines get cut: setlocal -> 'ocal'). Always check them out as CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf

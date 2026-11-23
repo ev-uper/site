@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>Dasbor operasional — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+  .wrap{max-width:1120px;margin:0 auto;padding:18px 20px 80px}
+  .kosong, .ket{color:var(--muted)} .ket{font-size:13px}
+  .ringkas{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 16px}
+  .ringkas div{background:var(--panel);border:1px solid var(--line);padding:8px 14px}
+  .ringkas b{font-family:var(--mono);font-size:22px;display:block}
+  .ringkas span{font-size:12.5px;color:var(--muted)}
+  .ringkas .awas b{color:var(--merah)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  .kartu{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--line);padding:12px 14px}
+  .kartu.ok{border-top-color:var(--hijau)} .kartu.perhatian{border-top-color:var(--merah)}
+  .kartu h2{font-family:var(--serif);font-size:17px;margin:0 0 2px}
+  .pj{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .peringatan{font-size:12.5px;color:var(--emas);margin:2px 0}
+  .baris{display:flex;gap:10px;align-items:baseline;padding:4px 0;border-top:1px solid var(--line-soft);font-size:14px}
+  .baris a{flex:1;color:var(--ink);text-decoration:none} .baris a:hover{text-decoration:underline}
+  .baris .n{font-family:var(--mono);font-weight:600}
+  .baris .lewat{font-family:var(--mono);font-size:12px;color:var(--merah);font-weight:600}
+  /* Beban bimbingan (109) */
+  .beban{background:var(--panel);border:1px solid var(--line);padding:12px 14px;margin-top:16px}
+  .beban h2{font-family:var(--serif);font-size:17px;margin:0 0 4px}
+  .beban .atas{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 8px}
+  .gulir{overflow-x:auto}
+  .beban table{border-collapse:collapse;width:100%;font-size:13.5px}
+  .beban th, .beban td{padding:5px 8px;border-top:1px solid var(--line-soft);text-align:right;white-space:nowrap}
+  .beban th:first-child, .beban td:first-child{text-align:left;white-space:normal}
+  .beban thead th{font-weight:600;color:var(--muted);font-size:12.5px;border-top:0}
+  .beban td{font-family:var(--mono)} .beban td:first-child{font-family:var(--sans)}
+  .beban tr.kk td{background:var(--line-soft);font-family:var(--sans);font-weight:600;font-size:12.5px}
+  .beban tfoot td{color:var(--muted);border-top:2px solid var(--line)}
+  .beban .tinggi{color:var(--merah);font-weight:600}
+  .beban .penuh{color:var(--emas);font-weight:600}
+  /* Kesehatan sistem (125) */
+  .sehat{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--hijau);padding:12px 14px;margin-top:16px}
+  .sehat.awas{border-top-color:var(--merah)}
+  .sehat h2{font-family:var(--serif);font-size:17px;margin:0 0 4px}
+  .sehat table{border-collapse:collapse;width:100%;font-size:13.5px}
+  .sehat td{padding:5px 8px;border-top:1px solid var(--line-soft);vertical-align:top}
+  .sehat .st{font-weight:600;white-space:nowrap} .sehat .st.ok{color:var(--hijau)} .sehat .st.awas{color:var(--merah)} .sehat .st.info{color:var(--muted)}
+  .sehat .kapan{font-family:var(--mono);font-size:12.5px;white-space:nowrap;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="hero" role="region" aria-label="Pembuka halaman"><div class="hero-in">
+  <div class="hero-inst" data-identitas></div>
+  <h1>Dasbor operasional</h1>
+  <div class="sub" id="hSub">Memuat…</div>
+</div></div>
+<main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+// Dasbor operasional (pemilik 2026-11-17): koordinator prodi melihat per bidang siapa penanggung jawabnya dan antrean yang
+// menunggu/terlambat. Hanya membaca; tindakan dilakukan di halaman kerja masing-masing (tautan di tiap baris).
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { gerbang } from './menu.js?v=2026-11-22-866c27';
+import { ringkasDasbor, HARI_ANTRE, ringkasBeban, ringkasKesehatan } from './dasbor.js?v=2026-11-22-866c27';
+import { tsBerjalan } from './sdgs-unduh.js?v=2026-11-22-866c27';
+import { labelPeran } from './koordinator.js?v=2026-11-22-866c27';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+const sb = createClient(window.SB_URL, window.SB_KEY);
+const baca = q => q.then(r => r.error ? [] : (r.data || []), () => []);   // tabel belum ada = kosong
+
+async function mulai(){
+  const saya = await gerbang(sb);
+  if (!saya) return;
+  $('hSub').textContent = `Masuk sebagai ${saya.nama} (${labelPeran(saya)})`;
+  const [koordinator, pengajuan, jadwal, temuan, tindak, karya, kabar] = await Promise.all([
+    baca(sb.from('koordinator').select('jabatan,mulai,selesai,nomor_sk,dokumen_id,dosen(nama)')),
+    baca(sb.from('pengajuan_mahasiswa').select('jenis,status,tahap,dibuat,diperbarui,tahap_ta:data->>tahap_ta').in('status', ['pembimbing', 'admin', 'disetujui']).limit(3000)),
+    baca(sb.from('jadwal_ta').select('tanggal,status,hasil,batas_revisi,revisi_selesai').limit(3000)),
+    baca(sb.from('ami_temuan').select('status,tenggat')),
+    baca(sb.from('rapat_tindak').select('status,tenggat')),
+    baca(sb.from('karya').select('status').eq('status', 'diajukan').limit(2000)),
+    baca(sb.from('kabar_kegiatan').select('status').eq('status', 'diajukan'))]);
+  // OBE O1 (instal-lengkap.sql); tanpa patch = kosong.
+  const [perluTL, tanpaBaris, tindakEval] = await Promise.all([baca(sb.rpc('evaluasi_perlu_tl')), baca(sb.rpc('cpl_belum_tanpa_evaluasi')),
+    baca(sb.from('evaluasi_tindak').select('status,tenggat'))]);
+  // RPS K26 (112): RPS yang menunggu pengesahan Kaprodi.
+  const rps = await baca(sb.from('mk_rps').select('status').eq('status', 'diajukan'));
+  // Tinjauan RPS (115): menunggu persetujuan dan tindak lanjut revisi; tanpa patch = kosong.
+  const [tinjauan, rpsSemua] = await Promise.all([baca(sb.from('mk_rps_tinjauan').select('status,keputusan,rps_dasar,data')),
+    baca(sb.from('mk_rps').select('kurikulum,kode_mk,status,revisi'))]);
+  const B = ringkasDasbor({ koordinator, pengajuan, jadwal, temuan, tindak, karya, kabar, perluTL, tanpaBaris, tindakEval, rps, tinjauan, rpsSemua });
+  const semua = B.flatMap(b => b.item), lewat = semua.reduce((a, i) => a + i.lewat, 0);
+  const antre = semua.reduce((a, i) => a + i.n, 0), peringatan = B.reduce((a, b) => a + b.pj.peringatan.length, 0);
+  $('isi').innerHTML = `
+    <p class="ket">Per bidang: penanggung jawab (Pengelolaan › Penugasan koordinator) dan pekerjaan yang menunggu. Merah = terlambat
+      (pengajuan menunggu lebih dari ${HARI_ANTRE} hari, revisi atau tenggat lewat). Klik baris untuk membuka halaman kerjanya.</p>
+    <div class="ringkas"><div class="${lewat ? 'awas' : ''}"><b>${lewat}</b><span>terlambat</span></div>
+      <div><b>${antre}</b><span>dalam antrean</span></div>
+      <div class="${peringatan ? 'awas' : ''}"><b>${peringatan}</b><span>peringatan penugasan</span></div></div>
+    <div class="grid">${B.map(b => {
+      const masalah = b.item.some(i => i.lewat) || b.pj.peringatan.length;
+      return `<section class="kartu ${masalah ? 'perhatian' : 'ok'}"><h2>${esc(b.bidang)}</h2>
+        ${b.jabatan ? `<div class="pj">Penanggung jawab: ${b.pj.nama.length ? esc(b.pj.nama.join(', ')) : '—'}</div>` : '<div class="pj">Koordinator prodi dan admin prodi</div>'}
+        ${b.pj.peringatan.map(t => `<div class="peringatan">⚠ ${esc(t)}</div>`).join('')}
+        ${b.item.map(i => `<div class="baris"><a href="${esc(i.href)}">${esc(i.label)}</a><span class="n">${i.n}</span>${
+          i.lewat ? `<span class="lewat">${i.lewat} terlambat</span>` : ''}</div>`).join('')
+          || '<div class="ket">Profil dan alat laboratorium dikelola kepala lab di halaman Laboratorium.</div>'}</section>`;
+    }).join('')}</div>
+    <section class="sehat" id="kesehatan" hidden></section>
+    <section class="beban" id="beban"><h2>Beban bimbingan per dosen</h2><p class="kosong">Memuat…</p></section>`;
+  muatKesehatan();
+  await siapkanBeban();
+}
+
+// Kesehatan sistem (instal-lengkap.sql, pemilik 2026-11-20): kapan tiap pekerjaan otomatis terakhir berjalan,
+// sisa kuota email, pemakaian Drive, ukuran basis data. Tanpa patch atau bukan admin/pimpinan: panel tidak tampil.
+async function muatKesehatan(){
+  const { data, error } = await sb.rpc('sistem_kesehatan');
+  if (error || !data) return;
+  const k = ringkasKesehatan(data), el = $('kesehatan');
+  el.className = 'sehat' + (k.perlu ? ' awas' : '');
+  el.innerHTML = `<h2>Kesehatan sistem</h2>
+    <p class="ket">${k.perlu ? `<b>${k.perlu} butir perlu dicek.</b> ` : 'Semua pekerjaan otomatis berjalan sesuai jadwal. '}Ukuran basis data
+      ${k.mb != null ? Number(k.mb).toLocaleString('id-ID') : '—'} MB. Ringkasan dikirim ke email admin tiap Senin pada jam kerja${k.ringkasan ? ` (terakhir ${new Date(k.ringkasan).toLocaleDateString('id-ID')})` : ''}.</p>
+    <div class="gulir"><table><tbody>${k.butir.map(b => `<tr><td>${esc(b.label)}${b.rinci ? `<div class="ket">${esc(b.rinci)}</div>` : ''}</td>
+      <td class="st ${b.kelas}">${esc(b.teks)}</td><td class="kapan" title="${esc(b.waktu ? new Date(b.waktu).toLocaleString('id-ID') : '')}">${esc(b.kapan)}</td></tr>`).join('')}</tbody></table></div>`;
+  el.hidden = false;
+}
+
+// Beban bimbingan per dosen (instal-lengkap.sql, pemilik 2026-11-18): hanya angka, per TS.
+// TA dibandingkan dengan dosen se-KK (pembimbing TA sebidang/mendekati); KP, menguji, lomba dengan semua dosen.
+const labelTS = ts => `${ts - 1}/${ts}`;
+const angka = v => String(v).replace('.', ',');   // desimal Indonesia
+let KK = [];
+async function siapkanBeban(){
+  const D = await fetch('data.json', {cache: 'no-cache'}).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  KK = D?.situs?.kelompok_keahlian || [];
+  const kini = tsBerjalan();
+  $('beban').innerHTML = `<h2>Beban bimbingan per dosen</h2>
+    <div class="atas"><label>Tahun akademik <select id="bTS">${[0, 1, 2, 3, 4].map(i => kini - i)
+      .map(t => `<option value="${t}">${labelTS(t)}${t === kini ? ' (berjalan)' : ''}</option>`).join('')}</select></label></div>
+    <div id="bIsi"><p class="kosong">Memuat…</p></div>`;
+  $('bTS').onchange = () => gambarBeban(+$('bTS').value);
+  await gambarBeban(kini);
+}
+async function gambarBeban(ts){
+  const { data, error } = await sb.rpc('beban_bimbingan', { p_ts: ts });
+  if (error) {
+    $('bIsi').innerHTML = `<p class="kosong">${/beban_bimbingan|function/i.test(error.message)
+      ? 'Belum tersedia: jalankan patch 109 di Supabase.' : 'Gagal memuat: ' + esc(error.message)}</p>`;
+    return;
+  }
+  const B = ringkasBeban(data || [], KK);
+  if (!B.baris.length) { $('bIsi').innerHTML = '<p class="kosong">Belum ada dosen pembimbing.</p>'; return; }
+  const sel = (r, k, teks) => `<td class="${r.tinggi[k] ? 'tinggi' : ''}">${teks}${r.tinggi[k] ? ' ▲' : ''}</td>`;
+  const kp = r => `<td class="${r.tinggi.kp ? 'tinggi' : r.kuota ? 'penuh' : ''}">${r.kp}${r.kp_kuota == null ? '' : '/' + r.kp_kuota}${
+    r.tinggi.kp ? ' ▲' : ''}${r.kuota === 'lebih' ? ' (lebih kuota)' : r.kuota === 'penuh' ? ' (penuh)' : ''}</td>`;
+  const tinggi = B.baris.filter(r => Object.values(r.tinggi).some(Boolean)).length;
+  $('bIsi').innerHTML = `
+    <p class="ket">Angka TS ${labelTS(ts)} dari pengajuan mahasiswa, jadwal seminar/sidang, dan prestasi mahasiswa di situs ini.
+      ▲ = jauh di atas rata-rata (lebih dari 2 dan lebih dari 1,5 × rata-rata). TA dibandingkan dengan dosen
+      sekelompok keahlian, karena pembimbing TA harus sebidang atau mendekati; KP, menguji, dan lomba dibandingkan
+      dengan semua dosen. KP = pembimbing KP (beban/kuota, dasar kuota KP); TA = mahasiswa berbeda sebagai pembimbing 1 atau 2.
+      ${tinggi ? `<b>${tinggi} dosen</b> bertanda ▲.` : 'Tidak ada dosen yang jauh di atas rata-rata.'}</p>
+    <div class="gulir"><table>
+      <thead><tr><th>Dosen</th><th>KP</th><th>KP selesai</th><th>TA dibimbing</th><th>TA lulus</th><th>Menguji</th><th>Lomba</th></tr></thead>
+      <tbody>${B.kelompok.map(g => `<tr class="kk"><td colspan="7">${esc(g.nama)} · ${g.n} dosen · rata-rata TA ${g.kode ? '' : 'semua dosen '}${angka(g.rata_ta)}</td></tr>
+        ${B.baris.filter(r => r.kk === g.kode).map(r => `<tr><td>${esc(r.nama)}</td>${kp(r)}<td>${r.kp_selesai}</td>${sel(r, 'ta', r.ta)}
+          <td>${r.ta_lulus}</td>${sel(r, 'uji', r.uji)}${sel(r, 'lomba', r.lomba)}</tr>`).join('')}`).join('')}</tbody>
+      <tfoot><tr><td>Rata-rata semua dosen</td><td>${angka(B.rata.kp)}</td><td></td><td>${angka(B.rata.ta)}</td><td></td><td>${angka(B.rata.uji)}</td><td>${angka(B.rata.lomba)}</td></tr></tfoot>
+    </table></div>
+    <p class="ket">Kuota KP diatur di Rekap KP. Kelompok keahlian dosen diisi admin di Kelola dosen.</p>`;
+}
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">Gagal memuat: ${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>

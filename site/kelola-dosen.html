@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="robots" content="noindex, nofollow">
+<title>Kelola dosen — Ruang kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema.css?v=2026-11-22-866c27">
+<style>
+  *{box-sizing:border-box}
+  /* Daftar per kelompok (154, pemilik 2026-11-22) */
+  h3.kel{font-size:15px;color:var(--biru);margin:18px 0 6px} .ringkas-ts{margin-bottom:10px} .ringkas-ts select{margin:0 8px 0 4px}
+  /* Daftar ringkas + panel samping (pemilik 2026-11-22) */
+  .alat{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 4px}
+  .alat input[type=search]{flex:1 1 240px;max-width:360px;padding:7px 9px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:13.5px}
+  table.t.ringkas td:first-child{white-space:normal;min-width:240px} table.t.ringkas td .ket{margin:0;font-size:12px}
+  button.nama{background:none;border:0;padding:0;font:inherit;font-size:13.5px;font-weight:600;color:var(--biru-2);cursor:pointer;text-align:left}
+  button.nama:hover,button.nama:focus-visible{text-decoration:underline}
+  .akses{font-size:12px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);white-space:nowrap}
+  .akses.ya{color:var(--hijau);border-color:currentColor} .akses.lihat{color:var(--biru-2);border-color:currentColor} .akses.tidak{color:var(--muted)}
+  .ket.peringatan{background:#FFFBEF;border-left:3px solid var(--emas);padding:6px 10px;color:var(--ink)} b.awas{color:var(--merah)}
+  aside#panel{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--panel,#fff);border-left:1px solid var(--line);
+    box-shadow:-10px 0 30px rgba(0,0,0,.15);overflow-y:auto;padding:0 18px 40px;z-index:60}
+  aside#panel[hidden]{display:none}
+  .panel-kepala{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:10px;
+    background:var(--panel,#fff);border-bottom:1px solid var(--line);padding:12px 0;margin-bottom:10px;z-index:1}
+  #panel .grid{grid-template-columns:1fr 1fr} @media (max-width:640px){#panel .grid{grid-template-columns:1fr}}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px 80px}
+  a{color:var(--biru-2)}
+  .hero{background:var(--biru);color:#fff;border-bottom:4px solid var(--merah)}
+  .hero-in{max-width:1100px;margin:0 auto;padding:26px 20px 24px}
+  .balik{display:inline-flex;gap:7px;align-items:center;text-decoration:none;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--biru-m2);margin:0 18px 16px 0}
+  .balik:hover{color:#fff}
+  h1{font-family:var(--serif);font-size:clamp(21px,3.4vw,28px);font-weight:600;margin:0;color:#fff}
+  h2{font-family:var(--serif);font-size:18px;margin:22px 0 8px;color:var(--biru)}
+  .sub{color:var(--biru-m4);font-size:14px;margin-top:6px}
+  .info{margin-top:18px;padding:10px 14px;border-left:3px solid var(--emas);
+        background:#FFFBEF;font-size:13.5px}
+  .b{background:var(--panel);border:1px solid var(--line);padding:16px 18px;margin-top:14px}
+  .ket{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 14px}
+  .fld label{display:block;font-size:12.5px;margin-bottom:3px}
+  .fld .wj{color:var(--merah)}
+  .fld input,.fld select{width:100%;padding:7px 9px;border:1px solid var(--line);
+    border-radius:2px;font:inherit;font-size:13.5px;background:#fff}
+  .fld input[type=checkbox]{width:auto;margin-right:6px}
+  .fld .cek{display:flex;align-items:center;font-size:13.5px;padding-top:6px}
+  .fld small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+  .aksi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  button.btn{font:inherit;font-size:13px;padding:7px 14px;border:1px solid var(--biru);
+    background:var(--biru);color:#fff;cursor:pointer;border-radius:2px}
+  button.btn.ghost{background:#fff;color:var(--biru)}
+  button.btn.kecil{font-size:12px;padding:3px 9px}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{font-size:13px}
+  .msg.ok{color:var(--hijau)} .msg.buruk{color:var(--merah)}
+  .gulir{overflow-x:auto}
+  table.t{border-collapse:collapse;font-size:12.5px;min-width:100%}
+  table.t th,table.t td{border-bottom:1px solid var(--line-soft);padding:5px 7px;text-align:left;vertical-align:top;white-space:nowrap}
+  table.t th{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  table.t tr.sunting{background:#FFFBEF}
+  table.t tr.nonaktif td{color:var(--muted)}
+  .kosong{color:var(--muted);font-size:13.5px;padding:12px 0}
+  .masuk{max-width:420px;margin:40px auto;background:#fff;border:1px solid var(--line);padding:20px}
+  .masuk input{width:100%;padding:8px 10px;margin:8px 0;font:inherit}
+</style>
+<link rel="stylesheet" href="kepala.css?v=2026-11-22-866c27">
+</head>
+<body>
+
+<div class="hero" role="region" aria-label="Pembuka halaman">
+  <div class="hero-in">
+    <div class="hero-inst" data-identitas></div>
+    <h1>Kelola dosen</h1>
+    <div class="sub" id="hSub">Memuat&hellip;</div>
+  </div>
+</div>
+
+<main class="wrap" id="isi"></main>
+
+<script src="config.js?v=2026-11-22-866c27"></script>
+<script>
+// Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
+// halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
+addEventListener('error', function (e) {
+  if (document.getElementById('galat-muat')) return;
+  var d = document.createElement('div');
+  d.id = 'galat-muat';
+  d.style.cssText = 'margin:16px;padding:12px 14px;border:1px solid var(--merah);' +
+    'background:var(--merah-m3);color:var(--ink);font:14px/1.5 system-ui,sans-serif';
+  d.textContent = 'Halaman gagal dimuat: ' + (e.message || 'galat skrip') +
+    '. Tekan Ctrl+Shift+R untuk memuat ulang tanpa cache; bila tetap muncul, kirim pesan ini ke admin.';
+  document.body.insertBefore(d, document.body.firstChild);
+});
+</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+import { pasangMenu, hanyaBaca } from './menu.js?v=2026-11-22-866c27';
+import { dosenLogin } from './dosen-login.js?v=2026-11-22-866c27';
+import { htmlSaran } from './saran-bukti.js?v=2026-11-22-866c27';
+import { unduhCV } from './cv-dosen.js?v=2026-11-22-866c27';
+import { KOLOM_PROFIL, KATEGORI, JABATAN,
+  formLKPS, bacaFormLKPS, pasangEditor } from './profil-dosen.js?v=2026-11-22-866c27';
+import { hitungVerifikasi } from './verifikasi-hitung.js?v=2026-11-22-866c27';
+import { KELOMPOK as KELOMPOK_LABEL, URUT_KELOMPOK, kelompokDosen, ampuPerTA, statusTS, hitungTS, catatTB, tbLewat } from './dosen-hitung.js?v=2026-11-22-866c27';
+
+/* =====================================================================
+   KELOLA DOSEN — daftar dosen prodi diisi admin di situs (keputusan
+   pemilik 2026-11-03), menggantikan lembar `dosen` di data-prodi.xlsx dan
+   `bangun.py --sinkron-dosen`. Tabel `dosen` (supabase/instal-lengkap.sql;
+   kolom pendidikan + jabatan sejak supabase/instal-lengkap.sql).
+   Hak tulis: policy dosen_admin (admin saja). Aturan isian (dulu juga di
+   sinkron_dosen() bangun.py, dipensiunkan 2026-11-04):
+     - nidn dan nama wajib; email wajib untuk DTPS dan admin, boleh kosong untuk
+       DT/DTT/industri (155, pemilik 2026-11-22); nidn dan email unik; admin staf tanpa NIDN
+       memakai NIP/NUP atau kode STAF-001;
+     - asesor tidak pernah DTPS;
+     - dosen tidak dihapus (karya merujuk ke barisnya): set aktif = tidak.
+   Pengaman: admin tidak bisa mencabut peran admin/aktif dirinya sendiri,
+   dan selalu tersisa minimal satu admin aktif.
+   ===================================================================== */
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+
+const SB_URL = window.SB_URL || '', SB_KEY = window.SB_KEY || '';
+if (!SB_URL || !SB_KEY || SB_URL.includes('xxxx')) {
+  $('isi').innerHTML = '<p class="kosong">config.js belum diisi.</p>';
+  throw new Error('config.js belum diisi');
+}
+const sb = createClient(SB_URL, SB_KEY);
+
+// Nilai sah; sama dengan PERAN_SAH, PETUNJUK_EXCEL dan validasi() di bangun.py.
+const PERAN = [['dosen', 'Dosen'], ['admin', 'Admin'], ['pimpinan', 'Pimpinan'], ['asesor', 'Asesor']];
+const PERAN_BUKAN_DTPS = ['asesor'];
+// Kelompok dosen -> [kunci, label, dtps, kategori] (pemilik 2026-11-10; APS-AV 2025:
+// DTPS = dosen tetap berkeahlian sesuai kompetensi inti; industri dihitung DTT).
+const KELOMPOK = [
+  ['dtps', 'DTPS (dosen tetap, keahlian sesuai kompetensi inti prodi)', true, 'tetap'],
+  ['dt', 'Dosen tetap PT dari prodi lain (DT)', false, 'tetap'],
+  ['dtt', 'Dosen tidak tetap (DTT)', false, 'tidak_tetap'],
+  ['industri', 'Dosen industri/praktisi (dihitung DTT)', false, 'industri'],
+  // Pilihan eksplisit untuk staf (pemilik 2026-11-17): admin/tenaga kependidikan tidak dihitung dosen sama sekali.
+  ['staf', 'Bukan dosen (admin/tenaga kependidikan): tidak dihitung dosen', false, null],
+];
+function kelompokDari(r){
+  if (r.dtps || String(r.tugas_belajar || '').trim()) return 'dtps';   // tugas belajar = dosen homebase (156)
+  // Baris tersimpan tanpa DTPS dan tanpa kategori = bukan dosen (staf); formulir baru tetap kosong.
+  return { tetap: 'dt', tidak_tetap: 'dtt', industri: 'industri' }[r.kategori] || (r.id ? 'staf' : '');
+}
+const PENDIDIKAN = [['', '—'], ['S2', 'S2'], ['S3', 'S3']];
+const POLA = {
+  sinta_id: [/^[0-9]+$/, 'hanya angka'],
+  scopus_id: [/^[0-9]+$/, 'hanya angka'],
+  orcid: [/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$/i, 'format 0000-0000-0000-0000'],
+};
+const KOLOM = 'id,nidn,nama,email,peran,pendidikan,jabatan,sinta_id,scopus_id,orcid,aktif,dtps';
+
+// ADA_LKPS: kolom profil LKPS 4.a ada (supabase/instal-lengkap.sql).
+let AMPU = new Map(), SUMBER = new Map(), ADA_AMPU = false;   // 154: mengampu per tahun akademik
+let ADA_155 = false;   // 155: kolom boleh_masuk + email boleh kosong
+let ADA_156 = false;   // 156: periode tugas belajar
+let SAYA = null, DOSEN = [], SUNTING = null, ADA_LKPS = true, ADA_ALT = false, ADA_KK = false, KK = null, ADA_TB = false, ADA_NIP = false, ADA_NUPTK = false, ADA_GELAR = false;
+
+const nama = (daftar, v) => (daftar.find(x => x[0] === (v || '')) || [, v || '—'])[1];
+const opsi = (daftar, v) => daftar.map(([k, l]) =>
+  `<option value="${esc(k)}"${k === (v || '') ? ' selected' : ''}>${esc(l)}</option>`).join('');
+
+function tulis(jenis, teks){
+  const m = $('panel') && !$('panel').hidden && $('pesan') ? $('pesan') : $('pesan_atas');
+  if (!m) return;
+  m.className = 'msg ' + jenis; m.textContent = teks;
+}
+
+// Tempel URL profil -> ambil ID-nya (sama dengan id_saja() di bangun.py).
+function idSaja(v){
+  let s = String(v || '').trim();
+  if (!s || ['nan', 'none', '-'].includes(s.toLowerCase())) return '';
+  if (/http/i.test(s)) {
+    s = s.slice(s.toLowerCase().lastIndexOf('http'));
+    const m = s.match(/authorId=([0-9]+)/i);
+    if (m) return m[1];
+    s = s.replace(/\/+$/, '').split('?')[0].split('#')[0].split('/').pop();
+  }
+  return s.trim();
+}
+
+async function mulai(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return layarMasuk();
+  const { data: saya } = await dosenLogin(sb, session, 'id,nama,email,peran');
+  if (!saya) { $('hSub').textContent = 'Tidak terdaftar'; $('isi').innerHTML = '<p class="kosong">Email belum terdaftar.</p>'; return; }
+  SAYA = saya;
+  pasangMenu(sb);
+  if (saya.peran !== 'admin') {
+    $('hSub').textContent = `Masuk sebagai ${saya.nama}`;
+    $('isi').innerHTML = '<p class="kosong">Halaman ini khusus admin prodi.</p>';
+    return;
+  }
+  $('hSub').textContent = `Masuk sebagai ${saya.nama} (admin)`;
+  $('isi').innerHTML = `
+    <div class="info">Daftar orang di situs prodi, dikelompokkan. <b>Peran</b> = hak di situs (Admin, Dosen, Pimpinan, Asesor);
+      <b>kelompok</b> = jenis untuk akreditasi: DTPS (dosen tetap, homebase prodi ini), DT bukan DTPS (homebase prodi lain),
+      tugas belajar, DTT, industri, dan <b>staf (bukan dosen)</b>. Untuk akreditasi, DTPS/DT/DTT dihitung <b>hanya bila
+      mengampu MK prodi pada TS</b> (kelas di Penyusunan kelas, atau centang <b>manual</b> di kolom Mengampu); tugas belajar,
+      staf, dan asesor tidak pernah dihitung. Dosen yang pindah tidak dihapus, cukup dinonaktifkan. Skor berubah setelah situs
+      dibangun ulang (otomatis tiap jam).</div>
+    ${htmlSaran('dosen')}
+    <div class="b"><p class="ket" style="margin:0">Ajuan perubahan profil dari dosen diputuskan di
+      <a href="verifikasi.html#profil">halaman Verifikasi</a><span id="nProfil"></span>.</p></div>
+    <h2>Daftar dosen</h2>
+    <div class="alat"><input id="cari" type="search" placeholder="Cari nama, NIDN, atau email…" aria-label="Cari dosen">
+      <button class="btn" id="tambah">+ Tambah dosen atau admin</button><span class="msg" id="pesan_atas" role="status"></span></div>
+    <div id="daftar"><p class="kosong">Memuat&hellip;</p></div>
+    <aside id="panel" hidden aria-label="Ubah data dosen"><div class="panel-kepala"><b id="panelJudul">Ubah data</b>
+      <button class="btn ghost kecil" id="tutupPanel">Tutup (Esc)</button></div><div id="form"></div></aside>`;
+  $('cari').oninput = e => { CARI = e.target.value.trim(); gambarDaftar(); };
+  $('tambah').onclick = () => bukaPanel(null);
+  $('tutupPanel').onclick = tutupPanel;
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('panel').hidden) tutupPanel(); });
+  await muat();
+  hitungVerifikasi(sb).then(n => { if (n.profil) $('nProfil').textContent = ` (${n.profil} menunggu)`; });
+}
+
+// Ajuan perubahan profil diputuskan di verifikasi.html (verifikasi-profil.js,
+// pemilik 2026-11-08).
+
+async function muat(){
+  let { data, error } = await sb.from('dosen').select(KOLOM + ',' + KOLOM_PROFIL).order('nama');
+  if (error && /kategori|riwayat|column/i.test(error.message)) {   // patch 22 belum dijalankan
+    ADA_LKPS = false;
+    ({ data, error } = await sb.from('dosen').select(KOLOM).order('nama'));
+  }
+  if (error) {
+    const kolomHilang = /pendidikan|jabatan|column/i.test(error.message);
+    $('daftar').innerHTML = `<p class="kosong">Daftar dosen tidak bisa dibaca: ${esc(error.message)}${
+      kolomHilang ? '. Jalankan supabase/instal-lengkap.sql di Supabase.' : ''}</p>`;
+    $('form').innerHTML = '';
+    return;
+  }
+  DOSEN = data || [];
+  // Email alternatif untuk masuk (patch 69); kueri terpisah supaya daftar tetap tampil sebelum patch.
+  const alt = await sb.from('dosen').select('id,email_alternatif');
+  ADA_ALT = !alt.error;
+  if (ADA_ALT) { const m = new Map((alt.data || []).map(x => [x.id, x.email_alternatif])); DOSEN.forEach(d => { d.email_alternatif = m.get(d.id) ?? null; }); }
+  // Kelompok keahlian (patch 86, pemilik 2026-11-17): kolom dibaca terpisah; daftar KK dari data.json
+  // (config.yaml public_site.expertise_groups), supaya daftarnya hanya ada di satu tempat.
+  const kq = await sb.from('dosen').select('id,kelompok_keahlian');
+  ADA_KK = !kq.error;
+  if (ADA_KK) { const m = new Map((kq.data || []).map(x => [x.id, x.kelompok_keahlian])); DOSEN.forEach(d => { d.kelompok_keahlian = m.get(d.id) ?? null; }); }
+  // Tugas belajar (patch 87, pemilik 2026-11-17): tampil di situs, tidak dihitung DTPS; kolom dibaca terpisah.
+  const tq = await sb.from('dosen').select('id,tugas_belajar');
+  ADA_TB = !tq.error;
+  if (ADA_TB) { const m = new Map((tq.data || []).map(x => [x.id, x.tugas_belajar])); DOSEN.forEach(d => { d.tugas_belajar = m.get(d.id) ?? null; }); }
+  // NIP (patch 89, pemilik 2026-11-17): tampil di situs untuk mahasiswa; kolom dibaca terpisah.
+  const nq = await sb.from('dosen').select('id,nip');
+  ADA_NIP = !nq.error;
+  if (ADA_NIP) { const m = new Map((nq.data || []).map(x => [x.id, x.nip])); DOSEN.forEach(d => { d.nip = m.get(d.id) ?? null; }); }
+  // NUPTK (patch 128, pemilik 2026-11-20): diisi dosen di Profil atau admin di sini; tidak tampil di situs publik.
+  const uq = await sb.from('dosen').select('id,nuptk');
+  ADA_NUPTK = !uq.error;
+  if (ADA_NUPTK) { const m = new Map((uq.data || []).map(x => [x.id, x.nuptk])); DOSEN.forEach(d => { d.nuptk = m.get(d.id) ?? null; }); }
+  // Nama dengan gelar (patch 111): lembar pengesahan RPS; kolom dibaca terpisah.
+  const gq = await sb.from('dosen').select('id,nama_gelar');
+  ADA_GELAR = !gq.error;
+  if (ADA_GELAR) { const m = new Map((gq.data || []).map(x => [x.id, x.nama_gelar])); DOSEN.forEach(d => { d.nama_gelar = m.get(d.id) ?? null; }); }
+  // Boleh masuk (patch 155, pemilik 2026-11-22): DT/DTT bisa ada di daftar tanpa bisa masuk; kolom dibaca terpisah.
+  // Periode tugas belajar (patch 156): kolom opsional.
+  const tp = await sb.from('dosen').select('id,tugas_belajar_mulai,tugas_belajar_selesai');
+  ADA_156 = !tp.error;
+  if (ADA_156) { const m = new Map((tp.data || []).map(x => [x.id, x])); DOSEN.forEach(d => Object.assign(d, m.get(d.id) || {})); }
+  const bm = await sb.from('dosen').select('id,boleh_masuk');
+  ADA_155 = !bm.error;
+  if (ADA_155) { const m = new Map((bm.data || []).map(x => [x.id, x.boleh_masuk])); DOSEN.forEach(d => { d.boleh_masuk = m.get(d.id) ?? true; }); }
+  if (KK === null) KK = await fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : {}).then(d => d.situs?.kelompok_keahlian || []).catch(() => []);
+  await muatAmpu();
+  gambarDaftar();
+  if (!$('panel').hidden) isiForm(SUNTING ? DOSEN.find(d => d.id === SUNTING) : null);
+}
+
+// Mengampu MK per tahun akademik (154): kelas Penyusunan kelas + centang manual; tabel yang belum ada dibaca kosong.
+async function muatAmpu(){
+  const baca = q => q.then(r => ({ ok: !r.error, data: r.error ? [] : (r.data || []) }), () => ({ ok: false, data: [] }));
+  const [kl, kd, man] = await Promise.all([baca(sb.from('kelas_kuliah').select('id,tahun_akademik')),
+    baca(sb.from('kelas_dosen').select('kelas_id,dosen_id')), baca(sb.from('dosen_ampu_ts').select('dosen_id,tahun_akademik'))]);
+  ADA_AMPU = man.ok;
+  AMPU = ampuPerTA({ kelas: kl.data, kd: kd.data, manual: man.data });
+  const taKelas = new Map(kl.data.map(k => [k.id, k.tahun_akademik]));
+  SUMBER = new Map();
+  const catat = (ta, id, s) => { if (!ta) return; if (!SUMBER.has(ta)) SUMBER.set(ta, new Map()); if (SUMBER.get(ta).get(id) !== 'kelas') SUMBER.get(ta).set(id, s); };
+  kd.data.forEach(r => catat(taKelas.get(r.kelas_id), r.dosen_id, 'kelas'));
+  man.data.forEach(r => catat(r.tahun_akademik, r.dosen_id, 'manual'));
+}
+
+// Daftar ringkas per kelompok (pemilik 2026-11-22): Nama · Mengampu TS · Dihitung TS · Akses · CV; klik nama membuka panel
+// ubah di samping. Kelompok dan "Dihitung TS" = dosen-hitung.js pada TS terpilih (aturan yang sama dengan bangun.py, Skor,
+// dan LKPS). Mengampu = kelas di Penyusunan kelas pada TS itu, atau centang manual.
+const tsBerjalanKD = () => { const d = new Date(); return d.getMonth() >= 8 ? d.getFullYear() + 1 : d.getFullYear(); };
+let TS_KD = null, CARI = '';
+// Akses masuk (155, 157): masuk / hanya lihat (pimpinan bukan DTPS) / tidak (alasan).
+function aksesMasuk(d){
+  if (d.aktif === false) return ['tidak', 'nonaktif'];
+  if (!d.email) return ['tidak', 'tanpa email'];
+  if (d.boleh_masuk === false) return ['tidak', 'akses ditutup'];
+  if (hanyaBaca(d)) return ['lihat', 'hanya lihat'];
+  return ['ya', 'masuk'];
+}
+function gambarDaftar(){
+  TS_KD ??= tsBerjalanKD();
+  const ta = `${TS_KD - 1}/${TS_KD}`, h = hitungTS(DOSEN, ta, AMPU);
+  const pilihTS = [0, 1, 2].map(n => tsBerjalanKD() - n).map(x => `<option value="${x}"${x === TS_KD ? ' selected' : ''}>${x - 1}/${x}</option>`).join('');
+  const cocok = d => !CARI || `${d.nama} ${d.nidn} ${d.email || ''}`.toLowerCase().includes(CARI.toLowerCase());
+  const baris = d => {
+    const st = statusTS(d, ta, AMPU, SUMBER), dosenProdi = !['staf', 'pimpinan', 'asesor'].includes(st.kelompok);
+    const ampu = !dosenProdi ? '—' : SUMBER.get(ta)?.get(d.id) === 'kelas' ? 'ya (kelas)'
+      : ADA_AMPU ? `<label class="cek"><input type="checkbox" data-ampu="${esc(d.id)}"${SUMBER.get(ta)?.get(d.id) === 'manual' ? ' checked' : ''}> manual</label>` : '—';
+    const hitung = st.dtps ? '<b>DTPS</b>' : st.dt ? '<b>DT</b>' : st.dtt ? '<b>DTT</b>' : `<span class="ket">tidak${st.alasan ? ': ' + esc(st.alasan) : ''}</span>`;
+    const [ak, akTeks] = aksesMasuk(d);
+    const tb = catatTB(d) ? `<div class="ket">Tugas belajar: ${esc(d.tugas_belajar)}${d.tugas_belajar_mulai ? ` (${esc(d.tugas_belajar_mulai)} s/d ${esc(d.tugas_belajar_selesai || 'sekarang')})` : ''}${
+      tbLewat(d) ? ' <b class="awas">masa selesai: kosongkan keterangan</b>' : ''}</div>` : '';
+    return `<tr class="${d.id === SUNTING ? 'sunting' : ''}${d.aktif ? '' : ' nonaktif'}">
+      <td><button type="button" class="nama" data-ubah="${esc(d.id)}" title="Ubah data ${esc(d.nama)}">${esc(d.nama)}</button>
+        <div class="ket">${esc(nama(PERAN, d.peran))} · ${d.email ? esc(d.email) : 'tanpa email'}${d.aktif === false ? ' · nonaktif' : ''}</div>${tb}</td>
+      <td>${ampu}</td><td>${hitung}</td><td><span class="akses ${ak}">${esc(akTeks)}</span></td>
+      <td><button class="btn ghost kecil" data-cv-dosen="${esc(d.id)}" title="Unduh CV dosen ini (.docx)">CV</button></td></tr>`;
+  };
+  const grup = URUT_KELOMPOK.map(k => [k, DOSEN.filter(d => kelompokDosen(d, ta) === k && cocok(d))]).filter(([, xs]) => xs.length);
+  $('daftar').innerHTML = `<div class="b ringkas-ts"><label>TS <select id="ts_kd">${pilihTS}</select></label>
+      <b>NDTPS ${h.ndtps}</b> · <b>NDT ${h.ndt}</b> · <b>NDTT ${h.ndtt}</b>${h.industri ? ` (${h.industri} industri)` : ''}
+      <div class="ket${h.diterapkan ? '' : ' peringatan'}">${h.diterapkan ? `Hanya dosen yang mengampu MK prodi pada ${ta} yang dihitung (kelas di
+        <a href="kelas.html">Penyusunan kelas</a> atau centang <b>manual</b> di kolom Mengampu)${h.tidakMengampu.length ? `; tidak mengampu: ${esc(h.tidakMengampu.join(', '))}` : ''}.`
+        : `<b>Perhatian:</b> belum ada data mengampu MK untuk ${ta} (kelas atau centang), jadi syarat mengampu <b>belum diterapkan</b>: semua dosen aktif
+        sesuai kelompoknya dihitung. Begitu satu kelas atau centang masuk, hanya yang tercatat mengampu yang dihitung. Centang <b>manual</b> dosen
+        yang mengampu, atau susun kelasnya di <a href="kelas.html">Penyusunan kelas</a>.`}
+        ${ADA_AMPU ? '' : ' Centang manual tersedia setelah supabase/instal-lengkap.sql dijalankan.'}
+        Tugas belajar (pada TS yang beririsan dengan masa tugas belajarnya), staf, pimpinan bukan dosen prodi, dan asesor tidak dihitung.
+        Skor berubah setelah situs dibangun ulang.</div></div>
+    <p class="ket">${DOSEN.length} orang${CARI ? `, ${grup.reduce((a, [, xs]) => a + xs.length, 0)} cocok dengan "${esc(CARI)}"` : ''}.
+      ${ADA_LKPS ? '' : ' Profil LKPS 4.a belum tersedia: jalankan supabase/instal-lengkap.sql.'}
+      <label class="ket" style="margin-left:12px">CV: <select id="cv_gaya"><option value="cv">CV akademik</option>
+        <option value="hibah">Biodata pengusul hibah (A–J)</option></select> periode karya <select id="cv_periode"><option value="semua">semua tahun</option>
+        <option value="5">5 tahun terakhir</option></select></label> <span class="msg" id="cv_msg"></span></p>
+    ${grup.map(([k, xs]) => `<h3 class="kel">${esc(KELOMPOK_LABEL[k])} <span class="ket">${xs.length} orang</span></h3>
+    <div class="gulir"><table class="t ringkas"><thead><tr><th>Nama</th><th>Mengampu ${esc(ta)}</th><th>Dihitung TS</th><th>Akses</th><th></th></tr></thead>
+      <tbody>${xs.map(baris).join('')}</tbody></table></div>`).join('') || '<p class="kosong">Tidak ada yang cocok.</p>'}`;
+  $('ts_kd').onchange = e => { TS_KD = +e.target.value; gambarDaftar(); };
+  $('daftar').querySelectorAll('[data-ampu]').forEach(c => { c.onchange = async () => {
+    c.disabled = true;
+    const ta2 = `${TS_KD - 1}/${TS_KD}`;
+    const { error } = c.checked
+      ? await sb.from('dosen_ampu_ts').insert({ dosen_id: c.dataset.ampu, tahun_akademik: ta2, oleh: SAYA.email })
+      : await sb.from('dosen_ampu_ts').delete().eq('dosen_id', c.dataset.ampu).eq('tahun_akademik', ta2);
+    if (error) { tulis('buruk', 'Centang mengampu gagal: ' + error.message); c.checked = !c.checked; c.disabled = false; return; }
+    await muatAmpu(); gambarDaftar();
+  }; });
+  // CV dosen otomatis (pemilik 2026-11-11): admin mengunduh CV dosen mana pun.
+  $('daftar').querySelectorAll('[data-cv-dosen]').forEach(b => {
+    b.onclick = async () => {
+      const d = DOSEN.find(x => x.id === b.dataset.cvDosen), m = $('cv_msg');
+      b.disabled = true; m.textContent = `Menyusun CV ${d.nama}…`;
+      try { await unduhCV(d, $('cv_periode').value, $('cv_gaya').value, sb); m.textContent = `Berkas ${d.nama} diunduh.`; }
+      catch (err) { m.textContent = 'Gagal: ' + (err.message || err); }
+      finally { b.disabled = false; }
+    };
+  });
+  $('daftar').querySelectorAll('[data-ubah]').forEach(b => { b.onclick = () => bukaPanel(DOSEN.find(d => d.id === b.dataset.ubah)); });
+}
+
+// Panel ubah di samping (pemilik 2026-11-22): tidak perlu menggeser tabel; Esc atau Tutup menutupnya.
+function bukaPanel(d = null){
+  SUNTING = d ? d.id : null;
+  isiForm(d);
+  $('panel').hidden = false;
+  document.body.classList.add('panel-buka');
+  gambarDaftar();
+  $('f_nama')?.focus();
+}
+function tutupPanel(){
+  $('panel').hidden = true;
+  document.body.classList.remove('panel-buka');
+  SUNTING = null;
+  gambarDaftar();
+}
+
+function isiForm(d){
+  const r = d || { peran: 'dosen', aktif: true, dtps: true };
+  const diriSendiri = d && d.id === SAYA.id;
+  if ($('panelJudul')) $('panelJudul').textContent = d ? 'Ubah: ' + d.nama : 'Tambah dosen atau admin';
+  $('form').innerHTML = `
+    ${diriSendiri ? '<p class="ket">Ini akun Anda sendiri: peran admin dan aktif tidak bisa dicabut di sini.</p>' : ''}
+    <div class="grid">
+      <div class="fld"><label>Nama lengkap <span class="wj">*</span></label><input id="f_nama" value="${esc(r.nama)}"></div>
+      <div class="fld"><label>NIDN <span class="wj">*</span></label><input id="f_nidn" value="${esc(r.nidn)}">
+        <small>Admin staf tanpa NIDN: NIP/NUP, atau kode STAF-001.</small></div>
+      ${ADA_GELAR ? `<div class="fld"><label>Nama dengan gelar</label><input id="f_gelar" maxlength="200" value="${esc(r.nama_gelar || '')}">
+        <small>Lembar pengesahan RPS, mis. "Dr. Nama, S.T., M.T.". Dosen juga bisa mengisinya sendiri di Profil.</small></div>` : ''}
+      ${ADA_NIP ? `<div class="fld"><label>NIP</label><input id="f_nip" maxlength="40" value="${esc(r.nip || '')}">
+        <small>Tampil di situs (daftar dan halaman dosen) untuk keperluan mahasiswa. Kosong = tidak tampil.${ADA_NUPTK ? ' Dosen juga bisa mengisinya sendiri di Profil.' : ''}</small></div>` : ''}
+      ${ADA_NUPTK ? `<div class="fld"><label>NUPTK</label><input id="f_nuptk" maxlength="40" value="${esc(r.nuptk || '')}">
+        <small>Biasanya 16 angka. Tidak tampil di situs publik. Dosen juga bisa mengisinya sendiri di Profil.</small></div>` : ''}
+      <div class="fld"><label>Email kampus${ADA_155 ? '' : ' <span class="wj">*</span>'}</label><input id="f_email" type="email" value="${esc(r.email)}">
+        <small>Dipakai untuk masuk situs.${ADA_155 ? ' Wajib untuk DTPS dan admin; DT, DTT, dan industri boleh kosong (= tidak bisa masuk).' : ''}</small></div>
+      ${ADA_ALT ? `<div class="fld"><label>Email alternatif untuk masuk</label><input id="f_email_alternatif" type="email"
+        value="${esc(r.email_alternatif)}" placeholder="mis. nama@gmail.com">
+        <small>Bila tautan masuk tidak sampai ke email kampus. Data tetap atas email kampus.</small></div>` : ''}
+      <div class="fld"><label>Peran</label><select id="f_peran"${diriSendiri ? ' disabled' : ''}>${opsi(PERAN, r.peran)}</select>
+        <small>Admin: verifikasi dan data prodi. Pimpinan: skor + rincian per dosen. Asesor: lihat skor.</small></div>
+      <div class="fld"><label>Pendidikan tertinggi</label><select id="f_pendidikan">${opsi(PENDIDIKAN, r.pendidikan)}</select></div>
+      <div class="fld"><label>Jabatan akademik</label><select id="f_jabatan">${opsi(JABATAN, r.jabatan)}</select></div>
+      ${ADA_KK && KK.length ? `<div class="fld"><label>Kelompok keahlian</label><select id="f_kk"><option value="">(belum ditetapkan)</option>${
+        KK.map(k => `<option value="${esc(k.kode)}"${r.kelompok_keahlian === k.kode ? ' selected' : ''}>${esc(k.nama)}</option>`).join('')}</select>
+        <small>Pengelompokan di daftar dosen publik.</small></div>` : ''}
+      ${ADA_TB ? `<div class="fld"><label>Sedang tugas belajar (keterangan)</label><input id="f_tb" maxlength="200"
+        value="${esc(r.tugas_belajar || '')}" placeholder="S3, Kyoto University (2024–2028)">
+        <small>Diisi = dosen homebase yang tugas belajar: tampil di situs dengan keterangan ini; tidak dihitung DTPS pada TS yang
+          beririsan dengan masa tugas belajarnya. Kosongkan bila sudah kembali.</small></div>` : ''}
+      ${ADA_TB && ADA_156 ? `<div class="fld"><label>Tugas belajar mulai</label><input id="f_tb_mulai" type="date" value="${esc(r.tugas_belajar_mulai || '')}">
+        <small>Kosong = dianggap tugas belajar di semua TS.</small></div>
+      <div class="fld"><label>Tugas belajar selesai</label><input id="f_tb_selesai" type="date" value="${esc(r.tugas_belajar_selesai || '')}">
+        <small>Rencana atau realisasi; kosong = masih tugas belajar.</small></div>` : ''}
+      <div class="fld"><label>SINTA ID</label><input id="f_sinta_id" value="${esc(r.sinta_id)}"></div>
+      <div class="fld"><label>Scopus ID</label><input id="f_scopus_id" value="${esc(r.scopus_id)}"></div>
+      <div class="fld"><label>ORCID</label><input id="f_orcid" value="${esc(r.orcid)}"></div>
+      <div class="fld"><label>Status</label>
+        <label class="cek"><input type="checkbox" id="f_aktif"${r.aktif ? ' checked' : ''}${diriSendiri ? ' disabled' : ''}>Aktif (masih bertugas; nonaktif = tidak masuk dan tidak dihitung)</label>
+        ${ADA_155 ? `<label class="cek"><input type="checkbox" id="f_boleh_masuk"${r.boleh_masuk !== false ? ' checked' : ''}${diriSendiri ? ' disabled' : ''}>Boleh masuk situs (menginput data)</label>
+        <small>Tanpa centang: tetap di daftar dan dihitung bila mengampu, tetapi tidak bisa masuk; kelasnya diinput koordinator MK atau admin.</small>` : ''}
+        ${ADA_LKPS ? '' : `<label class="cek"><input type="checkbox" id="f_dtps"${r.dtps ? ' checked' : ''}>Dihitung DTPS prodi</label>`}</div>
+      ${ADA_LKPS ? `<div class="fld"><label>Kelompok dosen</label>
+        ${KELOMPOK.map(([k, ket]) => `<label class="cek"><input type="checkbox" data-kelompok="${k}"${
+          kelompokDari(r) === k ? ' checked' : ''}>${ket}</label>`).join('')}
+        <small>Pilih satu; yang lain terkunci sampai centangnya dilepas. DTPS mengisi datanya sendiri;
+          DT prodi lain, DTT, dan industri diisi admin. Hanya yang <b>Aktif</b> dihitung di butir 26 dan Tabel 4.a.
+          Kosongkan untuk staf/asesor yang bukan dosen.</small></div>` : ''}
+    </div>
+    ${ADA_LKPS ? `<details style="margin-top:14px"><summary><b>Profil untuk LKPS (Tabel 4.a)</b></summary>
+      <div class="grid" style="margin-top:10px">
+        <div class="fld"><label>Penilaian prodi</label>
+          <label class="cek"><input type="checkbox" id="f_sesuai_kompetensi_inti"${r.sesuai_kompetensi_inti ? ' checked' : ''}>Sesuai kompetensi inti PS</label>
+          <label class="cek"><input type="checkbox" id="f_sesuai_keahlian_mk"${r.sesuai_keahlian_mk ? ' checked' : ''}>Bidang keahlian sesuai MK yang diampu</label></div>
+      </div>
+      ${formLKPS(r)}</details>` : ''}
+    <div class="aksi"><button class="btn" id="simpan">${d ? 'Simpan perubahan' : 'Tambah'}</button>
+      ${d ? '<button class="btn ghost" id="batal">Batal</button>' : ''}<span class="msg" id="pesan"></span></div>`;
+  // Kelompok saling meniadakan (pemilik 2026-11-10): satu dicentang, sisanya terkunci.
+  const sinkronDtps = () => {
+    const asesor = PERAN_BUKAN_DTPS.includes($('f_peran').value);
+    if (!ADA_LKPS) {
+      $('f_dtps').disabled = asesor;
+      if (asesor) $('f_dtps').checked = false;
+      return;
+    }
+    const kotak = [...document.querySelectorAll('[data-kelompok]')];
+    if (asesor) kotak.forEach(c => { c.checked = false; });
+    const pilih = kotak.find(c => c.checked);
+    kotak.forEach(c => { c.disabled = asesor || (pilih && c !== pilih); });
+    // Bawaan boleh masuk (155): formulir baru DT/DTT/industri tanpa centang, selama admin belum mengubahnya sendiri.
+    const bm = $('f_boleh_masuk');
+    if (bm && !d && !bm.dataset.disentuh) bm.checked = !['dt', 'dtt', 'industri'].includes(pilih?.dataset.kelompok);
+    if (bm && !diriSendiri) { const admin = $('f_peran').value === 'admin'; bm.disabled = admin; if (admin) bm.checked = true; }
+    const inti = $('f_sesuai_kompetensi_inti');
+    const dtps = pilih?.dataset.kelompok === 'dtps';
+    if (dtps) inti.checked = true;   // DTPS = keahlian sesuai kompetensi inti
+    inti.disabled = dtps;
+  };
+  document.querySelectorAll('[data-kelompok]').forEach(c => { c.onchange = sinkronDtps; });
+  $('f_peran').onchange = sinkronDtps;
+  if ($('f_boleh_masuk')) $('f_boleh_masuk').onchange = e => { e.target.dataset.disentuh = '1'; };
+  sinkronDtps();
+  if (ADA_LKPS) pasangEditor($('form'));
+  $('simpan').onclick = simpan;
+  if (d) $('batal').onclick = tutupPanel;
+}
+
+async function simpan(){
+  const v = k => $('f_' + k).value.trim();
+  const isi = {
+    nama: v('nama'), nidn: v('nidn'), email: v('email').toLowerCase() || null, peran: $('f_peran').value,
+    pendidikan: v('pendidikan') || null, jabatan: v('jabatan') || null,
+    sinta_id: idSaja(v('sinta_id')) || null, scopus_id: idSaja(v('scopus_id')) || null,
+    orcid: idSaja(v('orcid')) || null,
+    aktif: $('f_aktif').checked, dtps: ADA_LKPS ? false : $('f_dtps').checked,
+  };
+  if (ADA_KK && $('f_kk')) isi.kelompok_keahlian = $('f_kk').value || null;
+  if (ADA_GELAR && $('f_gelar')) {
+    isi.nama_gelar = $('f_gelar').value.trim().replace(/\s+/g, ' ') || null;
+    if (isi.nama_gelar && isi.nama_gelar.length < 3) return tulis('buruk', 'Nama dengan gelar paling sedikit 3 huruf.');
+  }
+  if (ADA_NIP && $('f_nip')) {
+    isi.nip = $('f_nip').value.trim().replace(/\s+/g, ' ') || null;
+    if (isi.nip && !/^[0-9A-Za-z][0-9A-Za-z ./-]{1,38}[0-9A-Za-z]$/.test(isi.nip))
+      return tulis('buruk', 'NIP: 3–40 karakter berupa angka, huruf, spasi, titik, garis miring, atau tanda hubung.');
+  }
+  if (ADA_NUPTK && $('f_nuptk')) {
+    isi.nuptk = $('f_nuptk').value.trim().replace(/\s+/g, ' ') || null;
+    if (isi.nuptk && !/^[0-9A-Za-z][0-9A-Za-z ./-]{1,38}[0-9A-Za-z]$/.test(isi.nuptk))
+      return tulis('buruk', 'NUPTK: 3–40 karakter berupa angka, huruf, spasi, titik, garis miring, atau tanda hubung.');
+  }
+  const kel = KELOMPOK.find(([k]) => document.querySelector(`[data-kelompok="${k}"]`)?.checked);
+  if (ADA_LKPS) Object.assign(isi, bacaFormLKPS(isi.pendidikan), {
+    dtps: kel ? kel[2] : false,
+    kategori: kel ? kel[3] : null,
+    sesuai_kompetensi_inti: $('f_sesuai_kompetensi_inti').checked,
+    sesuai_keahlian_mk: $('f_sesuai_keahlian_mk').checked,
+  });
+  // Tugas belajar (patch 87): tidak dihitung DTPS (aturan basis data); kategori dosen tetap (DT). Sesudah
+  // isian LKPS di atas, supaya pilihan kelompok DTPS tidak menimpanya.
+  if (ADA_TB && $('f_tb')) {
+    isi.tugas_belajar = $('f_tb').value.trim() || null;
+    if (isi.tugas_belajar) { isi.dtps = false; if (ADA_LKPS) isi.kategori = 'tetap'; }
+    // Periode (156): hanya bersama keterangan; selesai tidak sebelum mulai.
+    if (ADA_156 && $('f_tb_mulai')) {
+      isi.tugas_belajar_mulai = isi.tugas_belajar ? ($('f_tb_mulai').value || null) : null;
+      isi.tugas_belajar_selesai = isi.tugas_belajar ? ($('f_tb_selesai').value || null) : null;
+      if (isi.tugas_belajar_mulai && isi.tugas_belajar_selesai && isi.tugas_belajar_selesai < isi.tugas_belajar_mulai)
+        return tulis('buruk', 'Tanggal selesai tugas belajar sebelum tanggal mulai.');
+    }
+  }
+  if (PERAN_BUKAN_DTPS.includes(isi.peran)) isi.dtps = false;
+  if (!isi.nama || !isi.nidn) return tulis('buruk', 'Nama dan NIDN/kode wajib diisi.');
+  // Email (155, pemilik 2026-11-22): wajib untuk DTPS dan admin; DT/DTT/industri boleh kosong. Sebelum patch: selalu wajib.
+  if (!isi.email && (!ADA_155 || isi.dtps || isi.peran === 'admin'))
+    return tulis('buruk', ADA_155 ? 'Email wajib untuk DTPS dan admin.' : 'Nama, NIDN/kode, dan email wajib diisi.');
+  if (isi.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(isi.email)) return tulis('buruk', 'Email tidak sah.');
+  if (ADA_155 && $('f_boleh_masuk')) isi.boleh_masuk = isi.peran === 'admin' || $('f_boleh_masuk').checked;
+  // Pengaman (pemilik 2026-11-17): admin bisa dosen atau staf; staf tidak boleh terhitung DTPS karena lupa mengganti kelompok.
+  const sudahDtps = !!(SUNTING && DOSEN.find(d => d.id === SUNTING)?.dtps);   // admin dosen yang sudah DTPS: tanpa tanya ulang
+  if (isi.peran === 'admin' && isi.dtps && !sudahDtps && !confirm(`${isi.nama} berperan Admin dan bertanda DTPS (dihitung dosen tetap prodi untuk `
+      + 'akreditasi). Lanjutkan hanya bila ia memang dosen tetap prodi; untuk staf/tenaga kependidikan pilih "Bukan dosen".')) return;
+  const lain = DOSEN.filter(d => d.id !== SUNTING);
+  if (lain.some(d => String(d.nidn).toLowerCase() === isi.nidn.toLowerCase()))
+    return tulis('buruk', `NIDN/kode ${isi.nidn} sudah dipakai.`);
+  if (isi.email && lain.some(d => String(d.email || '').toLowerCase() === isi.email))
+    return tulis('buruk', `Email ${isi.email} sudah terdaftar.`);
+  if (ADA_ALT) {
+    isi.email_alternatif = v('email_alternatif').toLowerCase() || null;
+    const alt = isi.email_alternatif;
+    if (alt && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(alt)) return tulis('buruk', 'Email alternatif tidak sah.');
+    if (alt && alt === isi.email) return tulis('buruk', 'Email alternatif sama dengan email kampus.');
+    if (alt && lain.some(d => [d.email, d.email_alternatif].map(x => String(x || '').toLowerCase()).includes(alt)))
+      return tulis('buruk', `Email ${alt} sudah dipakai dosen lain.`);
+    if (isi.email && lain.some(d => String(d.email_alternatif || '').toLowerCase() === isi.email))
+      return tulis('buruk', `Email ${isi.email} sudah menjadi email alternatif dosen lain.`);
+  }
+  if (SUNTING === SAYA.id) { isi.peran = 'admin'; isi.aktif = true; if (ADA_155) isi.boleh_masuk = true; }
+  const adminTersisa = lain.some(d => d.peran === 'admin' && d.aktif) || (isi.peran === 'admin' && isi.aktif);
+  if (!adminTersisa) return tulis('buruk', 'Harus tersisa minimal satu admin aktif.');
+  const ingat = Object.entries(POLA)
+    .filter(([k, [re]]) => isi[k] && !re.test(isi[k]))
+    .map(([k, [, ket]]) => `${k} (${ket})`);
+  if (ingat.length && !confirm(`Format ${ingat.join(', ')} tidak sesuai; tautan profil mungkin tidak berfungsi. Tetap simpan?`)) return;
+
+  $('simpan').disabled = true;
+  const { error } = SUNTING
+    ? await sb.from('dosen').update({ ...isi, diubah_pada: new Date().toISOString() }).eq('id', SUNTING)
+    : await sb.from('dosen').insert(isi);
+  if (error) { $('simpan').disabled = false; return tulis('buruk', 'Gagal menyimpan: ' + error.message); }
+  const baru = !SUNTING;
+  SUNTING = null;
+  $('panel').hidden = true; document.body.classList.remove('panel-buka');
+  await muat();
+  const bisaMasuk = isi.email && isi.aktif && isi.boleh_masuk !== false;
+  tulis('ok', baru ? `${isi.nama} ditambahkan. ${bisaMasuk ? `Ia sekarang bisa masuk dengan ${isi.email}.`
+    : 'Ia tidak bisa masuk situs (tanpa email, nonaktif, atau tidak boleh masuk).'}` : 'Perubahan tersimpan.');
+}
+
+function layarMasuk(){
+  $('hSub').textContent = 'Perlu masuk';
+  $('isi').innerHTML = `<div class="masuk"><p>Masukkan email kampus Anda — tautan masuk dikirim tanpa kata sandi.</p>
+    <input id="em" type="email" placeholder="nama@kampus.ac.id" autocomplete="email">
+    <button class="btn" id="kirim">Kirim tautan masuk</button><p class="ket" id="pesan"></p></div>`;
+  $('kirim').onclick = async () => {
+    const em = $('em').value.trim();
+    if (!em) return;
+    const { error } = await sb.auth.signInWithOtp({ email: em, options: { emailRedirectTo: location.href } });
+    $('pesan').textContent = error ? 'Gagal: ' + error.message : 'Tautan masuk sudah dikirim. Periksa email Anda.';
+  };
+}
+
+sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_IN' && !SAYA) mulai(); });
+mulai().catch(e => { $('isi').innerHTML = `<p class="kosong">${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>
