@@ -1,5 +1,5 @@
-import { dosenLogin } from './dosen-login.js?v=2026-11-23-5a55a3';
-import { aktifPada } from './koordinator.js?v=2026-11-23-5a55a3';
+import { dosenLogin } from './dosen-login.js?v=2026-11-25-65047c';
+import { aktifPada } from './koordinator.js?v=2026-11-25-65047c';
 // Menu bersama ruang kerja (pemilik 2026-11-04).
 //
 // Situs dibagi dua:
@@ -32,15 +32,22 @@ const pantauanBoleh = (s, href) => PANTAUAN.includes(berkas(href)) || ((s.koordi
 // Asesor dan pimpinan hanya-baca tidak mengisi karya.
 const isiKarya = s => s.peran !== 'asesor' && !hanyaBaca(s);
 
-import { halamanAktif } from './fitur.js?v=2026-11-23-5a55a3';
-import { pasangPemicuBangun } from './pemicu-bangun.js?v=2026-11-23-5a55a3';
+import { halamanAktif } from './fitur.js?v=2026-11-25-65047c';
+import { BUTIR_LAM_TEKNIK } from './bobot.js?v=2026-11-25-65047c';
+import { pasangPemicuBangun } from './pemicu-bangun.js?v=2026-11-25-65047c';
+// Tinggi kotak teks mengikuti isi (pemilik 2026-11-25); bentuk "from" agar dicap stamp_versions.py.
+import { pasSemua as pasKotakTeks } from './kotak-teks.js?v=2026-11-25-65047c';
 
 export const MODUL = [
+  // Susunan menu mengikuti alur kerja (pemilik 2026-11-23): Data saya (milik dosen), Pengajaran (urut alur MK:
+  // koordinator dan tim -> silabus -> CPMK -> RPS -> kelas dan jadwal -> nilai CPL -> portofolio -> evaluasi -> tinjauan),
+  // Kurikulum dan CPL prodi, Kemahasiswaan, Penelitian dan PkM, Kegiatan, Mutu dan akreditasi (termasuk Grafik untuk LED),
+  // Pemantauan, Pengelolaan (termasuk Kelengkapan situs publik), Bantuan. Alamat halaman tidak berubah.
+  { judul: 'Data saya', ket: 'Profil, karya, target kinerja, dan jadwal berhalangan Anda.', halaman: [
   // Susunan modul (pemilik 2026-11-17): mengikuti pembagian tugas koordinator prodi (kemahasiswaan,
   // laboratorium, mutu & akreditasi/GKM) dan pemantauan oleh koordinator prodi; admin prodi terpisah.
   // Tahap 3 (pemilik 2026-11-20): "Pembelajaran dan CPL" dipecah jadi Mata kuliah saya (pekerjaan dosen per MK) dan
   // Kurikulum dan CPL prodi (rekap prodi); halaman admin, profil prodi, dan laboratorium dikumpulkan di Pengelolaan.
-  { judul: 'Data saya', ket: 'Profil, karya, dan target kinerja Anda.', halaman: [
     { href: 'profil.html', judul: 'Profil saya',
       ket: 'Nama, SINTA, Scopus, ORCID, pendidikan, jabatan; perubahan disetujui admin.' },
     { href: 'karya.html', judul: 'Karya dosen', boleh: isiKarya,
@@ -48,22 +55,37 @@ export const MODUL = [
     // Target kinerja per dosen (instal-lengkap.sql, pemilik 2026-11-12): dosen melihat miliknya.
     { href: 'target.html', judul: 'Target kinerja dosen', boleh: s => s.peran !== 'asesor',
       ket: 'Target tahunan per dosen (publikasi, penelitian, PkM, luaran, rekognisi, hibah) dibandingkan capaiannya.' },
+    // Jadwal berhalangan (instal-lengkap.sql, pemilik 2026-11-20): dosen mengisi slot yang tidak bisa; pengatur jadwal mencari slot kosong.
+    { href: 'jadwal-berhalangan.html', judul: 'Jadwal berhalangan', boleh: isiKarya,
+      ket: 'Slot jam kuliah yang tidak bisa Anda pakai (termasuk jadwal di luar prodi); admin, Kaprodi, dan koordinator TA/KP mencari slot kosong untuk sidang dan rapat.' },
+    // Kalender saya (162, pemilik 2026-11-24): kalender.html dalam mode pribadi.
+    { href: 'kalender.html?saya=1', judul: 'Kalender saya', boleh: s => s.peran !== 'asesor',
+      ket: 'Hanya yang menyangkut Anda: jadwal mengajar, rapat yang mengundang Anda, agenda dari admin, tenggat Anda, berhalangan, hari libur; unduh .ics.' },
   ]},
-  { judul: 'Mata kuliah saya', ket: 'CPMK, RPS, nilai CPL, portofolio, dan evaluasi mata kuliah yang Anda ampu.', halaman: [
-    { href: 'nilai-cpl.html', judul: 'Berkas nilai CPL', boleh: isiKarya,
-      ket: 'Unggah Template_Input_Data_CPL per kelas (diperiksa sebelum dikirim, disimpan privat); admin: daftar kelas dan pengingat.' },
+  { judul: 'Pengajaran', ket: 'Alur mata kuliah: koordinator dan tim, silabus, CPMK, RPS, kelas dan jadwal, nilai CPL, portofolio, evaluasi, tinjauan RPS.', halaman: [
+    // Mata kuliah saya (pemilik 2026-11-23): MK yang saya koordinasikan/ikut timnya dan kelas semester ini, urut alur kerja.
+    { href: 'mk-saya.html', judul: 'Mata kuliah saya', boleh: isiKarya,
+      ket: 'MK yang Anda koordinasikan atau ikut timnya dan kelas Anda semester ini: status silabus, CPMK, RPS, dan tautan ke tiap langkah.' },
+    // Koordinator dan tim MK (158, pemilik 2026-11-23): langkah pertama; Kaprodi aktif atau admin menetapkan, lainnya melihat.
+    { href: 'koordinator-mk.html', judul: 'Koordinator dan tim MK', boleh: s => s.peran !== 'asesor',
+      ket: 'Satu koordinator dan tim dosen per mata kuliah per kurikulum, status silabus/CPMK/RPS, beban per dosen, usulan dari kurikulum lama.' },
+    // Silabus (instal-lengkap.sql, pemilik 2026-11-20): lampiran dokumen kurikulum, disahkan Kaprodi.
+    { href: 'silabus.html', judul: 'Silabus', boleh: isiKarya,
+      ket: 'Silabus per mata kuliah dalam bahasa Indonesia dan Inggris, disahkan Kaprodi; unduh Word lampiran silabus dokumen kurikulum.' },
     // CPMK dan RPS per MK (instal-lengkap.sql, pemilik 2026-11-17, OBE O2): templat nilai CPL terisi per kelas.
     { href: 'cpmk.html', judul: 'CPMK dan penilaian', boleh: isiKarya,
       ket: 'CPMK, Sub-CPMK, butir asesmen, bobot, dan RPS per mata kuliah; unduh templat nilai CPL yang sudah terisi per kelas.' },
     // RPS K26 (instal-lengkap.sql, pemilik 2026-11-18): dosen mengisi RPS di situs, unduh Word Formulir RPS K26.
     { href: 'rps.html', judul: 'RPS', boleh: isiKarya,
       ket: 'Susun RPS per mata kuliah dan kurikulum (K21, K26, …; bagian B dari CPMK dan penilaian), periksa otomatis menurut Panduan, unduh Word formulir RPS.' },
-    // Silabus (instal-lengkap.sql, pemilik 2026-11-20): lampiran dokumen kurikulum, disahkan Kaprodi.
-    { href: 'silabus.html', judul: 'Silabus', boleh: isiKarya,
-      ket: 'Silabus per mata kuliah dalam bahasa Indonesia dan Inggris, disahkan Kaprodi; unduh Word lampiran silabus dokumen kurikulum.' },
-    // Tinjauan RPS (instal-lengkap.sql, pemilik 2026-11-19): butir 15 unsur 5-8 setelah nilai akhir keluar.
-    { href: 'tinjauan-rps.html', judul: 'Tinjauan RPS', boleh: isiKarya,
-      ket: 'Tinjau RPS tiap MK setelah nilai akhir keluar: analisis CPL, materi dan metode, penilaian, pembaruan materi; disetujui Kaprodi, revisi jadi tindak lanjut.' },
+    // Penyusunan kelas (136, pemilik 2026-11-21): admin/Kaprodi menyusun, dosen melihat kelasnya.
+    { href: 'kelas.html', judul: 'Penyusunan kelas', boleh: s => s.peran !== 'asesor',
+      ket: 'Kelas per semester: satu MK beberapa kelas, dosen pengampu dan team teaching; isi manual atau impor CSV, unduh CSV untuk penyusunan jadwal.' },
+    // Jadwal kuliah (150, pemilik 2026-11-22): admin/Kaprodi menyusun (run_jadwal.py), Kaprodi mengesahkan, lalu dosen melihat.
+    { href: 'jadwal-kuliah.html', judul: 'Jadwal kuliah', boleh: s => s.peran !== 'asesor',
+      ket: 'Hari, jam, dan ruang tiap kelas: disusun dengan run_jadwal.py atau manual, diperiksa bentroknya, disahkan Kaprodi, lalu tampil untuk semua dosen.' },
+    { href: 'nilai-cpl.html', judul: 'Berkas nilai CPL', boleh: isiKarya,
+      ket: 'Unggah Template_Input_Data_CPL per kelas (diperiksa sebelum dikirim, disimpan privat); admin: daftar kelas dan pengingat.' },
     // Portofolio MK (instal-lengkap.sql, pemilik 2026-11-17, OBE O3): isi disaring basis data (koordinator MK, pengampu,
     // GKM, admin, pimpinan, asesor aktif).
     { href: 'portofolio.html', judul: 'Portofolio mata kuliah',
@@ -71,27 +93,24 @@ export const MODUL = [
     // Evaluasi pembelajaran (instal-lengkap.sql): dosen miliknya, admin/pimpinan semua, asesor rekap prodi.
     { href: 'evaluasi-pembelajaran.html', judul: 'Evaluasi pembelajaran',
       ket: 'EDOM, capaian CPL kelas, refleksi RPS per mata kuliah tiap semester, dan tindak lanjutnya.' },
+    // Tinjauan RPS (instal-lengkap.sql, pemilik 2026-11-19): butir 15 unsur 5-8 setelah nilai akhir keluar.
+    { href: 'tinjauan-rps.html', judul: 'Tinjauan RPS', boleh: isiKarya,
+      ket: 'Tinjau RPS tiap MK setelah nilai akhir keluar: analisis CPL, materi dan metode, penilaian, pembaruan materi; disetujui Kaprodi, revisi jadi tindak lanjut.' },
   ]},
-  { judul: 'Kurikulum dan CPL prodi', ket: 'Rekap RPS, capaian CPL, PJP, dan data kurikulum program studi.', halaman: [
+  { judul: 'Kurikulum dan CPL prodi', ket: 'Data kurikulum, rekap RPS, capaian CPL, PJP, dan ekuivalensi program studi.', halaman: [
+    { href: 'data-prodi.html?tab=mk', judul: 'Mata kuliah dan CPL', boleh: admin,
+      ket: 'Data prodi › Kurikulum & CPL: mata kuliah, CPL per kurikulum, peta MK–CPL, korelasi CPL antar kurikulum.' },
     // Rekap RPS kurikulum (pemilik 2026-11-19): kalender asesmen lintas MK dan peta CPL dari bagian B.
     { href: 'rps-kurikulum.html', judul: 'Rekap RPS kurikulum', boleh: isiKarya,
       ket: 'Kalender asesmen semua MK per semester (penumpukan tugas per pekan), peta CPL dari CPMK berbobot, dan HOTS per tahun.' },
     { href: 'monitoring.html#cpl', judul: 'Capaian CPL',
       ket: 'Ketercapaian CPL: grafik per angkatan, progres per semester, peta MK × CPL, kelas yang belum tercapai.' },
     // Simulasi PJP butir 18 (pemilik 2026-11-19): sks praktikum/praktik/penugasan per MK, di peramban saja.
-    { href: 'pjp.html', judul: 'Simulasi PJP', boleh: s => mutu(s) || s.peran === 'pimpinan' || (s.koordinator || []).includes('kaprodi'),
+    { href: 'pjp.html', judul: 'Simulasi PJP', lam: true, boleh: s => mutu(s) || s.peran === 'pimpinan' || (s.koordinator || []).includes('kaprodi'),
       ket: 'Butir 18 LAM Teknik: PJP sekarang dan simulasi bila sks praktikum/praktik/penugasan beberapa MK diubah; unduh CSV untuk rapat kurikulum.' },
     // Ekuivalensi MK kurikulum lama -> baru (134, pemilik 2026-11-21): semua membaca (Dosen Wali); Kaprodi sahkan, Dekan tetapkan.
     { href: 'ekuivalensi.html', judul: 'Ekuivalensi mata kuliah',
       ket: 'Tabel padanan MK kurikulum lama ke baru (1:1, 1:2, 2:1): disahkan Kaprodi, ditetapkan Dekan, lalu terbit di halaman publik.' },
-    // Penyusunan kelas (136, pemilik 2026-11-21): admin/Kaprodi menyusun, dosen melihat kelasnya.
-    { href: 'kelas.html', judul: 'Penyusunan kelas', boleh: s => s.peran !== 'asesor',
-      ket: 'Kelas per semester: satu MK beberapa kelas, dosen pengampu dan team teaching; isi manual atau impor CSV, unduh CSV untuk penyusunan jadwal.' },
-    // Jadwal kuliah (150, pemilik 2026-11-22): admin/Kaprodi menyusun (run_jadwal.py), Kaprodi mengesahkan, lalu dosen melihat.
-    { href: 'jadwal-kuliah.html', judul: 'Jadwal kuliah', boleh: s => s.peran !== 'asesor',
-      ket: 'Hari, jam, dan ruang tiap kelas: disusun dengan run_jadwal.py atau manual, diperiksa bentroknya, disahkan Kaprodi, lalu tampil untuk semua dosen.' },
-    { href: 'data-prodi.html?tab=mk', judul: 'Mata kuliah dan CPL', boleh: admin,
-      ket: 'Data prodi › Kurikulum & CPL: mata kuliah, CPL per kurikulum, peta MK–CPL, korelasi CPL antar kurikulum.' },
   ]},
   { judul: 'Kemahasiswaan', ket: 'Pengajuan mahasiswa (KP, TA, lomba, luaran, kabar kegiatan, surat, yudisium), seminar/sidang TA, dan layanan mahasiswa.', halaman: [
     // Pengajuan KP dan laporan lomba (90, pemilik 2026-11-17): pembimbing lalu admin; mahasiswa tanpa masuk akun.
@@ -101,6 +120,12 @@ export const MODUL = [
     // Rekap seminar/sidang TA dan beban dosen (instal-lengkap.sql, pemilik 2026-11-17).
     { href: 'rekap-ta.html', judul: 'Rekap seminar/sidang TA', boleh: s => s.peran !== 'asesor',
       ket: 'Seminar proposal, seminar kemajuan, sidang akhir per periode; beban membimbing dan menguji per dosen.' },
+    // Penilaian seminar/sidang TA dan berita acara (instal-lengkap.sql, pemilik 2026-11-25).
+    // Catatan bimbingan TA dengan konfirmasi pembimbing (instal-lengkap.sql, pemilik 2026-11-25).
+    { href: 'bimbingan-ta.html', judul: 'Bimbingan TA', boleh: s => s.peran !== 'asesor',
+      ket: 'Konfirmasi catatan bimbingan mahasiswa, riwayat dan rekap bimbingan per mahasiswa, minimal bimbingan per tahap.' },
+    { href: 'penilaian-ta.html', judul: 'Penilaian seminar dan sidang TA', boleh: s => s.peran !== 'asesor',
+      ket: 'Pembimbing dan penguji mengisi nilai menurut form penilaian; koordinator TA menetapkan dan mencetak berita acara.' },
     // Rekap KP dan magang (instal-lengkap.sql, pemilik 2026-11-18): angka untuk semua staf; bukti untuk koordinator/admin/asesor.
     { href: 'rekap-kp.html', judul: 'Rekap KP dan magang', boleh: () => true,
       ket: 'Per tahun dan instansi, mitra kerja sama, beban bimbingan KP per dosen, bukti KP selesai untuk asesor.' },
@@ -114,6 +139,9 @@ export const MODUL = [
     // Sama dengan boleh_hibah() di supabase/instal-lengkap.sql.
     { href: 'hibah.html', judul: 'Pengajuan hibah', boleh: s => s.peran !== 'asesor',
       ket: 'Panggilan hibah dan proposal tim: tenggat, status, dana; didanai menjadi draf karya.' },
+    // Insentif publikasi (163, pemilik 2026-11-24): klaim dibuat di Karya saya; admin/Kaprodi memeriksa dan mengajukan ke fakultas.
+    { href: 'insentif.html', judul: 'Insentif publikasi', boleh: s => s.peran !== 'asesor',
+      ket: 'Klaim insentif publikasi tahun berjalan: status dan berkas; admin/Kaprodi memeriksa, mengajukan ke fakultas (rekap Excel), mencatat hasil.' },
     { href: 'keahlian.html', judul: 'Kepakaran dosen',
       ket: 'Cari pakar, peta topik, dan usulan pembimbing/penguji TA dari keahlian dosen; halaman publik.' },
     { href: 'sdgs-bukti.html', judul: 'Rekap SDGs dan bukti',
@@ -123,9 +151,6 @@ export const MODUL = [
     // Kalender (instal-lengkap.sql): semua pengguna terdaftar; kegiatan manual diisi admin (pemilik 2026-11-12).
     { href: 'kalender.html', judul: 'Kalender kegiatan',
       ket: 'Rapat, kegiatan prodi, tenggat hibah, tindak lanjut, dan temuan AMI dalam satu kalender; unduh .ics.' },
-    // Jadwal berhalangan (instal-lengkap.sql, pemilik 2026-11-20): dosen mengisi slot yang tidak bisa; pengatur jadwal mencari slot kosong.
-    { href: 'jadwal-berhalangan.html', judul: 'Jadwal berhalangan', boleh: isiKarya,
-      ket: 'Slot jam kuliah yang tidak bisa Anda pakai (termasuk jadwal di luar prodi); admin, Kaprodi, dan koordinator TA/KP mencari slot kosong untuk sidang dan rapat.' },
     // Kabar kegiatan (instal-lengkap.sql, pemilik 2026-11-16): dosen mengajukan, admin menerbitkan.
     { href: 'kabar-kegiatan.html', judul: 'Kabar kegiatan', boleh: s => s.peran !== 'asesor',
       ket: 'Kuliah tamu, kunjungan lapangan, seminar, pengabdian, kompetisi: kabar dan foto untuk situs publik.' },
@@ -133,7 +158,7 @@ export const MODUL = [
     { href: 'rapat.html', judul: 'Rapat dan notulen', boleh: s => s.peran !== 'asesor',
       ket: 'Agenda, peserta, keputusan, tindak lanjut ber-PJ, notulen Word, daftar hadir daring (QR).' },
   ]},
-  { judul: 'Mutu dan akreditasi', ket: 'Skor LAM, LED, bukti, SPMI, survei kepuasan, dan mutu data (GKM).', halaman: [
+  { judul: 'Mutu dan akreditasi', ket: 'Skor LAM, LED dan grafiknya, bukti, siklus mutu, survei kepuasan, dan mutu data (GKM).', halaman: [
     { href: 'skor.html', judul: 'Skor akreditasi dan LED',
       ket: 'Perkiraan skor per butir, rekap bukti, unduh draf LED.' },
     { href: 'rincian.html?butir=23', judul: 'Rincian butir',
@@ -144,9 +169,13 @@ export const MODUL = [
       ket: 'Daftar periksa otomatis: tim, narasi, data prodi, dokumen, dan bukti.' },
     { href: 'input-butir.html', judul: 'Isian butir dan dokumen', boleh: mutu,
       ket: 'Butir kualitatif, pustaka dokumen, bukti per butir.' },
+    { href: 'grafik.html', judul: 'Grafik untuk LED',
+      ket: 'Gambar yang sama dengan draf LED beserta kalimat narasinya, dan grafik tambahan untuk laporan.' },
     // Siklus PPEPP (instal-lengkap.sql): semua terdaftar membaca, admin mengisi (pemilik 2026-11-12).
-    { href: 'siklus-ppepp.html', judul: 'Siklus PPEPP',
-      ket: 'Butir standar SPMI per TS: target, capaian, bukti, rencana perbaikan, dan revisi standar.' },
+    // Nama diperjelas (pemilik 2026-11-23): "Siklus PPEPP" kurang dipahami.
+    { href: 'siklus-ppepp.html', judul: 'Siklus mutu (PPEPP)',
+      ket: 'Catatan siklus mutu per standar SPMI dan per TS: target (Penetapan), capaian dan bukti (Pelaksanaan), hasil AMI '
+        + '(Evaluasi), rencana perbaikan (Pengendalian), revisi standar (Peningkatan).' + (BUTIR_LAM_TEKNIK ? ' Bukti butir 53 dan 55, Tabel 7b LKPS.' : '') },
     { href: 'kelola-survei.html', judul: 'Kelola survei kepuasan', boleh: mutu,
       ket: 'Survei anonim mahasiswa, dosen, tendik, mitra, pengguna lulusan: buat, bagikan tautan, baca hasil.' },
     { href: 'hasil-survei.html', judul: 'Hasil survei kepuasan',
@@ -157,7 +186,7 @@ export const MODUL = [
     { href: 'mutu-data.html', judul: 'Mutu data', boleh: mutu,
       ket: 'Data yang perlu diperbaiki: karya tanpa bukti, DOI ganda, judul mirip, ID dosen, RPS, tracer.' },
   ]},
-  { judul: 'Pemantauan', ket: 'Kinerja prodi dan dosen dari waktu ke waktu.', halaman: [
+  { judul: 'Pemantauan', ket: 'Kinerja prodi dan dosen dari waktu ke waktu, dan pemakaian situs.', halaman: [
     // Dasbor operasional (pemilik 2026-11-17): antrean dan keterlambatan per bidang dan penanggung jawabnya.
     { href: 'dasbor.html', judul: 'Dasbor operasional', boleh: s => admin(s) || s.peran === 'pimpinan',
       ket: 'Per bidang (TA, KP, kemahasiswaan, mutu, lab, administrasi): penanggung jawab, antrean, dan yang terlambat.' },
@@ -170,18 +199,14 @@ export const MODUL = [
     // Kunjungan situs publik (instal-lengkap.sql, pemilik 2026-11-21): jumlah saja, tanpa data pengunjung.
     { href: 'kunjungan-situs.html', judul: 'Kunjungan situs publik', boleh: admin,
       ket: 'Berapa kali halaman publik dibuka, dari mana pengunjung datang (Google, Instagram, WhatsApp), kuis minat yang selesai, dan klik ke pendaftaran.' },
-    { href: 'kelengkapan-situs.html', judul: 'Kelengkapan situs publik', boleh: admin,
-      ket: 'Bagian situs publik yang masih kosong atau sebagian (profil, akreditasi, laboratorium, kerja sama, kabar, foto dosen) dan tempat mengisinya.' },
-    { href: 'grafik.html', judul: 'Grafik untuk LED',
-      ket: 'Grafik siap pakai untuk laporan dan LED.' },
   ]},
-  { judul: 'Pengelolaan', ket: 'Verifikasi, data prodi, dosen, koordinator, pengingat, profil prodi, dan laboratorium.', halaman: [
+  { judul: 'Pengelolaan', ket: 'Verifikasi, data prodi, dosen, koordinator, pengingat, jejak, profil prodi, laboratorium, dan kelengkapan situs publik.', halaman: [
     { href: 'verifikasi.html', judul: 'Verifikasi data', boleh: admin,
       ket: 'Karya dosen, profil dosen, BKD, dan prestasi mahasiswa yang menunggu keputusan admin.' },
     { href: 'data-prodi.html', judul: 'Data prodi', boleh: dataProdi,
       ket: 'Mahasiswa, lulusan, tracer, kerja sama, BKD, prestasi mahasiswa.' },
     { href: 'kelola-dosen.html', judul: 'Kelola dosen', boleh: admin,
-      ket: 'Email yang terdaftar dan perannya.' },
+      ket: 'Daftar dosen dan staf: peran, akses masuk, tugas belajar, dan hitungan DTPS/DT/DTT per TS.' },
     { href: 'koordinator.html', judul: 'Penugasan koordinator', boleh: admin,
       ket: 'Penugasan koordinator TA, KP/magang, kemahasiswaan, kepala lab, GKM: periode dan SK; wewenang per bidang.' },
     { href: 'pengingat.html', judul: 'Pengingat', boleh: admin,
@@ -195,6 +220,8 @@ export const MODUL = [
     // Laboratorium (instal-lengkap.sql, pemilik 2026-11-16): profil lab untuk situs publik; kepala lab miliknya.
     { href: 'kelola-laboratorium.html', judul: 'Kelola laboratorium', boleh: kalab,
       ket: 'Profil laboratorium untuk situs publik: ringkasan, koordinator, praktikum, layanan pengujian, foto.' },
+    { href: 'kelengkapan-situs.html', judul: 'Kelengkapan situs publik', boleh: admin,
+      ket: 'Bagian situs publik yang masih kosong atau sebagian (profil, akreditasi, laboratorium, kerja sama, kabar, foto dosen) dan tempat mengisinya.' },
   ]},
   { judul: 'Bantuan', ket: 'Cara memakai ruang kerja.', halaman: [
     { href: 'panduan.html', judul: 'Panduan pengguna',
@@ -213,7 +240,8 @@ const bolehHalaman = (s, h) => hanyaBaca(s) ? pantauanBoleh(s, h.href) : (!h.bol
 
 export function halamanBoleh(saya){
   // Modul yang dimatikan di config.js (FITUR_MATI, fitur.js) tidak tampil.
-  return MODUL.map(m => ({ ...m, halaman: m.halaman.filter(h => halamanAktif(h.href) && bolehHalaman(saya, h)) }))
+  // lam: true = halaman khusus butir LAM Teknik (2026-11-25), tidak tampil untuk instrumen lain.
+  return MODUL.map(m => ({ ...m, halaman: m.halaman.filter(h => halamanAktif(h.href) && bolehHalaman(saya, h) && (!h.lam || BUTIR_LAM_TEKNIK)) }))
     .filter(m => m.halaman.length);
 }
 
@@ -223,7 +251,7 @@ export function bolehBuka(saya, href){
   const b = berkas(href);
   const h = MODUL.flatMap(m => m.halaman).find(x => berkas(x.href) === b);
   if (!h) return null;
-  return halamanAktif(h.href) && bolehHalaman(saya, h);
+  return halamanAktif(h.href) && bolehHalaman(saya, h) && (!h.lam || BUTIR_LAM_TEKNIK);
 }
 
 // Pintasan di halaman depan ruang kerja (pemilik 2026-11-20, tahap 3): per peran/jabatan, jabatan lebih dulu,
@@ -231,15 +259,15 @@ export function bolehBuka(saya, href){
 const jab = j => s => (s.koordinator || []).includes(j);
 export const PINTASAN = [
   { label: 'Admin prodi', cocok: admin, href: ['verifikasi.html', 'pengajuan-mahasiswa.html', 'data-prodi.html', 'pengingat.html', 'dasbor.html', 'kelola-dosen.html'] },
-  { label: 'Kaprodi', cocok: s => jab('kaprodi')(s) || s.peran === 'pimpinan', href: ['dasbor.html', 'tinjauan-rps.html', 'silabus.html', 'ekuivalensi.html', 'kelas.html', 'jadwal-kuliah.html', 'rps-kurikulum.html', 'monitoring.html', 'pjp.html'] },
+  { label: 'Kaprodi', cocok: s => jab('kaprodi')(s) || s.peran === 'pimpinan', href: ['dasbor.html', 'koordinator-mk.html', 'tinjauan-rps.html', 'silabus.html', 'ekuivalensi.html', 'kelas.html', 'jadwal-kuliah.html', 'rps-kurikulum.html', 'monitoring.html', 'pjp.html'] },
   { label: 'Dekan', cocok: jab('dekan'), href: ['rps.html', 'ekuivalensi.html', 'monitoring.html'] },
   { label: 'Gugus kendali mutu (GKM)', cocok: jab('gkm'), href: ['skor.html', 'mutu-data.html', 'siklus-ppepp.html', 'kelola-survei.html', 'monitoring.html#cpl', 'evaluasi-pembelajaran.html'] },
   { label: 'Koordinator KP/Magang', cocok: jab('koordinator_kp'), href: ['pengajuan-mahasiswa.html', 'rekap-kp.html', 'kelola-layanan-mahasiswa.html'] },
-  { label: 'Koordinator TA', cocok: jab('koordinator_ta'), href: ['pengajuan-mahasiswa.html', 'rekap-ta.html', 'jadwal-berhalangan.html', 'kelola-layanan-mahasiswa.html'] },
+  { label: 'Koordinator TA', cocok: jab('koordinator_ta'), href: ['pengajuan-mahasiswa.html', 'bimbingan-ta.html', 'penilaian-ta.html', 'rekap-ta.html', 'jadwal-berhalangan.html', 'kelola-layanan-mahasiswa.html'] },
   { label: 'Pembina kemahasiswaan', cocok: jab('pembina_kemahasiswaan'), href: ['pengajuan-mahasiswa.html', 'kelola-layanan-mahasiswa.html', 'data-prodi.html'] },
   { label: 'Kepala laboratorium', cocok: jab('kepala_lab'), href: ['kelola-laboratorium.html'] },
   { label: 'Asesor', cocok: s => s.peran === 'asesor', href: ['skor.html', 'rincian.html?butir=23', 'portofolio.html', 'monitoring.html#cpl', 'rekap-kp.html'] },
-  { label: 'Dosen', cocok: s => s.peran !== 'asesor', href: ['profil.html', 'karya.html', 'rps.html', 'nilai-cpl.html', 'pengajuan-mahasiswa.html', 'kalender.html', 'jadwal-berhalangan.html'] },
+  { label: 'Dosen', cocok: s => s.peran !== 'asesor', href: ['profil.html', 'karya.html', 'mk-saya.html', 'rps.html', 'nilai-cpl.html', 'pengajuan-mahasiswa.html', 'bimbingan-ta.html', 'penilaian-ta.html', 'kalender.html', 'jadwal-berhalangan.html'] },
 ];
 
 /** Kelompok pintasan untuk `saya`: [{label, halaman: [{href, judul, ket}]}]; hanya halaman yang boleh dan aktif. */
@@ -373,11 +401,17 @@ export async function pasangMenu(sb){
   if (document.querySelector('.rk-menu')) return u.saya;
   pasangJudul();
   // Satu menu tarik-turun per modul, supaya menu tetap satu baris.
-  const grup = halamanBoleh(u.saya).map(m => {
-    const diSini = m.halaman.some(h => berkas(h.href) === ini);
+  // Satu berkas, dua entri (mis. kalender.html dan kalender.html?saya=1, 162): yang cocok persis dengan alamat ini yang aktif.
+  const semua = halamanBoleh(u.saya);
+  const sama = semua.flatMap(m => m.halaman).filter(h => berkas(h.href) === ini);
+  const persis = sama.some(h => h.href.includes('?') && h.href === ini + location.search);
+  const tanpaQ = sama.filter(h => !h.href.includes('?'));
+  const aktif = h => persis ? h.href === ini + location.search : tanpaQ.length ? tanpaQ.includes(h) : berkas(h.href) === ini;
+  const grup = semua.map(m => {
+    const diSini = m.halaman.some(aktif);
     return `<details class="rk-grup${diSini ? ' rk-ini' : ''}"><summary>${esc(m.judul)}</summary>
       <div class="rk-isi">${m.halaman.map(h => `<a href="${esc(h.href)}"${
-        berkas(h.href) === ini ? ' aria-current="page"' : ''}>${esc(h.judul)}</a>`).join('')}</div></details>`;
+        aktif(h) ? ' aria-current="page"' : ''}>${esc(h.judul)}</a>`).join('')}</div></details>`;
   }).join('');
   const gaya = document.createElement('style');
   gaya.textContent = CSS;
@@ -424,7 +458,7 @@ export async function pasangMenu(sb){
   // Pencarian menyeluruh (pemilik 2026-11-12; cari-ui.js, cari.js): dimuat saat pertama dipakai.
   const kotak = nav.querySelector('.rk-cari input');
   let siapCari = null;
-  const muatCari = () => siapCari || (siapCari = import('./cari-ui.js?v=2026-11-23-5a55a3').then(m =>
+  const muatCari = () => siapCari || (siapCari = import('./cari-ui.js?v=2026-11-25-65047c').then(m =>
     m.pasangCari(kotak, { sb, saya: u.saya, modul: halamanBoleh(u.saya), boleh: h => bolehBuka(u.saya, h) !== false })));
   kotak.addEventListener('focus', muatCari);
   document.addEventListener('keydown', e => {

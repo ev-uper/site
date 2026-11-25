@@ -45,8 +45,25 @@ export function kelengkapanYudisium(daftar = BERKAS_YUDISIUM_BAWAAN, berkas = []
   return { butir, wajib: wajib.length, ada: wajib.filter(b => b.berkas.length).length,
            kurang: wajib.filter(b => !b.berkas.length).map(b => b.label) };
 }
-/** Label jenis berkas; kode yud_* dari daftar yudisium. */
+/** Label jenis berkas; kode yud_ dan ta_ dari daftar yudisium atau berkas TA. */
 export const labelBerkas = (kode, daftar = BERKAS_YUDISIUM_BAWAAN) => LABEL_BERKAS[kode] || daftar.find(d => d.kode === kode)?.label || kode;
+
+// Berkas pendaftaran TA per tahap (174, 176; pemilik 2026-11-25): isi tabel ta_berkas yang aktif sesudah patch 176 (bukti
+// bimbingan SIUP dinonaktifkan, bukti terdaftar TA di SIUP di pengajuan pembimbing); dipakai bila ta_berkas_daftar() belum ada
+// (situs coba, contoh). Kode ta_* diunggah sebagai pengajuan_berkas.jenis; naskah_ta selalu wajib (seminar/sidang).
+export const BERKAS_TA_BAWAAN = [
+  ['penetapan_pembimbing', 'ta_terdaftar_siup', 'Bukti terdaftar TA di SIUP', 'KRS/KHS atau tangkapan layar SIUP yang menunjukkan mata kuliah Tugas Akhir sudah diambil semester ini.'],
+  ['seminar_proposal', 'naskah_ta', 'Naskah proposal TA', 'PDF naskah proposal yang akan diseminarkan.'],
+  ['seminar_kemajuan', 'naskah_ta', 'Laporan kemajuan TA', 'PDF laporan kemajuan yang akan diseminarkan.'],
+  ['sidang_akhir', 'naskah_ta', 'Laporan akhir TA', 'PDF laporan akhir yang akan disidangkan.'],
+  ['sidang_akhir', 'ta_transkrip', 'Transkrip atau KHS', 'Transkrip atau KHS terakhir dari SIUP.'],
+  ['sidang_akhir', 'ta_artikel', 'Draf artikel atau bukti publikasi', 'Draf artikel ilmiah dari TA, atau LoA/bukti terbit bila sudah dipublikasikan.'],
+].map(([tahap, kode, label, keterangan]) => ({ tahap, kode, label, keterangan, wajib: true }));
+/** Daftar berkas satu tahap TA (urut daftar) + 'Lainnya' opsional; bentuknya sama dengan daftar yudisium (kelengkapanYudisium). */
+export const berkasTahapTA = (daftar = BERKAS_TA_BAWAAN, tahap) => daftar.filter(d => d.tahap === tahap)
+  .map(({ kode, label, keterangan, wajib }) => ({ kode, label, keterangan: keterangan || '', wajib: !!wajib }))
+  .concat([{ kode: 'lainnya', label: 'Lainnya', keterangan: 'Berkas pendukung lain (opsional).', wajib: false }]);
+export const TAHAP_TA_BERKAS = ['penetapan_pembimbing', 'seminar_proposal', 'seminar_kemajuan', 'sidang_akhir'];
 
 export const JENIS_PUB = [['jurnal', 'Jurnal'], ['prosiding', 'Prosiding'], ['buku', 'Buku'], ['lainnya', 'Lainnya']];
 export const TINGKAT_PUB = [['internasional', 'Internasional'], ['nasional', 'Nasional'], ['wilayah', 'Wilayah']];
@@ -70,12 +87,30 @@ export const pembimbingCocok = (dosen, kk) => (dosen || []).filter(d => !!kk && 
 // Sama dengan public.ta_kk_cocok (110): KK sama, atau pasangan ta_kk_dekat {kk_a, kk_b} (dua arah).
 export const kkCocok = (kkTa, kkDosen, dekat = []) => !!kkTa && !!kkDosen && (kkTa === kkDosen
   || dekat.some(k => (k.kk_a === kkTa && k.kk_b === kkDosen) || (k.kk_b === kkTa && k.kk_a === kkDosen)));
-// Pilihan pembimbing 1 untuk koordinator TA: baris ta_beban(ts) -> cocok KK dulu, lalu abjad; teks "Nama - KK - 2/5".
+// Semester (180): Ganjil September-Februari, Genap Maret-Agustus (sama dengan semester_tanggal, 138). ts = tahun akhir
+// tahun akademik. Masukan: tanggal/waktu ISO; waktu dengan jam dibaca dalam WIB.
+export function semesterTA(t){
+  let x = String(t || '');
+  if (/T\d{2}:/.test(x) && !Number.isNaN(Date.parse(x))) x = new Date(Date.parse(x) + 7 * 3600e3).toISOString();
+  const m = x.match(/^(\d{4})-(\d{2})/); if (!m) return null;
+  const y = +m[1], b = +m[2];
+  return b >= 9 ? { ts: y + 1, sm: 'Ganjil' } : b <= 2 ? { ts: y, sm: 'Ganjil' } : { ts: y, sm: 'Genap' };
+}
+export const kunciSemester = s => s ? `${s.ts} ${s.sm}` : '';
+export const teksSemester = s => s ? `${s.ts - 1}/${s.ts} ${s.sm}` : '';
+// Semester ke-n sesudah (n > 0) atau sebelum (n < 0) s.
+export function geserSemester(s, n){
+  let i = s.ts * 2 + (s.sm === 'Genap' ? 1 : 0) + n;
+  return { ts: Math.floor(i / 2), sm: i % 2 ? 'Genap' : 'Ganjil' };
+}
+
+// Pilihan pembimbing 1 untuk koordinator TA: baris ta_beban(ts, sm) -> cocok KK dulu, lalu abjad; teks "Nama - KK - 2/5".
+// dibimbing (180) = mahasiswa semester sebelumnya yang belum lulus; hanya informasi, tidak dihitung kuota.
 export function pilihanPembimbingTA(rows = [], kkTa = '', dekat = []){
   return rows.map(r => {
     const cocok = kkCocok(kkTa, r.kk, dekat), lebih = r.kuota != null && r.beban >= r.kuota;
     return { ...r, cocok, lebih, teks: `${r.nama} — ${r.kk || 'KK belum diisi'} — ${r.beban}${r.kuota == null ? '' : '/' + r.kuota}`
-      + `${lebih ? ' (kuota penuh)' : ''}${cocok ? '' : ' (di luar KK)'}` };
+      + `${lebih ? ' (kuota penuh)' : ''}${cocok ? '' : ' (di luar KK)'}${r.dibimbing ? ` · ${r.dibimbing} masih dibimbing` : ''}` };
   }).sort((a, b) => (b.cocok - a.cocok) || String(a.nama).localeCompare(String(b.nama), 'id'));
 }
 
@@ -89,13 +124,20 @@ export const LABEL_BERKAS = {
   laporan_lomba: 'Laporan lomba', sertifikat: 'Sertifikat/piagam', surat_tugas: 'SK/surat tugas', foto: 'Foto kegiatan',
   lainnya: 'Lainnya', surat_pengantar: 'Surat pengantar dari prodi', surat_jadi: 'Surat dari prodi (bertanda tangan)',
   naskah_ta: 'Naskah TA (proposal / laporan kemajuan / laporan akhir)',
+  ta_bukti_bimbingan: 'Bukti bimbingan SIUP', ta_terdaftar_siup: 'Bukti terdaftar TA di SIUP', ta_transkrip: 'Transkrip atau KHS', ta_artikel: 'Draf artikel atau bukti publikasi',   // 174
   bukti_luaran: 'Bukti publikasi/luaran (naskah, LoA, sertifikat HKI, halaman ISBN)',
 };
 
 export const LABEL_STATUS = {
   draf: 'Draf (belum dikirim)', pembimbing: 'Diperiksa dosen pembimbing', admin: 'Diperiksa admin prodi',
   disetujui: 'Disetujui', dikembalikan: 'Dikembalikan untuk diperbaiki', ditolak: 'Ditolak',
+  dibatalkan: 'Dibatalkan',   // 161 (pemilik 2026-11-24): oleh mahasiswa (draf/dikembalikan) atau prodi atas permintaan
 };
+// Pengajuan yang bisa dibatalkan mahasiswa sendiri (161): masih di tangannya, tahap pengajuan.
+export const bolehBatalMhs = p => (p.tahap || 'pengajuan') === 'pengajuan' && ['draf', 'dikembalikan'].includes(p.status);
+// Pengajuan yang bisa dibatalkan prodi (161, pengajuan_batalkan): belum diputuskan akhir.
+export const bolehBatalProdi = p => !['dibatalkan', 'ditolak'].includes(p.status)
+  && !(p.status === 'disetujui' && ((p.tahap || 'pengajuan') === 'selesai' || p.jenis !== 'kp'));
 
 export const TINGKAT = [['internasional', 'Internasional'], ['nasional', 'Nasional'], ['wilayah_lokal', 'Wilayah/lokal']];
 export const BIDANG = [['akademik', 'Akademik'], ['non_akademik', 'Non-akademik']];
@@ -166,7 +208,9 @@ export function jalur(status, riwayat = [], nama = null){
   const urut = [...riwayat].sort((a, b) => String(a.waktu).localeCompare(String(b.waktu)));
   const pindah = urut.filter((r, i) => i === 0 || r.status !== urut[i - 1].status);
   const terakhir = k => [...pindah].reverse().find(r => r.status === k);
-  const posisi = { draf: 0, dikembalikan: 0, pembimbing: 1, admin: 2, disetujui: 3, ditolak: 3 }[status] ?? 0;
+  // 161: dibatalkan = satu langkah penutup.
+  if (status === 'dibatalkan') return [{ kunci: 'dibatalkan', label: 'Dibatalkan', keadaan: 'batal', ...info(terakhir('dibatalkan')) }];
+  const posisi ={ draf: 0, dikembalikan: 0, pembimbing: 1, admin: 2, disetujui: 3, ditolak: 3 }[status] ?? 0;
   return TAHAP.map(([kunci, label0], i) => {
     const label = nama ? nama[i] : label0;
     let keadaan = i < posisi ? 'selesai' : i === posisi ? 'kini' : 'nanti';
@@ -280,13 +324,15 @@ export function waktuPengajuan(p){
 export function keadaanKP(p){
   if (p.status === 'draf') return 'draf';
   if (p.status === 'ditolak') return 'ditolak';
+  if (p.status === 'dibatalkan') return 'dibatalkan';   // 161: tidak ikut rekap
   if (p.tahap === 'selesai') return p.status === 'disetujui' ? 'selesai' : 'berjalan';
   return p.status === 'disetujui' ? 'berjalan' : 'proses';
 }
 
 // Ringkasan: angka KP dan lomba, serta KP per instansi (nama instansi disatukan tanpa beda huruf besar/spasi).
 export function rekapPengajuan(xs){
-  const kp = xs.filter(p => p.jenis === 'kp' && p.status !== 'draf'), lomba = xs.filter(p => p.jenis === 'lomba' && p.status !== 'draf');
+  const masuk = p => !['draf', 'dibatalkan'].includes(p.status);   // 161: dibatalkan tidak dihitung
+  const kp = xs.filter(p => p.jenis === 'kp' && masuk(p)), lomba = xs.filter(p => p.jenis === 'lomba' && masuk(p));
   const hit = (ys, f) => ys.filter(f).length;
   const per = new Map();
   for (const p of kp) {
@@ -305,15 +351,16 @@ export function rekapPengajuan(xs){
     instansi: [...per.values()].sort((a, b) => b.mahasiswa - a.mahasiswa || a.instansi.localeCompare(b.instansi)),
     // 122: berkas yudisium per status (draf tidak ikut, sama dengan jenis lain).
     yudisium: (ys => ({ semua: ys.length, diperiksa: hit(ys, p => p.status === 'admin'), disahkan: hit(ys, p => p.status === 'disetujui'),
-                        dikembalikan: hit(ys, p => p.status === 'dikembalikan') }))(xs.filter(p => p.jenis === 'yudisium' && p.status !== 'draf')),
+                        dikembalikan: hit(ys, p => p.status === 'dikembalikan') }))(xs.filter(p => p.jenis === 'yudisium' && masuk(p))),
   };
 }
 
 // Isi lembar Excel (untuk admin; memuat NIM). Sel tautan berbentuk {t, l}.
 const LABEL_KEADAAN = { selesai: 'KP selesai', berjalan: 'KP dilaksanakan', proses: 'Pengajuan diperiksa', ditolak: 'Ditolak', draf: 'Draf' };
 export function lembarPengajuan(xs, tsTeks = () => '', daftarYud = BERKAS_YUDISIUM_BAWAAN){
-  const kp = xs.filter(p => p.jenis === 'kp' && p.status !== 'draf'), lomba = xs.filter(p => p.jenis === 'lomba' && p.status !== 'draf');
-  const yud = xs.filter(p => p.jenis === 'yudisium' && p.status !== 'draf');
+  const masuk = p => !['draf', 'dibatalkan'].includes(p.status);   // 161: dibatalkan tidak dihitung
+  const kp = xs.filter(p => p.jenis === 'kp' && masuk(p)), lomba = xs.filter(p => p.jenis === 'lomba' && masuk(p));
+  const yud = xs.filter(p => p.jenis === 'yudisium' && masuk(p));
   const pemb = p => p.dosen?.nama || p.pembimbing || '';
   const L = {
     KP: [['No', 'NIM', 'Nama', 'Program', 'Instansi', 'Pembimbing', 'Mulai', 'Selesai', 'Pembimbing lapangan', 'TS', 'Keadaan', 'Berkas']],

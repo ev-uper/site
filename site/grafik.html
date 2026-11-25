@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tema.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="tema.css?v=2026-11-25-65047c">
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
@@ -61,11 +61,20 @@
   .aksi button:hover{border-color:var(--biru-3);background:var(--bg)}
   .kosong{color:var(--muted);font-size:13.5px;padding:26px 0;text-align:center}
   svg{width:100%;height:auto;display:block}
+  /* Grafik di draf LED (pemilik 2026-11-23) */
+  h2.bagian{font-size:19px;margin:26px 0 6px}
+  .led-g{background:#fff;border:1px solid var(--line);padding:14px 16px;margin:12px 0}
+  .led-g img{width:100%;height:auto;display:block;border:1px solid var(--line-soft, #eee)}
+  .led-g .kalimat{margin:8px 0;font-size:14px}
+  .led-g table{border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  .led-g th,.led-g td{border:1px solid var(--line);padding:3px 8px;text-align:right}
+  .led-g td:first-child,.led-g th:first-child{text-align:left}
+  .led-g .ts{margin-left:8px}
   svg text{font-family:'IBM Plex Sans',sans-serif}
   footer{margin-top:44px;border-top:1px solid var(--line);padding-top:18px;
          font-size:12.5px;color:var(--muted)}
 </style>
-<link rel="stylesheet" href="kepala.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="kepala.css?v=2026-11-25-65047c">
 </head>
 <body>
 
@@ -624,11 +633,14 @@ function render(){
      f:grafikCakupan},
   ];
 
+  // Catatan kaki menyebut aturan butir LAM Teknik; instrumen lain hanya mendapat kalimat sumber data (2026-11-25).
+  const kakiInstrumen = k => window.BUTIR_LAM_TEKNIK !== false || !k ? k : k.replace(/\s*\([^()]*\b[Bb]utir \d[^()]*\)/g, '')
+    .split(/(?<=\.)\s+/).filter(x => !/\b[Bb]utir \d/.test(x)).join(' ');
   const kartu = daftar.map(g => {
     const hasil = g.f();
     const isi = hasil
       ? `<div class="svg-wadah">${hasil.svg}</div>
-         <p class="kaki">${hasil.kaki}</p>
+         ${kakiInstrumen(hasil.kaki) ? `<p class="kaki">${kakiInstrumen(hasil.kaki)}</p>` : ''}
          <div class="aksi">
            <button data-unduh="${g.id}">Unduh PNG</button>
            <button data-salin="${g.id}">Salin ke papan klip</button>
@@ -636,7 +648,7 @@ function render(){
       : `<p class="kosong">Data belum tersedia. Grafik muncul otomatis
          setelah sumbernya terisi.</p>`;
     return `<section class="kartu" data-g="${g.id}">
-      <h2>${esc(g.judul)}</h2><p class="ket">${esc(g.ket)}</p>${isi}</section>`;
+      <h2>${esc(g.judul)}</h2>${window.BUTIR_LAM_TEKNIK !== false ? `<p class="ket">${esc(g.ket)}</p>` : ''}${isi}</section>`;   // ket menyebut butir LAM Teknik (nilai dari modul di bawah)
   }).join('');
 
   document.getElementById('isi').innerHTML = `
@@ -645,6 +657,13 @@ function render(){
     ke Word. Skala 2&times; sudah memadai untuk cetak; pilih 3&times; bila gambar akan
     dibesarkan satu halaman penuh. Semua grafik memakai angka agregat —
     tidak memuat nama atau NIM mahasiswa.</div>
+    <section id="ledGrafik" aria-labelledby="jLedGrafik"><h2 class="bagian" id="jLedGrafik">Grafik di draf LED</h2>
+      <p class="ket">Sama persis dengan gambar yang masuk draf LED (tombol Unduh draf LED di halaman Skor): per TS, satu grafik
+      per butir, dengan kalimat narasi dan tabel data yang angkanya sama. Pakai ini supaya gambar, narasi, dan LKPS cocok.</p>
+      <div id="ledGrafikIsi"><p class="kosong">Memuat&hellip;</p></div></section>
+    <h2 class="bagian">Grafik tambahan (tidak masuk draf LED)</h2>
+    <p class="ket">Untuk laporan dan presentasi. Periode mengikuti pilihan Tahun/TS di atas, sehingga angkanya bisa berbeda
+    dengan LKPS<span class="hanya-lam">; untuk LED gunakan grafik di bagian atas</span>.</p>
     <div class="grid">${kartu}</div>
     <footer>Diperbarui ${esc(D.diperbarui || '')} ·
     Angka mengikuti mode ${MODE === 'ts' ? 'tahun akademik (TS)' : 'tahun kalender'}
@@ -656,6 +675,7 @@ function render(){
   });
   document.querySelectorAll('[data-salin]').forEach(b => b.onclick = () =>
     salinPNG(b.closest('.kartu').querySelector('svg'), b));
+  if (window.gambarGrafikLED) window.gambarGrafikLED(D);
 }
 
 function pasangKendali(){
@@ -685,7 +705,7 @@ window.mulaiHalaman = () => fetch('data.json', {cache: 'no-cache'})
       `<p class="kosong">Data belum tersedia. Hubungi admin prodi.</p>`;
   });
 </script>
-<script src="config.js?v=2026-11-23-5a55a3"></script>
+<script src="config.js?v=2026-11-25-65047c"></script>
 <script>
 // Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
 // halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
@@ -703,8 +723,46 @@ addEventListener('error', function (e) {
 <script type="module">
 // Ruang kerja, khusus email terdaftar (pemilik 2026-11-04).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
-import { gerbang } from './menu.js?v=2026-11-23-5a55a3';
+import { gerbang } from './menu.js?v=2026-11-25-65047c';
+import { BUTIR_GRAFIK, grafikButir, tabelGrafik, kalimatGrafik } from './led-data.js?v=2026-11-25-65047c';
+import { gambarGrafik } from './led-grafik.js?v=2026-11-25-65047c';
+import { BUTIR_LAM_TEKNIK } from './bobot.js?v=2026-11-25-65047c';
+// Grafik di draf LED (pemilik 2026-11-23): spesifikasi, gambar, kalimat, dan tabel yang sama dengan led.js.
+const tsBerjalan = () => { const d = new Date(); return d.getMonth() >= 8 ? d.getFullYear() + 1 : d.getFullYear(); };
+let TS_LED = null;
+const escL = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+window.gambarGrafikLED = async D => {
+  const w = document.getElementById('ledGrafikIsi');
+  if (!w) return;
+  // Grafik draf LED dan nomornya milik butir LAM Teknik (led.js); draf LED instrumen lain tanpa grafik (2026-11-25).
+  if (!BUTIR_LAM_TEKNIK) {
+    document.getElementById('ledGrafik')?.remove();
+    document.querySelectorAll('.hanya-lam').forEach(e => e.remove());
+    return;
+  }
+  TS_LED ??= tsBerjalan();
+  const pilih = [0, 1, 2].map(k => tsBerjalan() - k).map(t => `<option value="${t}"${t === TS_LED ? ' selected' : ''}>${t - 1}/${t}</option>`).join('');
+  const kartu = [];
+  let n = 0;
+  for (const no of BUTIR_GRAFIK) {
+    const g = grafikButir(no, D, TS_LED);
+    if (!g) continue;
+    n += 1;
+    const { buf } = await gambarGrafik(g);
+    const url = URL.createObjectURL(new Blob([buf], { type: 'image/png' }));
+    const t = tabelGrafik(g);
+    kartu.push(`<div class="led-g"><b>Butir ${escL(no)} · Gambar ${n}. ${escL(g.judul)}</b>
+      <p class="kalimat">${escL(kalimatGrafik(g, n))}</p><img src="${url}" alt="${escL(g.judul)}">
+      <table><tr>${t[0].map(x => `<th>${escL(x)}</th>`).join('')}</tr>${t.slice(1).map(r => `<tr>${r.map(x => `<td>${escL(x)}</td>`).join('')}</tr>`).join('')}</table>
+      <p><a class="btn" href="${url}" download="led-gambar-${n}-butir-${escL(no)}.png">Unduh PNG</a></p></div>`);
+  }
+  w.innerHTML = `<p><label>TS <select id="tsLed" class="ts">${pilih}</select></label>
+    <span class="ket"> · nomor gambar mengikuti urutan di draf LED bila semua butir ini punya data</span></p>`
+    + (kartu.join('') || '<p class="kosong">Belum ada butir dengan data berderet untuk TS ini.</p>');
+  document.getElementById('tsLed').onchange = e => { TS_LED = +e.target.value; window.gambarGrafikLED(D); };
+};
 await gerbang(createClient(window.SB_URL, window.SB_KEY));
+window.BUTIR_LAM_TEKNIK = BUTIR_LAM_TEKNIK;   // dibaca skrip klasik di atas (keterangan grafik)
 window.mulaiHalaman();
 </script>
 </body>

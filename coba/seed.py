@@ -35,6 +35,9 @@ NAMA = [("Adi", "lektor_kepala", "S3"), ("Budi", "lektor", "S3"), ("Cici", "lekt
         ("Eko", "asisten_ahli", "S3"), ("Fitri", "lektor", "S3"), ("Gani", "asisten_ahli", "S2"), ("Hana", "lektor", "S3"),
         ("Indra", "guru_besar", "S3"), ("Joko", "asisten_ahli", "S2"), ("Kartika", "lektor", "S2"), ("Lina", "tenaga_pengajar", "S2")]
 KEAHLIAN = ["Struktur", "Geoteknik", "Hidrologi", "Transportasi", "Manajemen konstruksi", "Lingkungan"]
+# Kode kelompok keahlian (dosen.kelompok_keahlian, 110/149) sejajar KEAHLIAN; kode = config.yaml public_site expertise_groups
+# dan pasangan ta_kk_dekat di mock-sb.js. Tanpa ini daftar Pembimbing 1 TA kosong di mode coba/latihan (2026-11-24).
+KK_KODE = ["STR", "GEO", "AIR", "TRN", "MRK", "AIR"]
 
 
 def dosen():
@@ -45,7 +48,7 @@ def dosen():
     for i, (n, j, p) in enumerate(NAMA):
         xs.append(dict(id=uid(n), nidn=f"00000000{i + 10}", nama=f"{n} Contoh", email=f"{n.lower()}@contoh.ac.id", peran="dosen", aktif=True,
                        dtps=i < 10, kategori="tetap" if i < 11 else "tidak_tetap", jabatan=j, pendidikan=p, tim_penyusun=i < 4,
-                       bidang_keahlian=KEAHLIAN[i % 6], sesuai_kompetensi_inti=True, sesuai_keahlian_mk=True,
+                       bidang_keahlian=KEAHLIAN[i % 6], kelompok_keahlian=KK_KODE[i % 6], sesuai_kompetensi_inti=True, sesuai_keahlian_mk=True,
                        nomor_serdos=f"1{i:04d}" if i < 8 else None, sinta_id=f"60{i:04d}", scopus_id=None, orcid=None,
                        riwayat_pendidikan=[dict(jenjang="S1", bidang="Teknik Contoh", institusi="Universitas Contoh"),
                                            dict(jenjang=p, bidang=KEAHLIAN[i % 6], institusi="Institut Contoh")],
@@ -127,7 +130,9 @@ def tabel_lain(ds, ks):
           "Manajemen Proyek", "Struktur Baja", "Perancangan Terpadu"]
     t["ref_mata_kuliah"] = id_([dict(kode=f"TC{i + 101}", nama=n, sks=3, sks_kuliah=3, sks_seminar=0, sks_praktikum=0, semester=i % 8 + 1, inti=i > 1,
                                      aktif=True, urutan=i, rps_ada=True, rps_url=url(), unit_penyelenggara="prodi", basic_science=i < 2, capstone=i == 9,
-                                     pengampu=[dt[i % 10]["nidn"]], kurikulum="K26") for i, n in enumerate(mk)])
+                                     pengampu=[dt[i % 10]["nidn"], dt[(i + 1) % 10]["nidn"]],
+                                     # 158: koordinator = dosen pertama, tim = dosen kedua (pemilik 2026-11-23)
+                                     koordinator_nidn=dt[i % 10]["nidn"], kurikulum="K26") for i, n in enumerate(mk)])
     # Penyusunan kelas (136) dan jadwal kuliah (150, pemilik 2026-11-22): kelas Genap 2026/2027 contoh; satu sudah berjadwal
     # dengan ruang, sisanya untuk dicoba (unduh masukan, isi manual, sahkan sebagai Admin Contoh = Kaprodi).
     t["kelas_kuliah"] = [dict(id=i + 1, tahun_akademik="2026/2027", semester="Genap", kurikulum="K26", kode_mk=kode, kelas=kls, kapasitas=40,
@@ -144,6 +149,12 @@ def tabel_lain(ds, ks):
             ("LA107", "Beton Prategang", 3, None, "pilihan"), ("LA108", "Ilmu Lingkungan", 2, 2, "wajib")]
     t["ref_mata_kuliah"] += [dict(id=len(t["ref_mata_kuliah"]) + i + 1, kode=k, nama=n, sks=s, semester=smt, sifat=sf, aktif=False, urutan=i,
                                   unit_penyelenggara="prodi", kurikulum="K21") for i, (k, n, s, smt, sf) in enumerate(lama)]
+    # MK universitas (pemilik 2026-11-24): PIC prodi di koordinator_nidn tanpa tim; satu dengan sisa pengampu lama, satu tanpa PIC.
+    mku = [("01X01", "Kalkulus 1", 1, [dt[2]["nidn"], dt[3]["nidn"]], dt[2]["nidn"]), ("01102", "Pancasila", 2, [dt[4]["nidn"]], dt[4]["nidn"]),
+           ("01104", "Bahasa Indonesia", 1, [], None)]
+    t["ref_mata_kuliah"] += [dict(id=len(t["ref_mata_kuliah"]) + i + 1, kode=k, nama=n, sks=2, semester=smt, sifat="wajib", aktif=True, urutan=20 + i,
+                                  unit_penyelenggara="universitas", pengampu=pg, koordinator_nidn=pic, kurikulum="K26")
+                             for i, (k, n, smt, pg, pic) in enumerate(mku)]
     pad = [("LA101", "TC101", "1:1", "Bab 7 Tabel 7-2 no 1"), ("LA102", "TC102", "nama sama", "Nama sama di K21 dan K26"),
            ("LA103", "TC106", "1:2", "Bab 7 Tabel 7-3 no 1"), ("LA103", "TC103", "1:2", "Bab 7 Tabel 7-3 no 1"),
            ("LA104", "TC109", "2:1", "Bab 7 Tabel 7-4 no 1"), ("LA105", "TC109", "2:1", "Bab 7 Tabel 7-4 no 2"),
@@ -204,6 +215,26 @@ def tabel_lain(ds, ks):
                            judul="Kajian drainase kampus contoh", pembimbing=["0000000010"], penguji=["0000000011"], penguji_luar=None,
                            tanggal=pekan.isoformat(), jam="09.00–10.30", ruang="Ruang contoh 2.01", tautan_daring=None,
                            status="terjadwal", hasil=None, tampil_nama=False, sembunyikan_publik=False, oleh=None)]
+    # Penilaian sidang (173, pemilik 2026-11-25): sidang akhir kemarin, Budi (penguji) sudah menilai; Adi (peran "Dosen (Adi)",
+    # pembimbing: nilai sidang + proses bimbingan) dan penguji luar belum, jadi alur isi nilai -> tetapkan berita acara bisa dicoba.
+    kemarin = date.today() - timedelta(days=1)
+    t["jadwal_ta"].append(dict(id=2, pengajuan_id=None, tahap="sidang_akhir", nama_mahasiswa="Mahasiswa Delapan", nim="9999000108",
+                               judul="Evaluasi kapasitas saluran drainase perumahan contoh", pembimbing=["0000000010"],
+                               penguji=["0000000011"], penguji_luar="Ir. Penguji Luar, M.T. (PT Contoh)", tanggal=kemarin.isoformat(),
+                               jam="13.00–14.30", ruang="Ruang contoh 2.02", tautan_daring=None, status="terjadwal", hasil=None,
+                               tampil_nama=False, sembunyikan_publik=False, oleh=None))
+    # Catatan bimbingan TA (175, pemilik 2026-11-25): Mahasiswa Enam (pembimbing Adi) punya 3 bimbingan terkonfirmasi dan 1 yang
+    # menunggu, jadi Tugas saya Adi berisi konfirmasi dan sidangnya belum memenuhi minimal 4.
+    hari = lambda n: (date.today() - timedelta(days=n)).isoformat()
+    t["ta_bimbingan"] = id_([dict(nim="9999000106", nama="Mahasiswa Enam", tanggal=hari(h), cara=c, pembimbing_id=uid("Adi"), topik=tp, arahan=ar,
+                                  status=st, catatan_pembimbing=None, konfirmasi_oleh="Adi Contoh" if st == "dikonfirmasi" else None,
+                                  konfirmasi_pada=hari(h - 1) + "T09:00:00Z" if st == "dikonfirmasi" else None,
+                                  diajukan=(hari(h) if st == "dikonfirmasi" else date.today().isoformat()) + "T08:00:00Z", dibuat=hari(h) + "T08:00:00Z")
+                             for h, c, tp, ar, st in [
+                                 (60, "tatap_muka", "Bab 4 hasil analisis debit banjir", "Lengkapi kalibrasi model", "dikonfirmasi"),
+                                 (40, "daring", "Bab 4 pembahasan dan perbandingan metode", "Tambahkan grafik hidrograf", "dikonfirmasi"),
+                                 (20, "tatap_muka", "Bab 5 kesimpulan dan saran", "Kaitkan kesimpulan dengan tujuan", "dikonfirmasi"),
+                                 (2, "daring", "Persiapan sidang akhir: slide presentasi", "", "menunggu")]])
     t["pengajuan_berkas"] = id_([dict(pengajuan_id=i, jenis=j, nama=f"{j}.pdf", url=url(), oleh="mahasiswa")
                                  for i in (1, 2, 3) for j in ("laporan_kp", "surat_selesai")])
     # Daftar kelas CPL contoh (portofolio MK, templat terisi per kelas).
@@ -249,8 +280,11 @@ def tabel_lain(ds, ks):
                                      tanggal_sk="2022-03-01", tanggal_kedaluwarsa="2027-03-01", mahasiswa_ts2=210, mahasiswa_ts1=222, mahasiswa_ts=234, urutan=1)])
     jd = ["biaya_dosen", "biaya_tendik", "operasional_pembelajaran", "operasional_tidak_langsung", "investasi", "kemahasiswaan"]
     t["lkps_penggunaan_dana"] = id_([dict(tahun_akademik=a, jenis=j, dana_upps=(k + 2) * 40000000, dana_ps=(k + 2) * 25000000) for a in ta for k, j in enumerate(jd)])
-    t["lkps_tendik"] = id_([dict(nama=n, jabatan=j, pendidikan=p, sertifikat="", unit_kerja="prodi", aktif=True)
-                            for n, j, p in [("Rudi Tendik", "laboran", "d3"), ("Sinta Tendik", "lainnya", "s1"), ("Tono Tendik", "teknisi", "d3")]])
+    # 164: peran, status kerja, boleh tampil; magang tampil di situs tetapi tidak masuk LKPS 4.b.
+    t["lkps_tendik"] = id_([dict(nama=n, jabatan=j, pendidikan=p, sertifikat="", unit_kerja="prodi", aktif=True, status_kerja=s,
+                                 laboratorium_id=None, boleh_tampil=b)
+                            for n, j, p, s, b in [("Rudi Tendik", "laboran", "d3", "tetap", True), ("Sinta Tendik", "admin_prodi", "s1", "kontrak", True),
+                                                  ("Tono Tendik", "teknisi", "d3", "tetap", False), ("Dewi Aslab", "asisten_lab", "sma_smk", "magang", True)]])
     t["lkps_prasarana"] = id_([dict(prasarana=n, jumlah_prasarana=1, alat=a, jumlah_standar=4, jumlah_dimiliki=4, kepemilikan="sendiri", kondisi="terawat", urutan=i)
                                for i, (n, a) in enumerate([("Laboratorium Beton", "Mesin uji tekan"), ("Laboratorium Tanah", "Alat geser langsung"),
                                                            ("Laboratorium Hidraulika", "Saluran terbuka")])])
@@ -295,7 +329,7 @@ def tabel_lain(ds, ks):
 def ref(sql):
     lit = re.compile(r"'((?:[^']|'')*)'|(NULL|true|false)|(-?\d+(?:\.\d+)?)")
     out = {}
-    for m in re.finditer(r"INSERT INTO public\.(ref_skema_dana|ref_kelompok_dana) \(([^)]*)\) VALUES \((.*)\);", sql):
+    for m in re.finditer(r"INSERT INTO public\.(ref_skema_dana|ref_kelompok_dana|ta_berkas|ta_syarat_bimbingan) \(([^)]*)\) VALUES \((.*)\);", sql):
         cols = [c.strip() for c in m.group(2).split(",")]
         vals = []
         for v in lit.finditer(m.group(3)):
@@ -320,10 +354,18 @@ def tabel_baru(ds, kini: date) -> dict:
                        tempat="Ruang rapat prodi", pimpinan="Admin Contoh", notulis="Budi Contoh", agenda="1. Evaluasi CPL\n2. Revisi RPS",
                        pembahasan="CPL 3 belum tercapai di dua mata kuliah.", terbatas=False, status="final", dokumen_id=None,
                        token_hadir=None, hadir_sampai=None, dibuat_oleh=admin["id"], oleh=admin["email"],
-                       dibuat=h(-20) + "T08:00:00Z", diperbarui=h(-20) + "T08:00:00Z")]
+                       dibuat=h(-20) + "T08:00:00Z", diperbarui=h(-20) + "T08:00:00Z"),
+                  # 166: draf yang tidak diikuti Adi -> Adi hanya melihat jadwal dan agenda.
+                  dict(id=2, judul="Rapat persiapan akreditasi", jenis="rapat_prodi", tanggal=h(-2), mulai="09:00:00", selesai="11:00:00",
+                       tempat="Ruang rapat prodi", pimpinan="Admin Contoh", notulis="Budi Contoh", agenda="1. Pembagian tugas borang",
+                       pembahasan="Pembagian penyusun kriteria (draf).", terbatas=False, status="draf", dokumen_id=None,
+                       token_hadir=None, hadir_sampai=None, dibuat_oleh=admin["id"], oleh=admin["email"],
+                       dibuat=h(-2) + "T08:00:00Z", diperbarui=h(-2) + "T08:00:00Z")]
     t["rapat_peserta"] = [dict(id=i + 1, rapat_id=1, dosen_id=d["id"], nama=d["nama"], instansi=None, peran=p, hadir=True,
                                cara="dicatat", klien=None, waktu=h(-20) + "T06:00:00Z")
                           for i, (d, p) in enumerate([(admin, "pimpinan"), (ds[2], "notulis"), (adi, "peserta"), (ds[3], "peserta")])]
+    t["rapat_peserta"].append(dict(id=99, rapat_id=2, dosen_id=ds[2]["id"], nama=ds[2]["nama"], instansi=None, peran="notulis", hadir=True,
+                                   cara="dicatat", klien=None, waktu=h(-2) + "T02:00:00Z"))
     t["rapat_tindak"] = [dict(id=1, rapat_id=1, urutan=1, keputusan="Revisi RPS Hidrologi sesuai CPL 3", pj_dosen_id=adi["id"], pj_nama=None,
                               tenggat=h(-3), status="terbuka", tanggal_selesai=None, catatan=None, diperbarui=h(-20) + "T08:00:00Z"),
                          dict(id=2, rapat_id=1, urutan=2, keputusan="Usulkan pelatihan asesmen berbasis OBE", pj_dosen_id=admin["id"], pj_nama=None,
@@ -351,11 +393,44 @@ def tabel_baru(ds, kini: date) -> dict:
     return t
 
 
+def penilaian_ta(sql: str) -> dict:
+    """Form penilaian TA versi 1 (173) dari skema + satu nilai sidang contoh Budi untuk jadwal 2. Skema gabungan (full_schema /
+    instal-lengkap.sql) memuat barisnya sebagai INSERT; patch sumber memuat blok rubrik_awal. Tanpa patch 173: kosong."""
+    lit = re.compile(r"'((?:[^']|'')*)'|(NULL)|(-?\d+(?:\.\d+)?)")
+    rubrik = []
+    for m in re.finditer(r"INSERT INTO public\.ta_rubrik \(([^)]*)\) OVERRIDING SYSTEM VALUE VALUES \((.*)\);", sql):
+        cols = [c.strip() for c in m.group(1).split(",")]
+        vals = [v.group(1).replace("''", "'") if v.group(1) is not None else None if v.group(2) else float(v.group(3))
+                for v in lit.finditer(m.group(2))]
+        r = dict(zip(cols, vals))
+        r.update(id=int(r["id"]), versi=int(r["versi"]), komponen=json.loads(r["komponen"]),
+                 komponen_bimbingan=json.loads(r.get("komponen_bimbingan") or "[]"),
+                 tingkat=[float(x) for x in r["tingkat"].strip("{}").split(",")], bobot_penguji=float(r["bobot_penguji"]),
+                 bobot_bimbingan=float(r.get("bobot_bimbingan") or 0), batas_lulus=float(r["batas_lulus"]))
+        rubrik.append(r)
+    if not rubrik:
+        m = re.search(r"\$rubrik_awal\$(.*?)\$rubrik_awal\$", sql, re.S)
+        if not m:
+            return {}
+        rubrik = [dict(id=i + 1, tahap=tahap, versi=1, komponen=x["komponen"], komponen_bimbingan=x["komponen_bimbingan"],
+                       bobot_penguji=x["bobot_penguji"], bobot_bimbingan=x["bobot_bimbingan"], batas_lulus=55, tingkat=[85, 70, 55, 0],
+                       catatan="Draf awal (pemilik 2026-11-25).", oleh="pemasangan", dibuat="2026-11-25T00:00:00Z")
+                  for i, (tahap, x) in enumerate(json.loads(m.group(1)).items())]
+    sidang = next(r for r in rubrik if r["tahap"] == "sidang_akhir")
+    nilai = {k["kode"]: 80 for k in sidang["komponen"]}
+    return {"ta_rubrik": rubrik,
+            "ta_nilai": [dict(id=1, jadwal_id=2, rubrik_id=sidang["id"], bagian="seminar", peran="penguji", penilai_nidn="0000000011",
+                              penilai_nama="Budi Contoh", nilai=nilai, total=80, catatan="Kesimpulan perlu dikaitkan dengan tujuan.", diisi_oleh="Budi Contoh",
+                              diwakilkan=False, diperbarui="2026-11-25T08:00:00Z")]}
+
+
 def buat(sql_path: Path, kini: date | None = None) -> dict:
     ds = dosen()
     ks, pen = karya(ds)
     t = tabel_lain(ds, ks)
-    t.update(ref(sql_path.read_text(encoding="utf-8")))
+    sql = sql_path.read_text(encoding="utf-8")
+    t.update(ref(sql))
+    t.update(penilaian_ta(sql))
     t.update(tabel_baru(ds, kini or date.today()))
     # Dekan bukan DTPS ikut menulis (pemilik 2026-11-21: nama pimpinan tidak boleh tampil di situs umum).
     pen += [dict(karya_id=k["id"], dosen_id=uid("pimpinan"), peran="anggota", korespondensi=False, ditambahkan_sendiri=False) for k in ks[:3]]

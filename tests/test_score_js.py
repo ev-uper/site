@@ -1,7 +1,8 @@
 """Run the JavaScript scoring tests (tests/js/) from pytest (owner 2026-11-04).
 
-The butir formulas live in site/skor.html and run in the browser, so they
-are tested with Node's built-in runner. This wrapper makes one `pytest`
+The butir formulas live in site/instrumen/<id>/rumus-butir.js (moved out of
+site/skor.html, owner 2026-11-24) and run in the browser, so they are tested
+with Node's built-in runner. This wrapper makes one `pytest`
 command cover them too; it is skipped where Node is not installed.
 """
 import shutil

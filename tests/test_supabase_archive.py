@@ -67,6 +67,14 @@ def sample():
             "lkps_kepuasan_pengguna", "lkps_bukti", "lkps_vmts", "lkps_prodi_upps",
             "lkps_penggunaan_dana", "lkps_tendik", "lkps_prasarana", "lkps_dokumen_k3l",
             "lkps_fasilitas_k3l", "lkps_spmi_ppepp", "lkps_target_kinerja", "lkps_peta_jalan",
+            # Tabel patch 165, sarana menurut standar (LKPS LAMDEPILAR L.1, 2026-11-24).
+            "lkps_sarana_standar",
+            # Tabel patch 167, pembimbing utama TA (LKPS LAMDEPILAR P.1.2, 2026-11-24).
+            "lkps_bimbingan_utama",
+            # Tabel patch 169, keuangan A.5 (LKPS LAMDEPILAR, 2026-11-24).
+            "lkps_keuangan",
+            # Tabel patch 171, mahasiswa per angkatan (LKPS LAMDEPILAR E.1, 2026-11-24).
+            "lkps_mahasiswa_angkatan",
             # Tabel patch 50-57 (pemilik 2026-11-11).
             "tautan_ami", "ami_temuan", "potret_skor", "survei", "survei_jawaban",
             "cpl_ringkasan", "cpl_kelas", "cpl_berkas",
@@ -80,6 +88,11 @@ def sample():
             "kegiatan")},
         "templat_email": [{"kunci": "karya", "subjek": "s", "isi": "i"}],
         "hibah_tim": [{"ajuan_id": "a", "dosen_id": "d", "peran": "ketua"}],
+        # Tabel patch 162, dosen yang ditugasi per kegiatan (Kalender saya, pemilik 2026-11-24).
+        "kegiatan_dosen": [{"kegiatan_id": 1, "dosen_id": "d"}],
+        # Tabel patch 163, klaim insentif publikasi (pemilik 2026-11-24).
+        "insentif_pengajuan": [{"id": 1, "judul": "Pengajuan insentif uji", "tanggal": "2026-11-24"}],
+        "insentif_publikasi": [{"id": 1, "karya_id": "k", "pengklaim_id": "d", "status": "diajukan", "pengajuan_id": 1}],
         # Tabel patch 66, target kinerja per dosen (pemilik 2026-11-12).
         "target_baku": [{"tahun": 2026, "jabatan": "lektor", "indikator": "publikasi", "target": 2}],
         "target_dosen": [{"tahun": 2026, "dosen_id": "d", "indikator": "publikasi", "target": 1}],
@@ -130,7 +143,15 @@ def sample():
         "kp_tolak_instansi": [{"id": 1, "pengajuan_id": 1, "instansi": "PT Contoh", "alasan": "kuota penuh"}],
         "kp_kuota": [{"id": 1, "ts": 2027, "dosen_id": None, "kuota": 5}],
         "ta_kk_dekat": [{"kk_a": "GEO", "kk_b": "STR"}],
-        "ta_kuota": [{"id": 1, "ts": 2027, "dosen_id": None, "kuota": 4}],
+        "ta_kuota": [{"id": 1, "ts": 2027, "dosen_id": None, "kuota": 4, "semester": "Ganjil"}],   # 180: per semester
+        # Patch 172: pengecualian urutan tahap TA (pemilik 2026-11-25).
+        "ta_kecuali_urutan": [{"id": 1, "nim": "104199001", "tahap": "sidang_akhir", "alasan": "Seminar kemajuan sebelum situs"}],
+        "ta_rubrik": [{"id": 1, "tahap": "seminar_proposal", "versi": 1, "komponen": [], "bobot_penguji": 60, "batas_lulus": 55}],
+        "ta_nilai": [{"id": 1, "jadwal_id": 1, "rubrik_id": 1, "peran": "penguji", "penilai_nama": "Penguji Contoh", "total": 80}],
+        "ta_berkas": [{"tahap": "sidang_akhir", "kode": "ta_transkrip", "label": "Transkrip atau KHS", "wajib": True, "urut": 3, "aktif": True}],
+        "ta_bimbingan": [{"id": 1, "nim": "104199175", "nama": "Contoh", "tanggal": "2026-11-20", "cara": "daring", "topik": "Bab 3 metode", "status": "dikonfirmasi"}],
+        "ta_syarat_bimbingan": [{"tahap": "sidang_akhir", "minimal": 4}],
+        "ta_arsip": [{"nim": "104199178", "nama": "Contoh", "url": "https://drive.google.com/file/d/X/view"}],
         # Patch 122: daftar berkas yudisium.
         "yudisium_berkas": [{"kode": "yud_transkrip", "label": "Transkrip", "wajib": True, "urut": 3, "aktif": True}],
         # Patch 126: peringatan keamanan.

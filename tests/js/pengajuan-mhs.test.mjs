@@ -262,3 +262,39 @@ test('Tugas saya: kabar tanpa pendamping menunggu pembina kemahasiswaan/admin', 
   assert.equal(cari(tugasSaya({ saya: { id: 'd1', peran: 'dosen', dtps: false }, pengajuanMhs: ps }, kini)).rinci, 'Eka (kabar kegiatan)');
   assert.equal(cari(tugasSaya({ saya: { id: 'd3', peran: 'dosen', dtps: false }, pengajuanMhs: ps }, kini)), undefined);
 });
+
+test('161: pembatalan pengajuan (pemilik 2026-11-24)', async () => {
+  const m = await import('../../site/pengajuan-mhs.js');
+  // Mahasiswa: hanya selama di tangannya (draf/dikembalikan) pada tahap pengajuan.
+  assert.equal(m.bolehBatalMhs({ status: 'draf' }), true);
+  assert.equal(m.bolehBatalMhs({ status: 'dikembalikan', tahap: 'pengajuan' }), true);
+  assert.equal(m.bolehBatalMhs({ status: 'admin' }), false);
+  assert.equal(m.bolehBatalMhs({ status: 'dikembalikan', tahap: 'selesai' }), false);
+  // Prodi: belum diputuskan akhir; KP yang surat pengantarnya terbit masih boleh.
+  assert.equal(m.bolehBatalProdi({ jenis: 'kp', status: 'pembimbing' }), true);
+  assert.equal(m.bolehBatalProdi({ jenis: 'kp', status: 'disetujui', tahap: 'pengajuan' }), true);
+  assert.equal(m.bolehBatalProdi({ jenis: 'kp', status: 'disetujui', tahap: 'selesai' }), false);
+  assert.equal(m.bolehBatalProdi({ jenis: 'lomba', status: 'disetujui' }), false);
+  assert.equal(m.bolehBatalProdi({ jenis: 'kp', status: 'dibatalkan' }), false);
+  // Tampilan dan rekap.
+  assert.equal(m.LABEL_STATUS.dibatalkan, 'Dibatalkan');
+  const j = m.jalur('dibatalkan', [{ status: 'draf', waktu: '2026-11-01' }, { status: 'dibatalkan', waktu: '2026-11-02', oleh: 'mahasiswa', catatan: 'x' }]);
+  assert.deepEqual(j.map(x => [x.label, x.keadaan, x.catatan]), [['Dibatalkan', 'batal', 'x']]);
+  assert.equal(m.keadaanKP({ status: 'dibatalkan' }), 'dibatalkan');
+  const r = m.rekapPengajuan([{ jenis: 'kp', status: 'dibatalkan', data: { instansi: 'PT A' } }, { jenis: 'kp', status: 'admin', data: { instansi: 'PT B' } }]);
+  assert.deepEqual(r.instansi.map(x => x.instansi), ['PT B']);
+});
+
+test('semester TA (180): Ganjil Sep-Feb, Genap Mar-Agu, waktu dibaca WIB, geser dan teks', async () => {
+  const m = await import('../../site/pengajuan-mhs.js');
+  assert.deepEqual(m.semesterTA('2026-09-01'), { ts: 2027, sm: 'Ganjil' });
+  assert.deepEqual(m.semesterTA('2027-02-28'), { ts: 2027, sm: 'Ganjil' });
+  assert.deepEqual(m.semesterTA('2027-03-01'), { ts: 2027, sm: 'Genap' });
+  assert.deepEqual(m.semesterTA('2027-02-28T18:00:00Z'), { ts: 2027, sm: 'Genap' });   // 1 Maret 01:00 WIB
+  assert.equal(m.semesterTA(''), null);
+  assert.deepEqual(m.geserSemester({ ts: 2027, sm: 'Ganjil' }, -1), { ts: 2026, sm: 'Genap' });
+  assert.deepEqual(m.geserSemester({ ts: 2027, sm: 'Genap' }, 1), { ts: 2028, sm: 'Ganjil' });
+  assert.equal(m.teksSemester({ ts: 2027, sm: 'Genap' }), '2026/2027 Genap');
+  const [x] = m.pilihanPembimbingTA([{ dosen_id: 'a', nama: 'Ani', kk: 'AIR', kuota: 5, beban: 5, dibimbing: 2 }], 'AIR', []);
+  assert.equal(x.teks, 'Ani — AIR — 5/5 (kuota penuh) · 2 masih dibimbing');
+});

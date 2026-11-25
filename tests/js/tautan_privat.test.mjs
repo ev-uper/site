@@ -19,8 +19,15 @@ test('Code.gs and rencana-bukti.js list the same private types', () => {
   assert.equal(new Set(JENIS_DOKUMEN.map(j => j.id)).size, JENIS_DOKUMEN.length);
 });
 
-test('patch 40 allows every lecturer evidence type', () => {
-  const sql = readFileSync(new URL('../../supabase/instal-lengkap.sql', import.meta.url), 'utf8');
+test('the latest karya_bukti_jenis_check allows every lecturer evidence type', async () => {
+  // Patch terbaru yang menetapkan batasan (40, lalu 163 insentif publikasi); repo templat: instal-lengkap.sql.
+  const { readdirSync, existsSync } = await import('node:fs');
+  const dir = new URL('../../supabase/', import.meta.url);
+  const patch = readdirSync(dir).filter(f => /^\d+-.*\.sql$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b))
+    .filter(f => /add constraint karya_bukti_jenis_check/.test(readFileSync(new URL(f, dir), 'utf8'))).at(-1);
+  const sumber = patch ? new URL(patch, dir) : new URL('instal-lengkap.sql', dir);
+  if (!existsSync(sumber)) return;
+  const sql = readFileSync(sumber, 'utf8');
   JENIS_BUKTI_KARYA.forEach(([id]) => assert.ok(sql.includes(`'${id}'`), id));
   JENIS_KARYA_PRIVAT.forEach(id => assert.ok(JENIS_BUKTI_KARYA.some(j => j[0] === id), id));
 });

@@ -30,9 +30,11 @@ export const SARAN_BUKTI = {
     U('Statuta, renstra, kurikulum, dan dokumen lain yang dirujuk banyak butir')],
     catatan: 'Isi dulu tab ini: dokumen di sini bisa ditautkan dari tab lain tanpa unggah ulang. Jenis bertanda (privat) tidak '
       + 'punya tautan publik; asesor membukanya dengan kata sandi.' },
+  // LKPS LAMDEPILAR P.1.2 (167-patch): pembimbing utama TA.
+  bimbingan_utama: { tabel: 'P.1.2', isi: [U('SK pembimbing tugas akhir tiap tahun akademik'), U('Rekap bimbingan dari sistem akademik')] },
   bkd: { tabel: '4.c', isi: [R('PDF Laporan Kinerja Dosen (LKD) SISTER tiap semester')],
     catatan: 'Berkas LKD privat, karena memuat data pribadi. Salin angka dari bagian C: SKS BKD dan SKS Lebih.' },
-  tendik: { tabel: '4.b', isi: [R('Ijazah'), R('Sertifikat kompetensi')] },
+  tendik: { tabel: '4.b', isi: [R('Ijazah'), R('Sertifikat kompetensi'), U('Foto profil (jenis "Foto profil"; tampil di situs bila boleh tampil)')] },
   mk: { tabel: '3.a.1, 3.a.4, 3.a.5', isi: [P('Dokumen RPS tiap mata kuliah'), U('Dokumen kurikulum'),
     U('Capstone: panduan capstone dan contoh laporan')] },
   tema: { tabel: '3.b, 3.c, 6.h, 6.i', isi: [U('Peta jalan penelitian dan PkM yang disahkan')] },
@@ -54,10 +56,17 @@ export const SARAN_BUKTI = {
   kepuasan: { tabel: '6.g.2', isi: [P('Laporan survei pengguna')] },
   vmts: { tabel: '1', isi: [P('Nomor SK dan tautan dokumen VMTS')] },
   prodi_upps: { tabel: 'PS', isi: [P('SK pembukaan PS dan SK akreditasi tiap prodi')] },
+  // LKPS LAMDEPILAR A.5.1/A.5.2 (169-patch): keuangan per pos.
+  keuangan_a5: { tabel: 'A.5', isi: [R('Laporan realisasi anggaran (RKAT) per tahun anggaran'), U('Laporan keuangan yang diaudit')] },
+  // LKPS LAMDEPILAR E.1.1/E.1.2 (171-patch): admisi dan status per angkatan.
+  angkatan: { tabel: 'E.1', isi: [R('Rekap PMB per angkatan: daya tampung, pendaftar, diterima (seleksi, afirmasi, transfer, asing)'),
+    R('Rekap status mahasiswa per angkatan dari PDDikti/SIAKAD (aktif, tidak aktif, lulus, gagal)')] },
   dana: { tabel: '2.b', isi: [R('Laporan realisasi anggaran per tahun anggaran')] },
   prasarana: { tabel: '5.a', isi: [P('Daftar alat utama tiap laboratorium'), U('Foto dan inventaris')] },
   dok_k3l: { tabel: '5.b', isi: [U('Dokumen K3L yang bertanggal')] },
   fas_k3l: { tabel: '5.c', isi: [U('Foto dan inventaris fasilitas')] },
+  // LKPS LAMDEPILAR L.1 (165-patch): sarana menurut standar.
+  sarana_std: { tabel: 'L.1', isi: [U('Foto dan inventaris sarana'), U('Dokumen standar sarana yang ditetapkan')] },
   spmi: { tabel: '7.a, 7.b', isi: [P('Nomor dan tanggal dokumen SPMI'), P('Tautan dokumen tiap tahap PPEPP'),
     R('Laporan AMI dan RTM')] },
   target: { tabel: 'butir 54–56', isi: [U('Dokumen IKU/IKT yang disahkan'), U('Laporan kinerja'),

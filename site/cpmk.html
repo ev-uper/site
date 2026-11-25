@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tema.css?v=2026-11-23-5a55a3">
-<link rel="stylesheet" href="kepala.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="tema.css?v=2026-11-25-65047c">
+<link rel="stylesheet" href="kepala.css?v=2026-11-25-65047c">
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
@@ -91,7 +91,7 @@
   <div class="sub" id="hSub">Memuat…</div>
 </div></div>
 <main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
-<script src="config.js?v=2026-11-23-5a55a3"></script>
+<script src="config.js?v=2026-11-25-65047c"></script>
 <script>
 // Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
 addEventListener('error', function (e) {
@@ -111,17 +111,17 @@ addEventListener('error', function (e) {
 // mengisi CPMK, Sub-CPMK, butir asesmen, bobot, dan RPS. Templat nilai CPL per kelas diisi dari struktur ini
 // di peramban (templat-cpl.js + JSZip), jadi dosen tinggal mengisi NIM dan nilai.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
-import { gerbang } from './menu.js?v=2026-11-23-5a55a3';
-import { bolehMutu } from './koordinator.js?v=2026-11-23-5a55a3';
-import { bawaanHanyaSaya, ingatHanyaSaya, pesanKosongSaya } from './mk-saya.js?v=2026-11-23-5a55a3';
-import { semesterKini } from './evaluasi-pembelajaran.js?v=2026-11-23-5a55a3';
-import { periksaStruktur, isiTemplat, namaBerkasTemplat } from './templat-cpl.js?v=2026-11-23-5a55a3';
+import { gerbang } from './menu.js?v=2026-11-25-65047c';
+import { bolehMutu } from './koordinator.js?v=2026-11-25-65047c';
+import { bawaanHanyaSaya, ingatHanyaSaya, pesanKosongSaya } from './mk-saya.js?v=2026-11-25-65047c';
+import { semesterKini } from './evaluasi-pembelajaran.js?v=2026-11-25-65047c';
+import { periksaStruktur, isiTemplat, namaBerkasTemplat } from './templat-cpl.js?v=2026-11-25-65047c';
 import { cplMK, strukturKosong, tambahCpmk, hapusCpmk, tambahSub, hapusSub, tambahAsesmen, hapusAsesmen, gantiNamaAsesmen,
   aturBobot, jumlahBobot, dataTemplat, statusStruktur,
-  hitungAwal, hitungOtomatis, MODE_HITUNG, PRIORITAS, PEMBULATAN } from './cpmk.js?v=2026-11-23-5a55a3';
+  hitungAwal, hitungOtomatis, MODE_HITUNG, PRIORITAS, PEMBULATAN } from './cpmk.js?v=2026-11-25-65047c';
 // RPS K26 (111): CPL per Sub-CPMK dan jenis asesmen (kolom Rencana Asesmen Sumatif) disimpan di struktur yang sama.
 import { JENIS_ASESMEN, jenisAsesmen, JENIS_MK, susunanMK, jenisMK, bagiParitas, saringMK, ringkasSemester, htmlRingkasSemester, htmlSaringan, ubahSaringan, KELOMPOK_ASESMEN, kelompokAsesmen, periksaKomposisi,
-  JENIS_KULIAH, jenisKuliah } from './rps.js?v=2026-11-23-5a55a3';
+  JENIS_KULIAH, jenisKuliah } from './rps.js?v=2026-11-25-65047c';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -377,11 +377,11 @@ function htmlEditor(){
       <p><button class="b utama" id="unduhTemplat">Unduh templat terisi</button><span class="msg" id="mTemplat"></span></p>
     </section>
 
-    ${KELOLA ? `<section class="kartu"><h2>Koordinator MK / pengampu</h2>
-      <p class="ket">Dosen yang boleh mengisi CPMK dan RPS mata kuliah ini sepanjang tahun (juga kolom pengampu Tabel 4.a LKPS). Pengampu kelas semester ini
-        (daftar kelas CPL) otomatis boleh mengisi.</p>
-      <div class="pilih-dosen">${DOSEN.map(d => `<label><input type="checkbox" data-pengampu="${esc(d.nidn)}"${(m.pengampu || []).includes(d.nidn) ? ' checked' : ''}> ${esc(d.nama)}</label>`).join('')}</div>
-      <p><button class="b" id="simpanPengampu">Simpan koordinator MK</button><span class="msg" id="mPengampu"></span></p></section>` : ''}`;
+    <section class="kartu"><h2>Koordinator dan tim MK</h2>
+      <p class="ket">Koordinator dan tim: ${esc(namaPengampu(m).join(', ')) || 'belum ditetapkan'}. Mereka boleh mengisi CPMK dan RPS
+        mata kuliah ini sepanjang tahun; pengampu kelas semester ini (daftar kelas CPL) otomatis boleh mengisi. Penetapannya oleh
+        Kaprodi atau admin di <a href="koordinator-mk.html?kur=${encodeURIComponent(m.kurikulum || '')}&amp;kode=${encodeURIComponent(m.kode)}">Koordinator dan tim MK</a>
+        (158, pemilik 2026-11-23).</p></section>`;
 }
 
 function gambar(){
@@ -411,7 +411,6 @@ function gambar(){
     $('asesBaru').onkeydown = e => { if (e.key === 'Enter') tambah(); };
   }
   if ($('simpan')) $('simpan').onclick = simpan;
-  if ($('simpanPengampu')) $('simpanPengampu').onclick = simpanPengampu;
   $('unduhTemplat').onclick = unduhTemplat;
   $('tKelas').onchange = isiDariKelas; isiDariKelas();
 }
@@ -501,15 +500,7 @@ async function simpan(){
 }
 
 
-async function simpanPengampu(){
-  const [kur, kode] = PILIH.split('|');
-  const nidn = [...document.querySelectorAll('[data-pengampu]:checked')].map(c => c.dataset.pengampu);
-  const { error } = await sb.rpc('mk_atur_pengampu', { p_kurikulum: kur, p_kode: kode, p_nidn: nidn });
-  if (error) return tulis('mPengampu', 'buruk', 'Gagal: ' + error.message);
-  mkDari(PILIH).pengampu = nidn;
-  const boleh = await baca(sb.rpc('mk_boleh_saya')); BOLEH = new Set(boleh.map(b => kunci(b.kurikulum, b.kode_mk)));
-  gambar(); tulis('mPengampu', 'ok', 'Koordinator MK tersimpan.');
-}
+// Koordinator dan tim MK ditetapkan di koordinator-mk.html (158); editor lama di halaman ini dihapus (2026-11-23).
 
 function isiDariKelas(){
   const k = KELAS.find(x => String(x.id) === $('tKelas').value);

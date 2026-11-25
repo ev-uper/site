@@ -44,7 +44,7 @@ from jadwal.aturan import baca_aturan
 from halaman_publik import (akreditasi_publik, alumni_ringkas, drive_id, jadwal_ta_publik, kabar_publik, kerjasama_publik,
                             laboratorium_publik, lengkapi_mk_terbaru, tempat_kp_publik, berkas_bidang, kalender_publik, arsip_ta_publik,
                             kaprodi_aktif, riwayat_kaprodi, prestasi_publik, profil_publik, salin_foto_dosen, testimoni_publik,
-                            salin_foto,
+                            salin_foto, tendik_publik,
                             salin_foto_prestasi,
                             tulis_halaman_publik, lengkapi_beranda, alamat_situs, fitur_mati)
 import requests
@@ -1174,6 +1174,7 @@ def bangun(env, lembar, karya, penulis, skema, kelompok, mahasiswa, mitra,
         {str(k["id"]): {"judul": k["judul"], "tahun": k["tahun"], "kategori": k["kategori"],
                         "skema": nama_skema_publik(peta_skema.get(k.get("skema_kode"), {}).get("nama", ""))}
          for k in semua_verif if k["kategori"] in {"penelitian", "pkm"}})
+    publik["tendik"] = lembar.get("tendik_publik") or []
     # Foto dosen (pemilik 2026-11-16): unggahan dosen sendiri di Profil saya (instal-lengkap.sql,
     # disalin dari Drive sebelum data.json ditulis) didahulukan; selain itu berkas
     # site/foto-dosen/<slug>.(jpg|jpeg|webp|png) bila ada; tanpa keduanya, halaman menampilkan inisial.
@@ -1285,6 +1286,8 @@ def bangun(env, lembar, karya, penulis, skema, kelompok, mahasiswa, mitra,
     foto_dosen = salin_foto_dosen(situs, publik["dosen"])
     print(f"  Foto dosen (unggahan): {foto_dosen['dipakai']} dipakai, {foto_dosen['baru']} baru, {foto_dosen['gagal']} gagal diunduh")
     foto_lab = salin_foto(situs, publik["laboratorium"], "laboratorium")
+    foto_tendik = salin_foto(situs, publik["tendik"], "tendik")
+    print(f"  Foto tenaga kependidikan: {foto_tendik['dipakai']} dipakai, {foto_tendik['baru']} baru, {foto_tendik['gagal']} gagal diunduh")
     print(f"  Foto laboratorium: {foto_lab['dipakai']} dipakai, {foto_lab['baru']} baru, {foto_lab['gagal']} gagal diunduh")
     print(f"  Foto kabar: {foto_kabar['dipakai']} dipakai, {foto_kabar['baru']} baru, {foto_kabar['gagal']} gagal diunduh")
     print(f"  Foto prestasi: {hasil_foto['dipakai']} dipakai, {hasil_foto['baru']} baru, "
@@ -2156,8 +2159,8 @@ def main() -> None:
     dosen_publik = [{"nidn": d.get("nidn"), "nama": lembar["nama_gelar"].get(d.get("nama")) or d.get("nama"),
                      "slug": slug(d["nama"]) if tampil_publik(d) else None}
                     for d in lembar["dosen"].to_dict("records") if d.get("nama") and not pimpinan_tersembunyi(d)]
-    lembar["prestasi_publik"] = prestasi_publik(
-        baris_prestasi, sb.ambil_opsional("lkps_bukti", "tabel,baris_id,jenis,url") or [], dosen_publik)
+    lembar["bukti_lkps"] = sb.ambil_opsional("lkps_bukti", "tabel,baris_id,jenis,url") or []
+    lembar["prestasi_publik"] = prestasi_publik(baris_prestasi, lembar["bukti_lkps"], dosen_publik)
     # Tempat KP/magang (90/91/99) dan ringkasan tracer alumni (55) untuk kerja-sama.html dan alumni.html
     # (pemilik 2026-11-17): hanya agregat; NIM, nama, email, dan isian pribadi tidak keluar dari fungsi.
     lembar["tempat_kp_publik"] = tempat_kp_publik(
@@ -2173,6 +2176,10 @@ def main() -> None:
     lembar["laboratorium_baris"] = (sb.ambil_opsional("laboratorium", kolom_lab + ",bidang")
                                     or sb.ambil_opsional("laboratorium", kolom_lab) or [])
     lembar["prasarana_baris"] = sb.ambil_opsional("lkps_prasarana", "prasarana,alat,jumlah_dimiliki,urutan") or []
+    # Tenaga kependidikan untuk situs (164, opsional): tanpa patch, kolom boleh_tampil tidak ada -> tidak ada yang tampil.
+    lembar["tendik_publik"] = tendik_publik(
+        sb.ambil_opsional("lkps_tendik", "id,nama,jabatan,laboratorium_id,boleh_tampil,aktif") or [],
+        lembar["bukti_lkps"], lembar["laboratorium_baris"])
     lembar["dosen_per_nidn"] = {str(d["nidn"]).strip(): d for d in dosen_publik if d.get("nidn")}
     # Kerja sama resmi untuk situs publik (patch 83: sembunyikan_publik; patch 24: manfaat dan tanggal), opsional.
     kolom_ks = "id,mitra,jenis,tingkat,kegiatan,tahun_mulai,tahun_selesai"

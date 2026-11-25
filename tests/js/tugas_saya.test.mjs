@@ -60,3 +60,16 @@ test('assessors have no tasks; non-DTPS staff get no profile reminder; nothing p
   assert.ok(!tugasSaya({ ...DATA, saya: { ...SAYA, dtps: false } }, KINI).some(x => x.jenis === 'profil'));
   assert.deepEqual(tugasSaya({ saya: { id: 'z', peran: 'dosen', sinta_id: '1' } }, KINI), []);
 });
+
+test('sertifikat: diingatkan 90 hari sebelum habis dan setelah kedaluwarsa (pemilik 2026-11-24)', () => {
+  const S = { id: 'z', peran: 'dosen', dtps: true, sinta_id: '1', scopus_id: '1', orcid: '1', jabatan: 'lektor', nidn: '1' };
+  const kini = new Date(2026, 10, 24);
+  const srt = [{ bidang: 'K3 Konstruksi', lembaga: 'BNSP', berlaku_sampai: '2026-12-01' }, { bidang: 'Insinyur', berlaku_sampai: '2026-11-01' },
+    { bidang: 'Jauh', berlaku_sampai: '2028-01-01' }, { bidang: 'Tanpa masa berlaku' }];
+  const t = tugasSaya({ saya: S, sertifikat: srt }, kini).filter(x => /^Sertifikat/.test(x.judul));
+  assert.equal(t.length, 1);
+  assert.equal(t[0].judul, 'Sertifikat: 1 sudah kedaluwarsa, 1 segera habis');
+  assert.equal(t[0].rinci, 'Insinyur: kedaluwarsa sejak 1 November 2026; K3 Konstruksi, BNSP: berlaku sampai 1 Desember 2026 (7 hari lagi). Perbarui sertifikat dan masa berlakunya di Profil saya.');
+  assert.equal(t[0].tingkat, 'lewat');
+  assert.deepEqual(tugasSaya({ saya: S, sertifikat: [srt[2], srt[3]] }, kini).filter(x => /^Sertifikat/.test(x.judul)), []);
+});

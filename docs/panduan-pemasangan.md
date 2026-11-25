@@ -137,15 +137,15 @@ Catat username GitHub, `<org>`, dan alamat Gmail prodi di lembar catatan di akhi
 
 ## Tahap 2. Pasang Miniforge
 
-Miniforge menyediakan Python dan git. Keduanya hanya dipakai saat pemasangan.
+Miniforge menyediakan Python, git, dan Node.js. Ketiganya hanya dipakai saat pemasangan (Node.js untuk memasang instrumen akreditasi di tahap 6).
 
 1. Buka `github.com/conda-forge/miniforge`, bagian **Download**, lalu unduh penginstal Windows `Miniforge3-Windows-x86_64.exe`.
 2. Jalankan penginstalnya dan pilih **Just Me**. Pengaturan lain biarkan bawaan.
 3. Dari menu Start, buka **Miniforge Prompt**. Semua perintah di panduan ini diketik di jendela itu.
-4. Buat lingkungan kerja berisi Python dan git:
+4. Buat lingkungan kerja berisi Python, git, dan Node.js:
 
 ```
-conda create -n pasang-situs python git -y
+conda create -n pasang-situs python git nodejs -y
 conda activate pasang-situs
 ```
 
@@ -265,6 +265,10 @@ Situs coba tidak memerlukan dan tidak menyentuh Supabase, GitHub, atau Google Dr
     - *Name*: nama yang mudah dikenali, misalnya `dashboard-prodi`.
     - *Database Password*: klik **Generate a password**, lalu simpan di pengelola kata sandi prodi. Situs tidak memakai kata sandi ini, tetapi Supabase memintanya untuk keperluan pemulihan.
     - *Region*: pilih yang terdekat, misalnya Singapura.
+    - Kotak **Grant API access to new tables automatically** (di bagian keamanan formulir, sejak akhir 2026 tidak
+      dicentang secara bawaan): **centang**. `instal-lengkap.sql` sudah menulis sendiri hak akses semua tabelnya,
+      tetapi patch pembaruan berikutnya yang menambah tabel bergantung pada kotak ini; tanpa centang, tabel baru
+      itu tidak bisa dibaca situs. Keamanan data tetap dijaga aturan baris (RLS) tiap tabel.
 4. Klik **Create new project** dan tunggu beberapa menit sampai proyek siap.
 
 ### Membuat tabel
@@ -442,6 +446,18 @@ Jawab pertanyaan berikut. Di atas beberapa pertanyaan, pemasang menulis petunjuk
 | Berkas logo `.png` | path berkas, atau kosongkan | |
 | Warna utama dan warna aksen | `#0C2A4D`, atau Enter | |
 | Paket situs | `lengkap` (Enter) atau `akreditasi` | lihat "Paket lengkap atau akreditasi" di bawah |
+| Instrumen akreditasi | `lam-teknik-s1` (Enter) atau `lamdepilar-magister` | lihat "Instrumen akreditasi" di bawah |
+
+### Instrumen akreditasi
+
+Instrumen menentukan butir skor, bobot, syarat status, serta templat LKPS dan LED yang diunduh dari halaman Skor & LED. Pilih sesuai LAM dan jenjang prodi; daftar lengkap dicetak pemasang di atas pertanyaannya.
+
+| Id | Instrumen |
+|---|---|
+| `lam-teknik-s1` | LAM Teknik, APS-AV 2025 1.0, Program Sarjana (60 butir, skor 0–4, NA maksimal 400) |
+| `lamdepilar-magister` | LAMDEPILAR, IAPS DEPILAR 1.0, Magister program akademik, perolehan status terakreditasi (30 elemen, skor 0–3 diisi manual, NA maksimal 300) |
+
+Pemasang menulis pilihan ke `config.yaml` (`accreditation.instrument`), lalu menjalankan `tools/pilih_instrumen.py` yang mengarahkan halaman ke folder `site/instrumen/<id>/`. Langkah ini butuh Node.js dari tahap 2. Kalau muncul "node tidak ditemukan", jalankan `conda install nodejs -y` di lingkungan `pasang-situs`, lalu ulangi `python install.py`. Berganti instrumen kelak juga lewat `python install.py`, lalu commit dan push. Data yang sudah diisi tetap ada, tetapi skor dan bukti per butir milik instrumen lama tidak tampil di instrumen baru.
 
 ### Paket lengkap atau akreditasi
 

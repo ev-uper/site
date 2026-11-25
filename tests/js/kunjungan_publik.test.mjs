@@ -29,6 +29,10 @@ test('nama halaman', () => {
   assert.equal(namaHalaman('/cv-site/dosen/ani-lestari.html'), 'dosen/ani-lestari.html');
   assert.equal(namaHalaman('/'), 'index.html');
   assert.equal(namaHalaman('/cv-site/daftar.html', '?jenis=<script>'), 'daftar.html');
+  // Mode latihan (pemilik 2026-11-24): terpisah dari halaman pengajuan sungguhan, juga dari tautan email tiruan.
+  assert.equal(namaHalaman('/cv-site/pengajuan.html', '?latihan=1'), 'pengajuan.html:latihan');
+  assert.equal(namaHalaman('/cv-site/pengajuan.html', '?dari=email-coba&latihan=1'), 'pengajuan.html:latihan');
+  assert.equal(namaHalaman('/cv-site/pengajuan.html', '?jenis=kp&latihan=1'), 'pengajuan.html:kp:latihan');
 });
 
 test('perayap, peramban otomatis, dan situs lokal tidak dicatat', () => {

@@ -9,7 +9,9 @@ const baca = f => readFileSync(new URL(f, SITE), 'utf8');
 const TEMA = baca('tema.css');
 const DEKL = new Map([...TEMA.matchAll(/(--[\w-]+):([^;]+);/g)].map(m => [m[1], m[2].trim()]));
 const halaman = readdirSync(SITE).filter(f => f.endsWith('.html'));
-const berkas = readdirSync(SITE).filter(f => /\.(html|js|css)$/.test(f) && !f.startsWith('tema.'));
+// recursive: instrument modules in site/instrumen/<id>/ are checked too (2026-11-24)
+const berkas = readdirSync(SITE, { recursive: true }).map(f => f.replaceAll('\\', '/'))
+  .filter(f => /\.(html|js|css)$/.test(f) && !f.startsWith('tema.'));
 
 test('tema.css: every page links it before its own styles', () => {
   for (const f of halaman) {

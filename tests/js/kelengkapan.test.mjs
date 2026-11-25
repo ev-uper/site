@@ -71,6 +71,18 @@ test('TAB_DATA sama dengan tab yang ada di data-prodi.html', () => {
   assert.deepEqual(TAB_DATA.map(([id, t]) => `${id}|${t}`).sort(), tab);
 });
 
+// Tab khusus satu mesin LKPS (elemen ke-5) hanya masuk Kelengkapan instrumen itu (2026-11-24).
+import { TAB_AKTIF } from '../../site/kelengkapan.js';
+import { LKPS } from '../../site/dokumen-instrumen.js';
+test('TAB_AKTIF: tab khusus mesin LKPS lain disaring', () => {
+  const sar = TAB_DATA.find(t => t[0] === 'sarana_std');
+  assert.equal(sar[4], 'lkps-lamdepilar.js');
+  assert.equal(TAB_AKTIF.some(t => t[0] === 'sarana_std'), LKPS.mesin === 'lkps-lamdepilar.js');
+  assert.ok(TAB_AKTIF.every(t => !t[4] || t[4] === LKPS.mesin));
+  assert.equal(TAB_AKTIF.length, TAB_DATA.filter(t => !t[4] || t[4] === LKPS.mesin).length);
+  assert.ok(TAB_DATA.some(t => t[0] === 'bimbingan_utama' && t[4] === 'lkps-lamdepilar.js'));
+});
+
 // Tugas per pihak (owner 2026-11-11): missing elements grouped by responsible party.
 import { tugasPerPihak } from '../../site/kelengkapan.js';
 test('tugasPerPihak: missing elements per party, uploaded ones and RPS 1/4 excluded', () => {

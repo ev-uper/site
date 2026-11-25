@@ -88,6 +88,34 @@ def test_banner_added_once_to_module_pages_only(tmp_path):
     assert "galat-muat" not in (p / "index.html").read_text(encoding="utf-8")
 
 
+def test_subfolder_modules_are_stamped_and_fingerprinted(tmp_path):
+    """Instrument modules live in site/instrumen/<id>/ (owner 2026-11-24)."""
+    p = site(tmp_path)
+    v0, _ = run(p)
+    sub = p / "instrumen" / "x"
+    sub.mkdir(parents=True)
+    (sub / "c.js").write_text("import { a } from '../../a.js';\nexport const c = 1;\n", encoding="utf-8")
+    (p / "b.js").write_text("export * from './instrumen/x/c.js';\nexport const b = 2;\n", encoding="utf-8")
+    v1, changed = run(p, DAY2)
+    assert v1 != v0
+    assert "instrumen/x/c.js" in changed
+    assert f"from '../../a.js?v={v1}'" in (sub / "c.js").read_text(encoding="utf-8")
+    assert f"from './instrumen/x/c.js?v={v1}'" in (p / "b.js").read_text(encoding="utf-8")
+    # editing only the nested module moves the version too
+    (sub / "c.js").write_text((sub / "c.js").read_text(encoding="utf-8").replace("c = 1", "c = 2"),
+                              encoding="utf-8")
+    v2, _ = run(p, DAY2)
+    assert v2 != v1
+
+
+def test_flat_site_version_unchanged_by_recursive_scan(tmp_path):
+    """Keys of top-level files are the bare name, as before 2026-11-24."""
+    p = site(tmp_path)
+    files = {f.name: f.read_text(encoding="utf-8") for f in p.iterdir() if f.is_file()}
+    v, _ = sv.plan(p, DAY1)
+    assert v == f"{DAY1:%Y-%m-%d}-{sv.fingerprint({n: sv.add_banner(n, t) for n, t in files.items()})}"
+
+
 def test_check_mode_reports_without_writing(tmp_path, capsys):
     p = site(tmp_path)
     before = (p / "skor.html").read_text(encoding="utf-8")

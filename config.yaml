@@ -230,6 +230,14 @@ supabase:
     lkps_prasarana: id
     lkps_dokumen_k3l: id
     lkps_fasilitas_k3l: id
+    # Sarana menurut standar, LKPS LAMDEPILAR Tabel L.1 (patch 165, pemilik 2026-11-24).
+    lkps_sarana_standar: id
+    # Pembimbing utama TA per dosen per tahun akademik, LKPS LAMDEPILAR Tabel P.1.2 (patch 167, pemilik 2026-11-24).
+    lkps_bimbingan_utama: id
+    # Keuangan A.5.1/A.5.2 per pos per tahun akademik, LKPS LAMDEPILAR (patch 169, pemilik 2026-11-24).
+    lkps_keuangan: id
+    # Mahasiswa per angkatan, LKPS LAMDEPILAR Tabel E.1.1/E.1.2 (patch 171, pemilik 2026-11-24).
+    lkps_mahasiswa_angkatan: id
     # Tahap PPEPP SPMI (patch 30, pemilik 2026-11-04).
     lkps_spmi_ppepp: id
     # Target IKU/IKT (patch 34, pemilik 2026-11-05).
@@ -267,6 +275,9 @@ supabase:
     rapat_tindak: id          # patch 62: keputusan dan tindak lanjut rapat (PJ, tenggat, status)
     templat_email: kunci      # patch 63: templat email pengingat (subjek, isi)
     kegiatan: id              # patch 64: kegiatan prodi manual untuk kalender (diisi admin)
+    kegiatan_dosen: kegiatan_id,dosen_id   # patch 162: dosen yang ditugasi per kegiatan (Kalender saya); kosong = semua dosen
+    insentif_pengajuan: id    # patch 163: pengajuan insentif publikasi ke fakultas (admin/Kaprodi)
+    insentif_publikasi: id    # patch 163: klaim insentif per publikasi (satu klaim per karya)
     target_baku: tahun,jabatan,indikator   # patch 66: target kinerja baku per jabatan per tahun
     target_dosen: tahun,dosen_id,indikator # patch 66: target khusus per dosen per tahun
     spmi_standar: id          # patch 67: butir standar SPMI (dari rekap standar SPM)
@@ -303,7 +314,14 @@ supabase:
     kp_tolak_instansi: id         # patch 106: surat pengantar KP ditolak instansi (instansi, alasan, tanggal)
     kp_kuota: id                  # patch 107: kuota pembimbing KP per TS (dosen_id kosong = bawaan); keputusan pemilik 2026-11-18
     ta_kk_dekat: kk_a,kk_b        # patch 110: pasangan kelompok keahlian berdekatan untuk pembimbing 1 TA; keputusan pemilik 2026-11-18
-    ta_kuota: id                  # patch 110: kuota pembimbing TA per TS (dosen_id kosong = bawaan); keputusan pemilik 2026-11-18
+    ta_kuota: id                  # patch 110: kuota pembimbing TA (dosen_id kosong = bawaan), pemilik 2026-11-18; per semester sejak 180 (2026-11-25)
+    ta_kecuali_urutan: id         # patch 172: pengecualian urutan tahap TA per (nim, tahap) oleh koordinator TA; keputusan pemilik 2026-11-25
+    ta_rubrik: id                 # patch 173: form penilaian seminar/sidang TA per (tahap, versi); keputusan pemilik 2026-11-25
+    ta_nilai: id                  # patch 173: nilai tiap pembimbing/penguji per jadwal_ta; keputusan pemilik 2026-11-25
+    ta_berkas: tahap,kode         # patch 174: berkas pendaftaran seminar/sidang TA per tahap (diubah koordinator TA); keputusan pemilik 2026-11-25
+    ta_bimbingan: id              # patch 175: catatan bimbingan TA mahasiswa + konfirmasi pembimbing; keputusan pemilik 2026-11-25
+    ta_syarat_bimbingan: tahap    # patch 175: minimal bimbingan terkonfirmasi per tahap (diubah koordinator TA); keputusan pemilik 2026-11-25
+    ta_arsip: nim                 # patch 178: tautan arsip TA (PDF di Drive prodi) per mahasiswa lulus; keputusan pemilik 2026-11-25
     yudisium_berkas: kode         # patch 122: daftar berkas yudisium (label, wajib, urutan; diubah admin); keputusan pemilik 2026-11-20
     peringatan_keamanan: id       # patch 126: antrean email peringatan tindakan sensitif ke admin; keputusan pemilik 2026-11-20
     status_sistem: kunci          # patch 125: kapan tiap pekerjaan otomatis terakhir berjalan (panel Kesehatan sistem); keputusan pemilik 2026-11-20
@@ -635,3 +653,13 @@ schedule:
   # Batas waktu pemecah (HiGHS), detik. Bila habis, jadwal terbaik yang ditemukan dipakai dan ditandai di laporan.
   # Nilai sah: bilangan bulat 10-3600. Asal: usulan Claude 2026-11-22.
   time_limit_seconds: 120
+
+# Instrumen akreditasi yang dipakai situs (skor, bobot, syarat, LKPS, LED). Isi tiap instrumen ada di
+# site/instrumen/<id>/; tools/pilih_instrumen.py menulis "pintu" di site/ (mis. site/bobot.js) agar menunjuk ke
+# folder ini dan memeriksa bahwa folder itu lengkap. Jalankan ulang skrip itu setelah mengubah kunci ini.
+accreditation:
+  # Id instrumen = nama folder di site/instrumen/ (huruf kecil, angka, tanda minus). Nilai sah: folder yang ada,
+  # mis. lam-teknik-s1 (LAM Teknik, APS-AV 2025 1.0, Program Sarjana). Instrumen lain (LAM Teknik S2/S3, LAMEMBA,
+  # LAMINFOKOM, LAMSPAK, LAMSAMA) ditambah dari dokumen resminya. Asal: keputusan pemilik 2026-11-24 (folder per
+  # instrumen); lam-teknik-s1 = instrumen prodi ini (Dokumen Kurikulum K26 Bab 1, LAM Teknik).
+  instrument: lam-teknik-s1

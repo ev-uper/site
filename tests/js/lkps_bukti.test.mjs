@@ -82,3 +82,49 @@ test('4c: private LKD through lkd.html, password only when typed at download', (
   assert.match(satu({})[0].items[0].catatan, /diberikan terpisah/);
   assert.match(bagianDocx([x], { ts: 2026 }).bagian['word/document.xml'], /rahasia-uji/);
 });
+
+// LAMDEPILAR Magister (owner 2026-11-24): own table list, same evidence sources as lkps-lamdepilar.js.
+import { TABEL_LAMDEPILAR } from '../../site/lkps-bukti.js';
+const C2 = { ts: 2026, prodi: 'Magister Uji', daftar: { ...C.daftar,
+  dokumen: [...C.daftar.dokumen, { id: 9, jenis: 'laporan_keuangan', tahun: 2025, judul: '', url: 'https://d/lra' },
+            { id: 10, jenis: 'pedoman_sarpras', tahun: 2024, judul: '', url: 'https://d/sarpras' }],
+  karya: [...C.daftar.karya, { id: 'e', kategori: 'pkm', judul: 'Desa air', tahun: 2026, url: 'https://d/pkm' }],
+  angkatan: [{ id: 11, tahun_akademik: '2022/2023', asing_penuh_waktu: 1 }, { id: 12, tahun_akademik: '2025/2026', asing_penuh_waktu: 0 }],
+  saranaStd: [{ id: 21, jenis: 'belajar', nama: 'Ruang kelas', lokasi: 'Gedung A' }, { id: 22, jenis: 'kerja', nama: 'Lab hidro' }],
+  keuangan: [{ id: 31, tahun_akademik: '2025/2026', pos: 'ukt_bergelar' }, { id: 32, tahun_akademik: '2025/2026', pos: 'biaya_pkm' },
+             { id: 33, tahun_akademik: '2021/2022', pos: 'ukt_bergelar' }],
+  buktiBaris: [...C.daftar.buktiBaris, { tabel: 'lkps_mahasiswa_angkatan', baris_id: 11, judul: 'Rekap PMB', url: 'https://d/pmb' },
+    { tabel: 'lkps_sarana_standar', baris_id: 21, judul: 'Foto', url: 'https://d/foto' },
+    { tabel: 'lkps_keuangan', baris_id: 31, judul: 'RKAT', url: 'https://d/rkat' },
+    { tabel: 'lkps_keuangan', baris_id: 33, judul: 'RKAT lama', url: 'https://d/rkat-lama' }],
+} };
+const I2 = indeksBukti(C2, TABEL_LAMDEPILAR);
+const per2 = n => I2.find(x => x.nama === n);
+const urls2 = n => per2(n).items.flatMap(i => i.tautan.map(l => l.url));
+
+test('LAMDEPILAR: Magister tables in template order, Terapan and formula-only tables left out', () => {
+  assert.equal(I2.length, 25);
+  assert.deepEqual([I2[0].nama, I2[24].nama], ['D.1', 'R.6.1']);
+  for (const n of ['E.1.3', 'A.5.3', 'L.4.2', 'R.3.2', 'R.6.2']) assert.equal(per2(n), undefined, n);
+  assert.deepEqual(per2('P.1.4').items, []);
+});
+
+test('LAMDEPILAR: cohort, facilities per kind, finance with proof in TS-2..TS, karya for R.3.1/R.6.1', () => {
+  assert.deepEqual(urls2('E.1.1'), ['https://d/pmb']);
+  assert.deepEqual(per2('E.1.2').items, [{ item: 'Angkatan 2022/2023', tautan: [{ t: 'Rekap PMB', url: 'https://d/pmb' }] }]);
+  assert.deepEqual(urls2('L.1.1'), ['https://d/sarpras', 'https://d/foto']);
+  assert.deepEqual(per2('L.1.1').items.at(-1), { item: 'Ruang kelas (Gedung A)', tautan: [{ t: 'Foto', url: 'https://d/foto' }] });
+  assert.equal(per2('L.1.1').items.length, 2, 'library document + one facility');
+  assert.deepEqual(per2('L.1.2').items, [{ item: 'Lab hidro', tautan: [] }]);
+  assert.deepEqual(urls2('A.5.1'), ['https://d/lra', 'https://d/rkat']);
+  assert.ok(per2('A.5.1').items.some(i => /^2025\/2026 Pemasukan: UKT — UKT bergelar$/.test(i.item)));
+  assert.deepEqual(urls2('A.5.2'), ['https://d/lra'], 'pos without proof not listed');
+  assert.deepEqual(per2('R.3.1').items.map(i => i.item).sort(), ['Banjir & air (2025)', 'Model (2025)'], '2020 outside TS-2..TS');
+  assert.deepEqual(per2('R.6.1').items, [{ item: 'Desa air (2026)', tautan: [{ t: 'Tautan', url: 'https://d/pkm' }] }]);
+  assert.deepEqual(per2('P.1.6').items.map(i => i.item), ['Editor (2025)']);
+});
+
+test('docx intro names the instrument tables', () => {
+  assert.match(bagianDocx(I2, { ...C2, namaTabel: 'tabel LKPS LAMDEPILAR (Magister)' }).bagian['word/document.xml'], /dari 25 tabel LKPS LAMDEPILAR \(Magister\)/);
+  assert.match(bagianDocx(I, C).bagian['word/document.xml'], /dari 44 tabel wajib Sarjana LAM Teknik/);
+});

@@ -1,7 +1,7 @@
 // CV dosen otomatis (.docx), owner 2026-11-11.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { kumpulKarya, isiCV, tahunAwal, namaBerkasCV } from '../../site/cv-dosen.js';
+import { kumpulKarya, isiCV, tahunAwal, namaBerkasCV, urlProfil, urlDoi } from '../../site/cv-dosen.js';
 
 const D = {
   prodi: 'Teknik Contoh', institusi: 'Universitas Contoh',
@@ -45,7 +45,12 @@ test('document body: owner bold, DOI normalised, text escaped, sections present'
   assert.match(x, /<w:b\/><\/w:rPr><w:t xml:space="preserve">Ani Contoh<\/w:t>/);
   assert.match(x, /https:\/\/doi\.org\/10\.1\/AB/);
   // Sitasi: Jurnal Air, 12(3), 401–415 (patch 74); teks gabungan semua <w:t>.
-  assert.ok(x.replace(/<[^>]+>/g, '').includes('Jurnal Air, 12(3), 401–415. https://doi.org/'));
+  // Kode kolom HYPERLINK (instrText) bukan teks yang tampil.
+  assert.ok(x.replace(/<w:instrText[^>]*>[^<]*<\/w:instrText>/g, '').replace(/<[^>]+>/g, '').includes('Jurnal Air, 12(3), 401–415. https://doi.org/10.1/AB. '));
+  // Tautan yang bisa diklik (pemilik 2026-11-24): DOI, SINTA, ORCID, email.
+  assert.ok(x.includes('HYPERLINK "https://doi.org/10.1/AB"'));
+  assert.ok(x.includes('HYPERLINK "https://sinta.kemdiktisaintek.go.id/authors/profile/123"'));
+  assert.ok(x.includes('HYPERLINK "mailto:ani@contoh.ac.id"'));
   assert.ok(x.includes('Hujan &amp; &lt;banjir&gt;') && !x.includes('<banjir>'));
   for (const s of ['Identitas', 'Riwayat pendidikan', 'Sertifikasi', 'Publikasi (2)', 'Penelitian (1)', 'Pengabdian kepada masyarakat (1)', 'Luaran dan HKI (1)', 'Rekognisi (1)'])
     assert.ok(x.includes(s), s);
@@ -121,4 +126,39 @@ test('grant biodata: A–J sections, funds in million rupiah, journals vs semina
   assert.ok(x.includes('(isi)'));
   assert.ok(x.includes('Univ A') && x.includes('Univ C'));
   assert.match(x, /Pengusul,/);
+});
+
+test('profile and DOI URLs (pemilik 2026-11-24)', () => {
+  assert.equal(urlProfil('orcid', '0000-0002-1825-0097'), 'https://orcid.org/0000-0002-1825-0097');
+  assert.equal(urlProfil('orcid', 'orcid.org/0000-0002-1825-0097'), 'https://orcid.org/0000-0002-1825-0097');
+  assert.equal(urlProfil('orcid', 'https://orcid.org/0000-0002-1825-0097'), 'https://orcid.org/0000-0002-1825-0097');
+  assert.equal(urlProfil('scopus_id', ' 57190000000 '), 'https://www.scopus.com/pages/authors/57190000000');
+  assert.equal(urlProfil('sinta_id', ''), '');
+  assert.equal(urlDoi('10.1/AB'), 'https://doi.org/10.1/AB');
+  assert.equal(urlDoi('doi:10.1/AB'), 'https://doi.org/10.1/AB');
+  assert.equal(urlDoi('https://dx.doi.org/10.1/AB'), 'https://doi.org/10.1/AB');
+});
+
+test('sertifikasi: serdos, SKIP, STRI, masa berlaku; tautan bukti Drive tidak dicetak (pemilik 2026-11-24)', () => {
+  const Q = { nama: 'Ani Contoh', nomor_serdos: '1234', skip: 'IPM', stri: 'STRI-9', sertifikat: [
+    { jenis: 'kompetensi', bidang: 'K3', lembaga: 'BNSP', berlaku_sampai: '2025-01-31', url: 'https://drive.google.com/x' },
+    { jenis: 'profesi', bidang: 'Insinyur', berlaku_sampai: '2030-12-31' }] };
+  const x = isiCV(Q, D, { kini: new Date(2026, 10, 24) });
+  const teks = x.replace(/<w:instrText[^>]*>[^<]*<\/w:instrText>/g, '').replace(/<[^>]+>/g, '');
+  for (const s of ['Sertifikat pendidik', '1234', 'Insinyur profesional (SKIP)', 'IPM', 'STRI-9', '31 Januari 2025 (kedaluwarsa)', '31 Desember 2030'])
+    assert.ok(teks.includes(s), s);
+  // CV dibagikan ke luar: bukti Drive (akses terbatas) tidak dicetak; tautan publikasi (DOI) tetap.
+  assert.ok(!x.includes('drive.google.com') && !teks.includes('lihat bukti'));
+  assert.ok(!/Nomor sertifikat pendidik/.test(teks));   // pindah dari Identitas ke Sertifikasi
+});
+
+test('STRI tidak tercetak dua kali bila sudah dicatat sebagai sertifikat profesi (pemilik 2026-11-24)', () => {
+  const hitung = Q => (isiCV(Q, D, {}).replace(/<[^>]+>/g, '').match(/STRI-9/g) || []).length;
+  assert.equal(hitung({ nama: 'Ani Contoh', stri: 'STRI-9' }), 1);
+  assert.equal(hitung({ nama: 'Ani Contoh', stri: 'STRI-9', sertifikat: [{ jenis: 'profesi', bidang: 'STRI', nomor: 'STRI-9', berlaku_sampai: '2029-01-01' }] }), 1);
+  const x = isiCV({ nama: 'Ani Contoh', stri: 'STRI-9', sertifikat: [{ jenis: 'profesi', bidang: 'Surat Tanda Registrasi Insinyur', nomor: '123' }] }, D, {});
+  assert.ok(!x.includes('STRI-9'));
+  assert.equal(hitung({ nama: 'Ani Contoh', stri: 'STRI-9', sertifikat: [{ jenis: 'profesi', bidang: 'STRI PII', nomor: '555' }] }), 0);
+  // 'Industri' memuat huruf s-t-r-i tetapi bukan STRI.
+  assert.equal(hitung({ nama: 'Ani Contoh', stri: 'STRI-9', sertifikat: [{ jenis: 'industri', bidang: 'K3 Industri', nomor: '77' }] }), 1);
 });

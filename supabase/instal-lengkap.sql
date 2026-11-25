@@ -839,6 +839,110 @@ CREATE FUNCTION public.id_dosen_login() RETURNS uuid
   select d.id from public.dosen d where lower(d.email) = public.email_saya() limit 1
 $$;
 
+CREATE FUNCTION public.insentif_ajukan(p_judul text, p_ids bigint[], p_catatan text DEFAULT NULL::text) RETURNS bigint
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_id bigint; n int;
+begin
+  if not pengelola_insentif() then raise exception 'Pengajuan ke fakultas dibuat admin prodi atau Kaprodi aktif.'; end if;
+  if coalesce(cardinality(p_ids), 0) = 0 then raise exception 'Pilih minimal satu klaim.'; end if;
+  select count(*) into n from insentif_publikasi where id = any(p_ids) and status <> 'siap';
+  if n > 0 or (select count(*) from insentif_publikasi where id = any(p_ids)) <> cardinality(p_ids) then
+    raise exception 'Hanya klaim berstatus siap yang bisa diajukan.'; end if;
+  insert into insentif_pengajuan (judul, catatan) values (btrim(p_judul), nullif(btrim(coalesce(p_catatan, '')), '')) returning id into v_id;
+  update insentif_publikasi set status = 'diajukan', pengajuan_id = v_id, diperbarui = now(), oleh = me() where id = any(p_ids);
+  return v_id;
+end $$;
+
+CREATE FUNCTION public.insentif_batal(p_karya uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare i record;
+begin
+  select * into i from insentif_publikasi where karya_id = p_karya;
+  if i.id is null then return; end if;
+  if i.pengklaim_id <> me() and not pengelola_insentif() then raise exception 'Hanya pengklaim yang bisa membatalkan.'; end if;
+  if i.status not in ('diklaim', 'dikembalikan') then
+    raise exception 'Klaim berstatus % tidak bisa dibatalkan; hubungi admin prodi.', i.status; end if;
+  delete from insentif_publikasi where id = i.id;
+end $$;
+
+CREATE FUNCTION public.insentif_berkas_kurang(p_karya uuid) RETURNS text[]
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select coalesce(array_agg(j order by o), '{}') from unnest(array['naskah', 'indeksasi', 'loa', 'pernyataan']) with ordinality x(j, o)
+   where not exists (select 1 from karya_bukti b where b.karya_id = p_karya and b.jenis = x.j)
+$$;
+
+CREATE FUNCTION public.insentif_hasil(p_ids bigint[], p_status text, p_catatan text DEFAULT NULL::text) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare n int;
+begin
+  if not pengelola_insentif() then raise exception 'Hasil pengajuan dicatat admin prodi atau Kaprodi aktif.'; end if;
+  if p_status not in ('disetujui', 'ditolak', 'cair', 'siap') then raise exception 'Status hasil tidak dikenal: %.', p_status; end if;
+  -- Asal yang sah: diajukan -> disetujui | ditolak | siap (ditarik dari pengajuan); disetujui -> cair.
+  select count(*) into n from insentif_publikasi where id = any(p_ids)
+     and not ((status = 'diajukan' and p_status in ('disetujui', 'ditolak', 'siap')) or (status = 'disetujui' and p_status = 'cair'));
+  if n > 0 then raise exception 'Ada klaim yang statusnya tidak bisa diubah menjadi %.', p_status; end if;
+  update insentif_publikasi set status = p_status, pengajuan_id = case when p_status = 'siap' then null else pengajuan_id end,
+         catatan = coalesce(nullif(btrim(coalesce(p_catatan, '')), ''), catatan), diperbarui = now(), oleh = me()
+   where id = any(p_ids);
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+CREATE FUNCTION public.insentif_klaim(p_karya uuid) RETURNS bigint
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare k record; i record; v_id bigint; v_tahun int := extract(year from now() at time zone 'Asia/Jakarta')::int;
+begin
+  if me() is null then raise exception 'Masuk dulu.'; end if;
+  select id, kategori, tahun, status into k from karya where id = p_karya;
+  if k.id is null then raise exception 'Publikasi tidak ditemukan.'; end if;
+  if not penulis_karya(p_karya) then raise exception 'Hanya penulis publikasi ini yang bisa mengklaim insentif.'; end if;
+  if k.kategori <> 'publikasi' then raise exception 'Insentif hanya untuk publikasi.'; end if;
+  if k.tahun <> v_tahun then raise exception 'Insentif hanya untuk publikasi terbit tahun % (publikasi ini %).', v_tahun, k.tahun; end if;
+  if k.status = 'ditolak' then raise exception 'Publikasi ini ditolak verifikasi; perbaiki dulu.'; end if;
+  select * into i from insentif_publikasi where karya_id = p_karya;
+  if i.id is not null then
+    if i.pengklaim_id <> me() then raise exception 'Publikasi ini sudah diklaim penulis lain (satu klaim per publikasi).'; end if;
+    if i.status <> 'dikembalikan' then return i.id; end if;
+    update insentif_publikasi set status = 'diklaim', diperbarui = now(), oleh = me() where id = i.id;
+    return i.id;
+  end if;
+  insert into insentif_publikasi (karya_id, pengklaim_id, oleh) values (p_karya, me(), me()) returning id into v_id;
+  return v_id;
+end $$;
+
+CREATE FUNCTION public.insentif_periksa(p_id bigint, p_status text, p_catatan text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare i record; k record; v_kurang text[];
+begin
+  if not pengelola_insentif() then raise exception 'Klaim insentif diperiksa admin prodi atau Kaprodi aktif.'; end if;
+  select * into i from insentif_publikasi where id = p_id;
+  if i.id is null then raise exception 'Klaim tidak ditemukan.'; end if;
+  if i.status not in ('diklaim', 'dikembalikan', 'siap') then raise exception 'Klaim berstatus % tidak diperiksa lagi.', i.status; end if;
+  if p_status = 'dikembalikan' then
+    if coalesce(btrim(p_catatan), '') = '' then raise exception 'Tulis catatan: apa yang perlu diperbaiki dosen.'; end if;
+  elsif p_status = 'siap' then
+    select status into k from karya where id = i.karya_id;
+    if k.status <> 'terverifikasi' then raise exception 'Verifikasi publikasinya dulu (status sekarang: %).', k.status; end if;
+    v_kurang := insentif_berkas_kurang(i.karya_id);
+    if cardinality(v_kurang) > 0 then raise exception 'Berkas belum lengkap: %.', array_to_string(v_kurang, ', '); end if;
+  else raise exception 'Status pemeriksaan harus siap atau dikembalikan.';
+  end if;
+  update insentif_publikasi set status = p_status, catatan = nullif(btrim(coalesce(p_catatan, '')), ''), diperbarui = now(), oleh = me()
+   where id = p_id;
+end $$;
+
 CREATE FUNCTION public.is_admin() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public'
@@ -1476,7 +1580,7 @@ CREATE TABLE public.pengajuan_mahasiswa (
     CONSTRAINT pengajuan_mahasiswa_jenis_check CHECK ((jenis = ANY (ARRAY['kp'::text, 'lomba'::text, 'surat'::text, 'ta'::text, 'luaran'::text, 'yudisium'::text, 'kabar'::text]))),
     CONSTRAINT pengajuan_mahasiswa_nama_check CHECK (((length(btrim(nama)) >= 2) AND (length(btrim(nama)) <= 120))),
     CONSTRAINT pengajuan_mahasiswa_nim_check CHECK ((nim ~ '^[0-9]{6,15}$'::text)),
-    CONSTRAINT pengajuan_mahasiswa_status_check CHECK ((status = ANY (ARRAY['draf'::text, 'pembimbing'::text, 'admin'::text, 'disetujui'::text, 'dikembalikan'::text, 'ditolak'::text]))),
+    CONSTRAINT pengajuan_mahasiswa_status_check CHECK ((status = ANY (ARRAY['draf'::text, 'pembimbing'::text, 'admin'::text, 'disetujui'::text, 'dikembalikan'::text, 'ditolak'::text, 'dibatalkan'::text]))),
     CONSTRAINT pengajuan_mahasiswa_tahap_check CHECK (((tahap = ANY (ARRAY['pengajuan'::text, 'selesai'::text])) AND ((tahap = 'pengajuan'::text) OR (jenis = 'kp'::text)) AND (jsonb_typeof(data_selesai) = 'object'::text) AND (length((data_selesai)::text) <= 8000)))
 );
 
@@ -1633,6 +1737,24 @@ CREATE FUNCTION public.mengajar_mk(p_kurikulum text, p_kode text) RETURNS boolea
        and public.semester_urut(k.tahun_akademik, k.semester) >= public.semester_kini_urut())
 $$;
 
+CREATE FUNCTION public.mhs_batal(p_token text, p_alasan text DEFAULT NULL::text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; v_alasan text := left(btrim(coalesce(p_alasan, '')), 300);
+begin
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku.'; end if;
+  if p.status = 'dibatalkan' then return 'dibatalkan'; end if;
+  if coalesce(p.tahap, 'pengajuan') <> 'pengajuan' or p.status not in ('draf', 'dikembalikan') then
+    raise exception 'Pengajuan yang sedang diperiksa atau sudah diputuskan tidak bisa dibatalkan sendiri. Minta pemeriksa mengembalikannya dulu, atau hubungi admin prodi.'; end if;
+  update pengajuan_mahasiswa set status = 'dibatalkan', diperbarui = now() where id = p.id;
+  insert into pengajuan_riwayat (pengajuan_id, status, oleh, catatan, tahap)
+  values (p.id, 'dibatalkan', 'mahasiswa', 'Dibatalkan mahasiswa' || case when v_alasan <> '' then ': ' || v_alasan else '' end || '.', 'pengajuan');
+  return 'dibatalkan';
+end;
+$$;
+
 CREATE FUNCTION public.mhs_berkas(p_kunci text, p_token text, p_berkas bigint, p_buang boolean DEFAULT false) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
@@ -1653,6 +1775,118 @@ begin
     raise exception 'Berkas ini berupa tautan Google Drive; buka tautannya langsung.';
   end if;
   return b.url;
+end;
+$$;
+
+CREATE FUNCTION public.mhs_bimbingan(p_token text) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa;
+begin
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku. Minta tautan baru di halaman pengajuan.'; end if;
+  if p.jenis <> 'ta' then raise exception 'Catatan bimbingan ada di pengajuan TA.'; end if;
+  return jsonb_build_object(
+    'hari_otomatis', 14,
+    'pembimbing', (select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'nama', x.nama, 'ke', x.ke) order by x.ke), '[]'::jsonb)
+                     from ta_pembimbing_nim(p.nim) x),
+    'catatan', (select coalesce(jsonb_agg(jsonb_build_object('id', b.id, 'tanggal', b.tanggal, 'cara', b.cara, 'pembimbing_id', b.pembimbing_id,
+                  'pembimbing', (select d.nama from dosen d where d.id = b.pembimbing_id), 'topik', b.topik, 'arahan', b.arahan,
+                  'status', b.status, 'sah', ta_bimbingan_sah(b.status, b.diajukan), 'catatan_pembimbing', b.catatan_pembimbing,
+                  'konfirmasi_oleh', b.konfirmasi_oleh, 'konfirmasi_pada', b.konfirmasi_pada, 'diajukan', b.diajukan,
+                  'lampiran_nama', b.lampiran_nama, 'ada_lampiran', b.lampiran_url is not null, 'lampiran_dihapus', b.lampiran_dihapus)
+                  order by b.tanggal desc, b.id desc), '[]'::jsonb)
+                  from ta_bimbingan b where upper(btrim(b.nim)) = upper(btrim(p.nim))),
+    'syarat', (select jsonb_agg(ta_syarat_bimbingan_hitung(p.nim, t.tahap) order by t.urut)
+                 from (values ('seminar_proposal', 1), ('seminar_kemajuan', 2), ('sidang_akhir', 3)) t(tahap, urut)));
+end;
+$$;
+
+CREATE FUNCTION public.mhs_bimbingan_hapus(p_token text, p_id bigint) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; b ta_bimbingan;
+begin
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku. Minta tautan baru di halaman pengajuan.'; end if;
+  select * into b from ta_bimbingan x where x.id = p_id and upper(btrim(x.nim)) = upper(btrim(p.nim)) for update;
+  if b.id is null then raise exception 'Catatan bimbingan tidak ditemukan.'; end if;
+  if ta_bimbingan_sah(b.status, b.diajukan) then raise exception 'Catatan yang sudah terkonfirmasi tidak bisa dihapus.'; end if;
+  delete from ta_bimbingan where id = b.id;
+  return 'dihapus';
+end;
+$$;
+
+CREATE FUNCTION public.mhs_bimbingan_lampiran(p_kunci text, p_token text, p_id bigint, p_nama text, p_url text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+declare p pengajuan_mahasiswa; b ta_bimbingan;
+begin
+  if not mhs_kunci_sah(p_kunci) then raise exception 'Kunci layanan salah.'; end if;
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku. Minta tautan baru di halaman pengajuan.'; end if;
+  select * into b from ta_bimbingan x where x.id = p_id and upper(btrim(x.nim)) = upper(btrim(p.nim)) for update;
+  if b.id is null then raise exception 'Catatan bimbingan tidak ditemukan.'; end if;
+  if ta_bimbingan_sah(b.status, b.diajukan) then raise exception 'Catatan yang sudah terkonfirmasi tidak bisa diberi lampiran.'; end if;
+  if coalesce(p_url, '') !~ '^https://(drive|docs)\.google\.com/\S+$' then raise exception 'Tautan lampiran tidak sah.'; end if;
+  update ta_bimbingan set lampiran_nama = left(btrim(coalesce(p_nama, 'lampiran')), 200), lampiran_url = p_url, lampiran_dihapus = null,
+         diperbarui = now()
+   where id = b.id;
+  return b.lampiran_url;
+end;
+$_$;
+
+CREATE FUNCTION public.mhs_bimbingan_lampiran_url(p_kunci text, p_token text, p_id bigint) RETURNS text
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; v_url text;
+begin
+  if not mhs_kunci_sah(p_kunci) then raise exception 'Kunci layanan salah.'; end if;
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku. Minta tautan baru di halaman pengajuan.'; end if;
+  select x.lampiran_url into v_url from ta_bimbingan x where x.id = p_id and upper(btrim(x.nim)) = upper(btrim(p.nim));
+  if v_url is null then raise exception 'Lampiran tidak ada (atau sudah dihapus 30 hari setelah lulus).'; end if;
+  return v_url;
+end;
+$$;
+
+CREATE FUNCTION public.mhs_bimbingan_simpan(p_token text, p_id bigint, p_tanggal date, p_cara text, p_pembimbing uuid, p_topik text, p_arahan text) RETURNS bigint
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; b ta_bimbingan; v_id bigint; v_topik text := btrim(coalesce(p_topik, '')); v_arahan text := btrim(coalesce(p_arahan, ''));
+begin
+  p := mhs_cari(p_token);
+  if p.id is null then raise exception 'Tautan tidak berlaku. Minta tautan baru di halaman pengajuan.'; end if;
+  if p.jenis <> 'ta' then raise exception 'Catatan bimbingan ada di pengajuan TA.'; end if;
+  if not exists (select 1 from ta_pembimbing_nim(p.nim)) then
+    raise exception 'Pembimbing TA Anda belum tercatat; ajukan pembimbing TA dulu.'; end if;
+  if p_pembimbing is null or not exists (select 1 from ta_pembimbing_nim(p.nim) x where x.id = p_pembimbing) then
+    raise exception 'Pilih pembimbing yang membimbing.'; end if;
+  if p_tanggal is null or p_tanggal > (now() at time zone 'Asia/Jakarta')::date then
+    raise exception 'Isi tanggal bimbingan (tidak boleh setelah hari ini).'; end if;
+  if p_tanggal < date '2020-01-01' then raise exception 'Tanggal bimbingan terlalu lama.'; end if;
+  if p_cara is null or p_cara not in ('tatap_muka', 'daring') then raise exception 'Pilih cara bimbingan: tatap muka atau daring.'; end if;
+  if length(v_topik) not between 5 and 1000 then raise exception 'Tulis topik yang dibahas (5–1000 huruf).'; end if;
+  if length(v_arahan) > 2000 then raise exception 'Arahan paling banyak 2000 huruf.'; end if;
+  if p_id is null then
+    if (select count(*) from ta_bimbingan x where upper(btrim(x.nim)) = upper(btrim(p.nim))) >= 300 then
+      raise exception 'Paling banyak 300 catatan bimbingan per mahasiswa.'; end if;
+    insert into ta_bimbingan (nim, nama, tanggal, cara, pembimbing_id, topik, arahan)
+    values (upper(btrim(p.nim)), p.nama, p_tanggal, p_cara, p_pembimbing, v_topik, v_arahan) returning id into v_id;
+    return v_id;
+  end if;
+  select * into b from ta_bimbingan x where x.id = p_id and upper(btrim(x.nim)) = upper(btrim(p.nim)) for update;
+  if b.id is null then raise exception 'Catatan bimbingan tidak ditemukan.'; end if;
+  if ta_bimbingan_sah(b.status, b.diajukan) then raise exception 'Catatan yang sudah terkonfirmasi tidak bisa diubah.'; end if;
+  update ta_bimbingan set tanggal = p_tanggal, cara = p_cara, pembimbing_id = p_pembimbing, topik = v_topik, arahan = v_arahan,
+         status = 'menunggu', diajukan = now(), diperbarui = now()
+   where id = b.id;
+  return b.id;
 end;
 $$;
 
@@ -1677,9 +1911,9 @@ begin
   if (select count(*) from pengajuan_mahasiswa where nim = btrim(p_nim) and dibuat > now() - interval '24 hours') >= 5 then
     raise exception 'NIM ini sudah membuat 5 pengajuan dalam 24 jam. Gunakan tautan di email kampus Anda.'; end if;
   if p_jenis = 'kp' and exists (select 1 from pengajuan_mahasiswa where nim = btrim(p_nim) and jenis = 'kp'
-       and status <> 'ditolak' and not (tahap = 'selesai' and status = 'disetujui')) then
+       and status not in ('ditolak', 'dibatalkan') and not (tahap = 'selesai' and status = 'disetujui')) then
     raise exception 'NIM ini masih punya KP yang dalam proses; satu mahasiswa hanya satu KP aktif. Bila surat pengantar ditolak instansi, buka tautan pengajuan itu dan laporkan di "Jawaban instansi" (ditolak); sesudah itu pengajuan baru bisa dibuat. Tautan hilang? Minta tautan baru.'; end if;
-  if p_jenis = 'yudisium' and exists (select 1 from pengajuan_mahasiswa where nim = btrim(p_nim) and jenis = 'yudisium' and status <> 'ditolak') then
+  if p_jenis = 'yudisium' and exists (select 1 from pengajuan_mahasiswa where nim = btrim(p_nim) and jenis = 'yudisium' and status not in ('ditolak', 'dibatalkan')) then
     raise exception 'NIM ini sudah punya pengajuan berkas yudisium. Buka tautannya dari email kampus; tautan hilang? Minta tautan baru.'; end if;
   if (select count(*) from pengajuan_mahasiswa where dibuat > now() - interval '1 hour') >= 60 then
     raise exception 'Terlalu banyak pengajuan saat ini. Coba lagi satu jam lagi.'; end if;
@@ -1844,6 +2078,7 @@ CREATE FUNCTION public.mhs_jenis_berkas_sah(p public.pengajuan_mahasiswa, p_jeni
     SET search_path TO 'public'
     AS $$
   select case when p.jenis = 'yudisium' then exists (select 1 from yudisium_berkas y where y.kode = p_jenis and y.aktif)
+              when p_jenis ~ '^ta_' then p.jenis = 'ta' and exists (select 1 from ta_berkas t where t.kode = p_jenis and t.aktif)
               else p_jenis !~ '^yud_' end
 $$;
 
@@ -2093,6 +2328,52 @@ begin
   if mhs_tingkat_kabar(p) >= p_tingkat then return 'sudah'; end if;
   update pengajuan_mahasiswa set pemeriksa_dikabari = p_kunci_tahap || '#' || p_tingkat, pemeriksa_antre = null where id = p.id;
   return 'tercatat';
+end;
+$$;
+
+CREATE FUNCTION public.mhs_pratinjau_admin(p_id bigint) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare
+  p pengajuan_mahasiswa; t text := mhs_token_baru(); h text; v_lihat jsonb; v_periksa jsonb := '[]'::jsonb;
+  v_pesan text; a record;
+begin
+  select * into p from pengajuan_mahasiswa where id = p_id;
+  if p.id is null then raise exception 'Pengajuan tidak ditemukan.'; end if;
+  if not boleh_pengajuan(p.jenis) then raise exception 'Pratinjau pengajuan khusus admin prodi atau koordinator bidangnya.'; end if;
+  h := encode(extensions.digest(t, 'sha256'), 'hex');
+
+  -- Tampilan mahasiswa (mhs_lihat asli).
+  begin
+    update pengajuan_mahasiswa set token_hash = h where id = p.id;
+    v_lihat := mhs_lihat(t);
+    raise exception '__pratinjau_batal__';
+  exception when others then
+    if sqlerrm <> '__pratinjau_batal__' then raise; end if;
+  end;
+
+  -- Pemeriksaan tombol yang tampil bagi mahasiswa pada keadaan ini (sama dengan pengajuan.html):
+  --   Kirim untuk diperiksa: tahap pengajuan, draf/dikembalikan, bukan KP susulan selesai (mhs_kirim);
+  --   Kirim laporan selesai: jendela laporan selesai KP terbuka DAN formulirnya tampil (pengajuan.html bukaSelesai: KP susulan
+  --   selesai, tahap selesai, atau mahasiswa sudah melaporkan diterima instansi) (mhs_kirim_selesai).
+  for a in select * from (values
+      ('kirim', 'Kirim untuk diperiksa',
+        p.tahap = 'pengajuan' and p.status in ('draf', 'dikembalikan') and coalesce(p.data ->> 'susulan', '') <> 'selesai'),
+      ('kirim_selesai', 'Kirim laporan selesai', mhs_jendela_selesai(p) and (coalesce(p.data ->> 'susulan', '') = 'selesai'
+        or p.tahap = 'selesai' or coalesce(p.data ->> 'jawaban_instansi', '') = 'diterima'))) x(aksi, label, tampil) where tampil loop
+    v_pesan := null;
+    begin
+      update pengajuan_mahasiswa set token_hash = h where id = p.id;
+      if a.aksi = 'kirim' then perform mhs_kirim(t); else perform mhs_kirim_selesai(t); end if;
+      raise exception '__pratinjau_lolos__';
+    exception when others then
+      v_pesan := case when sqlerrm = '__pratinjau_lolos__' then null else sqlerrm end;
+    end;
+    v_periksa := v_periksa || jsonb_build_object('aksi', a.aksi, 'label', a.label, 'lolos', v_pesan is null, 'pesan', v_pesan);
+  end loop;
+
+  return jsonb_build_object('lihat', v_lihat, 'periksa', v_periksa);
 end;
 $$;
 
@@ -2387,14 +2668,37 @@ CREATE FUNCTION public.mk_atur_pengampu(p_kurikulum text, p_kode text, p_nidn te
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
-declare x text;
+declare x text; v_lama text;
 begin
-  if not (public.is_admin() or public.boleh_mutu()) then
-    raise exception 'Koordinator MK/pengampu ditetapkan admin prodi atau GKM.'; end if;
+  if not (public.is_admin() or public.koordinator_aktif('kaprodi')) then
+    raise exception 'Koordinator dan tim MK ditetapkan Kaprodi aktif atau admin prodi.'; end if;
   foreach x in array coalesce(p_nidn, '{}') loop
     if not exists (select 1 from public.dosen where nidn = x) then raise exception 'NIDN % bukan dosen terdaftar.', x; end if;
   end loop;
-  update public.ref_mata_kuliah set pengampu = coalesce(p_nidn, '{}'), oleh = coalesce(auth.jwt() ->> 'email', oleh), diperbarui = now()
+  select koordinator_nidn into v_lama from public.ref_mata_kuliah where kurikulum = p_kurikulum and kode = p_kode;
+  update public.ref_mata_kuliah set pengampu = coalesce(p_nidn, '{}'),
+         koordinator_nidn = case when v_lama = any(coalesce(p_nidn, '{}')) then v_lama else (coalesce(p_nidn, '{}'))[1] end,
+         oleh = coalesce(auth.jwt() ->> 'email', oleh), diperbarui = now()
+   where kurikulum = p_kurikulum and kode = p_kode;
+  if not found then raise exception 'Mata kuliah tidak ditemukan.'; end if;
+end $$;
+
+CREATE FUNCTION public.mk_atur_tim(p_kurikulum text, p_kode text, p_koordinator text, p_tim text[]) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_koor text := nullif(btrim(coalesce(p_koordinator, '')), ''); v_tim text[]; x text;
+begin
+  if not (public.is_admin() or public.koordinator_aktif('kaprodi')) then
+    raise exception 'Koordinator dan tim MK ditetapkan Kaprodi aktif atau admin prodi.'; end if;
+  v_tim := array(select distinct btrim(t) from unnest(coalesce(p_tim, '{}')) t where btrim(t) <> '' and btrim(t) <> coalesce(v_koor, ''));
+  if v_koor is null and cardinality(v_tim) > 0 then raise exception 'Pilih koordinator MK lebih dulu.'; end if;
+  foreach x in array (case when v_koor is null then v_tim else array_prepend(v_koor, v_tim) end) loop
+    if not exists (select 1 from public.dosen where nidn = x) then raise exception 'NIDN % bukan dosen terdaftar.', x; end if;
+  end loop;
+  update public.ref_mata_kuliah
+     set pengampu = case when v_koor is null then '{}' else array_prepend(v_koor, v_tim) end,
+         koordinator_nidn = v_koor, oleh = coalesce(auth.jwt() ->> 'email', oleh), diperbarui = now()
    where kurikulum = p_kurikulum and kode = p_kode;
   if not found then raise exception 'Mata kuliah tidak ditemukan.'; end if;
 end $$;
@@ -2666,6 +2970,28 @@ CREATE FUNCTION public.pembimbing_pilihan_ta() RETURNS TABLE(id uuid, nama text,
    order by x.nama
 $$;
 
+CREATE FUNCTION public.pengajuan_batalkan(p_id bigint, p_alasan text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; v_alasan text := left(btrim(coalesce(p_alasan, '')), 300); v_nama text;
+begin
+  select * into p from pengajuan_mahasiswa where id = p_id;
+  if p.id is null then raise exception 'Pengajuan tidak ditemukan.'; end if;
+  if not boleh_pengajuan(p.jenis) then raise exception 'Pembatalan oleh prodi khusus admin prodi atau koordinator bidangnya.'; end if;
+  if v_alasan = '' then raise exception 'Tulis alasan pembatalan (mis. permintaan mahasiswa: salah jalur).'; end if;
+  if p.status = 'dibatalkan' then return 'dibatalkan'; end if;
+  if p.status in ('ditolak') or (p.status = 'disetujui' and coalesce(p.tahap, 'pengajuan') = 'selesai')
+     or (p.status = 'disetujui' and p.jenis <> 'kp') then
+    raise exception 'Pengajuan yang sudah diputuskan tidak dibatalkan.'; end if;
+  select nama into v_nama from dosen where id = me();
+  update pengajuan_mahasiswa set status = 'dibatalkan', diperbarui = now() where id = p.id;
+  insert into pengajuan_riwayat (pengajuan_id, status, oleh, catatan, tahap)
+  values (p.id, 'dibatalkan', coalesce(v_nama, 'admin prodi'), 'Dibatalkan prodi atas permintaan: ' || v_alasan || '.', coalesce(p.tahap, 'pengajuan'));
+  return 'dibatalkan';
+end;
+$$;
+
 CREATE FUNCTION public.pengajuan_catat_berkas(p_id bigint, p_jenis text, p_nama text, p_url text) RETURNS bigint
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
@@ -2875,6 +3201,13 @@ CREATE FUNCTION public.pengatur_kelas() RETURNS boolean
   select public.is_admin() or public.koordinator_aktif('kaprodi')
 $$;
 
+CREATE FUNCTION public.pengelola_insentif() RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select is_admin() or koordinator_aktif('kaprodi')
+$$;
+
 CREATE FUNCTION public.pengumuman_mahasiswa_aktif() RETURNS TABLE(id bigint, judul text, isi text, berlaku_sampai date, diperbarui timestamp with time zone)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public'
@@ -3041,7 +3374,8 @@ CREATE FUNCTION public.rapat_baca(r bigint) RETURNS boolean
     AS $$
   select public.me() is not null and exists (select 1 from public.rapat x where x.id = r and (
     not x.terbatas or x.dibuat_oleh = public.me() or public.lihat_semua_hibah()
-    or exists (select 1 from public.rapat_peserta p where p.rapat_id = r and p.dosen_id = public.me())))
+    or exists (select 1 from public.rapat_peserta p where p.rapat_id = r and p.dosen_id = public.me())
+    or exists (select 1 from public.rapat_tindak t where t.rapat_id = r and t.pj_dosen_id = public.me())))
 $$;
 
 CREATE FUNCTION public.rapat_buka_hadir(p_token text) RETURNS jsonb
@@ -3102,6 +3436,25 @@ begin
     values (r.id, n, nullif(trim(coalesce(p_instansi, '')), ''), 'daring', p_klien);
   return 'tercatat';
 end $$;
+
+CREATE FUNCTION public.rapat_isi(p_id bigint) RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select case when public.rapat_isi_boleh(p_id)
+    then jsonb_build_object('boleh', true, 'pembahasan', (select pembahasan from public.rapat where id = p_id))
+    else jsonb_build_object('boleh', false, 'pembahasan', null) end
+$$;
+
+CREATE FUNCTION public.rapat_isi_boleh(r bigint) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select public.rapat_baca(r) and exists (select 1 from public.rapat x where x.id = r and (
+    x.status = 'final' or x.dibuat_oleh = public.me() or public.lihat_semua_hibah()
+    or exists (select 1 from public.rapat_peserta p where p.rapat_id = r and p.dosen_id = public.me())
+    or exists (select 1 from public.rapat_tindak t where t.rapat_id = r and t.pj_dosen_id = public.me())))
+$$;
 
 CREATE FUNCTION public.rapikan_kata_kunci(j jsonb) RETURNS text[]
     LANGUAGE plpgsql IMMUTABLE
@@ -3590,6 +3943,18 @@ CREATE FUNCTION public.sebutan_pada(p_dosen uuid, p_jabatan text, p_waktu timest
    order by k.mulai desc limit 1
 $$;
 
+CREATE FUNCTION public.semester_akhir(p_ts integer, p_sm text) RETURNS date
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  select case p_sm when 'Ganjil' then make_date(p_ts, 3, 1) when 'Genap' then make_date(p_ts, 9, 1) end
+$$;
+
+CREATE FUNCTION public.semester_awal(p_ts integer, p_sm text) RETURNS date
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  select case p_sm when 'Ganjil' then make_date(p_ts - 1, 9, 1) when 'Genap' then make_date(p_ts, 3, 1) end
+$$;
+
 CREATE FUNCTION public.semester_kini_urut() RETURNS integer
     LANGUAGE sql STABLE
     AS $$
@@ -3888,6 +4253,10 @@ CREATE FUNCTION public.sistem_periksa() RETURNS jsonb
     AS $$
 declare
   hasil jsonb := '[]'::jsonb; r record; s status_sistem; v_status text; v_rinci text; v_kuota int; v_pakai numeric; v_batas numeric;
+  v_batas_db_mb constant numeric := 500;        -- paket gratis Supabase, per proyek
+  v_batas_storage_mb constant numeric := 1024;  -- paket gratis Supabase, 1 GB
+  v_ambang constant numeric := 0.5;             -- perlu dicek mulai 50%
+  v_db_mb numeric; v_st_mb numeric; v_besar text;
 begin
   for r in select * from (values
       ('bangun_situs', 'Bangun situs (tiap jam)', interval '2 hours'),
@@ -3927,9 +4296,28 @@ begin
     end if;
     hasil := hasil || jsonb_build_object('kunci', r.kunci, 'label', r.label, 'waktu', s.waktu, 'status', v_status, 'rinci', v_rinci);
   end loop;
+
+  -- 170: kapasitas paket.
+  v_db_mb := round(pg_database_size(current_database()) / 1048576.0, 1);
+  select relname || ' ' || round(pg_total_relation_size(relid) / 1048576.0, 1) || ' MB' into v_besar
+    from pg_statio_user_tables where schemaname = 'public' order by pg_total_relation_size(relid) desc limit 1;
+  hasil := hasil || jsonb_build_object('kunci', 'kapasitas_basis_data', 'label', 'Ukuran basis data (paket gratis ' || v_batas_db_mb || ' MB)',
+    'waktu', now(), 'status', case when v_db_mb >= v_batas_db_mb * v_ambang then 'perlu_dicek' else 'baik' end,
+    'rinci', concat_ws(' · ', v_db_mb || ' MB dari ' || v_batas_db_mb || ' MB (' || round(v_db_mb / v_batas_db_mb * 100) || '%)',
+      case when v_besar is not null then 'tabel terbesar ' || v_besar end));
+  if not exists (select 1 from pg_attribute where attrelid = to_regclass('storage.objects') and attname = 'metadata' and not attisdropped) then
+    hasil := hasil || jsonb_build_object('kunci', 'kapasitas_storage', 'label', 'Storage berkas (paket gratis 1 GB)',
+      'waktu', now(), 'status', 'info', 'rinci', 'skema storage tidak ada');
+  else
+    execute 'select round(coalesce(sum((metadata ->> ''size'')::bigint), 0) / 1048576.0, 1) from storage.objects' into v_st_mb;
+    hasil := hasil || jsonb_build_object('kunci', 'kapasitas_storage', 'label', 'Storage berkas (paket gratis 1 GB)',
+      'waktu', now(), 'status', case when v_st_mb >= v_batas_storage_mb * v_ambang then 'perlu_dicek' else 'baik' end,
+      'rinci', v_st_mb || ' MB dari ' || v_batas_storage_mb || ' MB (' || round(v_st_mb / v_batas_storage_mb * 100) || '%)');
+  end if;
+
   return jsonb_build_object('dibuat', now(), 'butir', hasil,
     'perlu_dicek', (select count(*) from jsonb_array_elements(hasil) x where x ->> 'status' not in ('baik', 'info')),
-    'basis_data_mb', round(pg_database_size(current_database()) / 1048576.0, 1),
+    'basis_data_mb', v_db_mb,
     'ringkasan_terakhir', (select waktu from status_sistem where kunci = 'ringkasan_mingguan'));
 end;
 $$;
@@ -4111,35 +4499,376 @@ begin
   return (r ->> 'n')::int;
 end $$;
 
-CREATE FUNCTION public.ta_atur_kuota(p_ts integer, p_dosen uuid, p_kuota integer) RETURNS text
+CREATE FUNCTION public.ta_arsip_boleh(p_nim text) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select ta_bimbingan_boleh(p_nim) or exists (
+    select 1 from jadwal_ta t, dosen d
+     where upper(btrim(coalesce(t.nim, ''))) = upper(btrim(p_nim)) and d.id = me() and d.nidn is not null and d.nidn = any(t.pembimbing))
+$$;
+
+CREATE FUNCTION public.ta_arsip_catat(p_nim text, p_url text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $_$
+declare v_nim text := upper(btrim(coalesce(p_nim, ''))); v_nama text; v_oleh text; v_lama text;
+begin
+  if not boleh_pengajuan('ta') then raise exception 'Arsip TA disimpan koordinator TA atau admin.'; end if;
+  if ta_lulus_ta(v_nim) is null then raise exception 'Mahasiswa % belum lulus sidang akhir (atau revisinya belum selesai).', v_nim; end if;
+  if coalesce(p_url, '') !~ '^https://(drive|docs)\.google\.com/\S+$' then raise exception 'Tautan arsip harus tautan Google Drive.'; end if;
+  select t.nama_mahasiswa into v_nama from jadwal_ta t
+   where upper(btrim(coalesce(t.nim, ''))) = v_nim and t.tahap = 'sidang_akhir' order by t.tanggal desc limit 1;
+  select nama into v_oleh from dosen where id = me();
+  select url into v_lama from ta_arsip where nim = v_nim;
+  insert into ta_arsip (nim, nama, url, oleh) values (v_nim, v_nama, p_url, v_oleh)
+  on conflict (nim) do update set nama = excluded.nama, url = excluded.url, oleh = excluded.oleh, dibuat = now();
+  return v_lama;
+end;
+$_$;
+
+CREATE FUNCTION public.ta_arsip_siap() RETURNS TABLE(nim text, nama text, judul text, lulus date, arsip_url text, arsip_dibuat timestamp with time zone, arsip_oleh text)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  with s as (
+    select upper(btrim(t.nim)) as nim, (array_agg(t.nama_mahasiswa order by t.tanggal desc))[1] as nama,
+           (array_agg(t.judul order by t.tanggal desc))[1] as judul
+      from jadwal_ta t
+     where t.nim is not null and t.tahap = 'sidang_akhir' and t.status = 'selesai'
+       and (t.hasil = 'lulus' or (t.hasil = 'lulus_revisi' and t.revisi_selesai is not null))
+     group by 1)
+  select s.nim, s.nama, s.judul, ta_lulus_ta(s.nim), a.url, a.dibuat, a.oleh
+    from s left join ta_arsip a on a.nim = s.nim
+   where boleh_pengajuan('ta')
+   order by 4 desc, 2
+$$;
+
+CREATE FUNCTION public.ta_arsip_url(p_nim text) RETURNS text
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_url text;
+begin
+  if not ta_arsip_boleh(p_nim) then raise exception 'Arsip TA dibuka koordinator TA, admin, atau pembimbingnya.'; end if;
+  select url into v_url from ta_arsip where nim = upper(btrim(p_nim));
+  if v_url is null then raise exception 'Arsip TA mahasiswa ini belum disimpan.'; end if;
+  return v_url;
+end;
+$$;
+
+CREATE FUNCTION public.ta_atur_kuota(p_ts integer, p_sm text, p_dosen uuid, p_kuota integer) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
 begin
   if not boleh_pengajuan('ta') then raise exception 'Kuota TA diatur koordinator TA atau admin.'; end if;
   if p_ts is null or p_ts < 2000 or p_ts > 2100 then raise exception 'TS tidak sah.'; end if;
+  if p_sm is null or p_sm not in ('Ganjil', 'Genap') then raise exception 'Semester harus Ganjil atau Genap.'; end if;
   if p_kuota is not null and (p_kuota < 0 or p_kuota > 100) then raise exception 'Kuota 0 sampai 100.'; end if;
-  delete from ta_kuota where ts = p_ts and dosen_id is not distinct from p_dosen;
-  if p_kuota is not null then insert into ta_kuota (ts, dosen_id, kuota) values (p_ts, p_dosen, p_kuota); end if;
+  delete from ta_kuota where ts = p_ts and semester = p_sm and dosen_id is not distinct from p_dosen;
+  if p_kuota is not null then insert into ta_kuota (ts, semester, dosen_id, kuota) values (p_ts, p_sm, p_dosen, p_kuota); end if;
   return 'ok';
 end;
 $$;
 
-CREATE FUNCTION public.ta_beban(p_ts integer) RETURNS TABLE(dosen_id uuid, nama text, kk text, kuota integer, kuota_sendiri boolean, beban integer)
+CREATE FUNCTION public.ta_ba_buka(p_jadwal bigint, p_alasan text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare j jadwal_ta; v_alasan text := btrim(coalesce(p_alasan, '')); v_oleh text;
+begin
+  if not boleh_tabel('jadwal_ta') then raise exception 'Berita acara dibuka kembali oleh koordinator TA atau admin.'; end if;
+  if length(v_alasan) not between 5 and 500 then raise exception 'Tulis alasan membuka kembali (5–500 huruf).'; end if;
+  select * into j from jadwal_ta where id = p_jadwal for update;
+  if j.id is null then raise exception 'Jadwal seminar/sidang tidak ditemukan.'; end if;
+  if j.ba_ditetapkan is null then raise exception 'Berita acara seminar ini belum ditetapkan.'; end if;
+  select nama into v_oleh from dosen where id = me();
+  update jadwal_ta set ba_ditetapkan = null, ba_oleh = null, nilai_akhir = null, hasil = null, revisi_selesai = null,
+         siup_diunggah = null, siup_oleh = null,
+         ba_dibuka = to_char(now() at time zone 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI') || ' WIB, ' || coalesce(v_oleh, '?') || ': ' || v_alasan,
+         oleh = v_oleh, diperbarui = now()
+   where id = j.id;
+  return 'dibuka';
+end;
+$$;
+
+CREATE FUNCTION public.ta_ba_tetapkan(p_jadwal bigint, p_hasil text DEFAULT NULL::text, p_batas_revisi date DEFAULT NULL::date, p_catatan_revisi text DEFAULT NULL::text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare j jadwal_ta; r ta_rubrik; h jsonb; v_akhir numeric; v_hasil text; v_oleh text;
+  angka constant text := 'FM990.00';
+begin
+  if not boleh_tabel('jadwal_ta') then raise exception 'Berita acara ditetapkan koordinator TA atau admin.'; end if;
+  select * into j from jadwal_ta where id = p_jadwal for update;
+  if j.id is null then raise exception 'Jadwal seminar/sidang tidak ditemukan.'; end if;
+  if j.ba_ditetapkan is not null then raise exception 'Berita acara seminar ini sudah ditetapkan.'; end if;
+  if j.status not in ('terjadwal', 'selesai') then
+    raise exception 'Seminar/sidang ini berstatus %; ubah statusnya dulu di Data prodi.', j.status; end if;
+  if not exists (select 1 from ta_nilai where jadwal_id = j.id) then raise exception 'Belum ada nilai untuk seminar ini.'; end if;
+  h := ta_nilai_hitung(j.id);
+  if jsonb_array_length(h -> 'kurang') > 0 then
+    raise exception 'Nilai belum lengkap: % belum menilai.',
+      (select string_agg((x ->> 'nama') || case when x ->> 'bagian' = 'bimbingan' then ' (proses bimbingan)' else '' end, ', ')
+         from jsonb_array_elements(h -> 'kurang') x); end if;
+  select * into r from ta_rubrik where id = (h ->> 'rubrik_id')::bigint;
+  v_akhir := (h ->> 'nilai_akhir')::numeric;
+  if v_akhir < r.batas_lulus then
+    if coalesce(p_hasil, 'mengulang') <> 'mengulang' then
+      raise exception 'Nilai akhir % di bawah batas lulus %: hasilnya mengulang.',
+        replace(to_char(v_akhir, angka), '.', ','), replace(to_char(r.batas_lulus, angka), '.', ','); end if;
+    v_hasil := 'mengulang';
+  else
+    if p_hasil is null or p_hasil not in ('lulus', 'lulus_revisi') then
+      raise exception 'Nilai akhir % mencapai batas lulus %: pilih lulus atau lulus dengan revisi.',
+        replace(to_char(v_akhir, angka), '.', ','), replace(to_char(r.batas_lulus, angka), '.', ','); end if;
+    v_hasil := p_hasil;
+  end if;
+  if v_hasil = 'lulus_revisi' then
+    if p_batas_revisi is null then raise exception 'Isi tenggat revisi.'; end if;
+    if p_batas_revisi < j.tanggal then raise exception 'Tenggat revisi tidak boleh sebelum tanggal seminar.'; end if;
+  end if;
+  if length(coalesce(p_catatan_revisi, '')) > 2000 then raise exception 'Catatan revisi paling banyak 2000 huruf.'; end if;
+  select nama into v_oleh from dosen where id = me();
+  update jadwal_ta set status = 'selesai', hasil = v_hasil, nilai_akhir = v_akhir, rubrik_id = r.id,
+         ba_ditetapkan = now(), ba_oleh = v_oleh, oleh = v_oleh, diperbarui = now(),
+         batas_revisi = case when v_hasil = 'lulus_revisi' then p_batas_revisi end,
+         catatan_revisi = case when v_hasil = 'lulus_revisi' then nullif(btrim(coalesce(p_catatan_revisi, '')), '') end,
+         revisi_selesai = case when v_hasil = 'lulus_revisi' then revisi_selesai end
+   where id = j.id;
+  return v_hasil;
+end;
+$$;
+
+CREATE FUNCTION public.ta_beban(p_ts integer, p_sm text) RETURNS TABLE(dosen_id uuid, nama text, kk text, kuota integer, kuota_sendiri boolean, beban integer, dibimbing integer)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public'
     AS $$
   select d.id, d.nama, ds.kelompok_keahlian,
          coalesce(k.kuota, b.kuota), k.kuota is not null,
          (select count(*)::int from pengajuan_mahasiswa p
+           where p.jenis = 'ta' and p.data ->> 'tahap_ta' = 'penetapan_pembimbing'
+             and coalesce(nullif(p.data ->> 'pembimbing_awal', ''), p.pembimbing_id::text) = d.id::text
+             and p.status not in ('draf', 'ditolak')
+             and (p.dibuat at time zone 'Asia/Jakarta')::date >= semester_awal(p_ts, p_sm)
+             and (p.dibuat at time zone 'Asia/Jakarta')::date < semester_akhir(p_ts, p_sm)),
+         (select count(distinct upper(btrim(p.nim)))::int from pengajuan_mahasiswa p
            where p.jenis = 'ta' and p.data ->> 'tahap_ta' = 'penetapan_pembimbing' and p.pembimbing_id = d.id
-             and p.status not in ('draf', 'ditolak') and ts_dari((p.dibuat at time zone 'Asia/Jakarta')::date) = p_ts)
+             and p.status not in ('draf', 'ditolak')
+             and (p.dibuat at time zone 'Asia/Jakarta')::date < semester_awal(p_ts, p_sm)
+             and ta_lulus_ta(p.nim) is null)
     from pembimbing_pilihan() d
     join dosen ds on ds.id = d.id
-    left join ta_kuota k on k.ts = p_ts and k.dosen_id = d.id
-    left join ta_kuota b on b.ts = p_ts and b.dosen_id is null
-   where me() is not null
+    left join ta_kuota k on k.ts = p_ts and k.semester = p_sm and k.dosen_id = d.id
+    left join ta_kuota b on b.ts = p_ts and b.semester = p_sm and b.dosen_id is null
+   where me() is not null and p_sm in ('Ganjil', 'Genap')
    order by d.nama
+$$;
+
+CREATE FUNCTION public.ta_berkas_daftar() RETURNS jsonb
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select coalesce(jsonb_agg(jsonb_build_object('tahap', tahap, 'kode', kode, 'label', label, 'keterangan', keterangan, 'wajib', wajib)
+                            order by tahap, urut, kode), '[]'::jsonb)
+    from ta_berkas where aktif
+$$;
+
+CREATE FUNCTION public.ta_bimbingan_boleh(p_nim text) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select boleh_pengajuan('ta') or exists (select 1 from ta_pembimbing_nim(p_nim) x where x.id = me())
+$$;
+
+CREATE FUNCTION public.ta_bimbingan_konfirmasi(p_ids bigint[], p_setuju boolean, p_catatan text DEFAULT NULL::text) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare b ta_bimbingan; v_nama text; v_n int := 0; v_catatan text := nullif(btrim(coalesce(p_catatan, '')), '');
+begin
+  select nama into v_nama from dosen where id = me();
+  if v_nama is null then raise exception 'Masuk sebagai dosen terdaftar dulu.'; end if;
+  if p_setuju is null then raise exception 'Pilih konfirmasi atau kembalikan.'; end if;
+  if not p_setuju and length(coalesce(v_catatan, '')) < 3 then raise exception 'Tulis alasan mengembalikan (minimal 3 huruf).'; end if;
+  if length(coalesce(v_catatan, '')) > 1000 then raise exception 'Catatan paling banyak 1000 huruf.'; end if;
+  for b in select * from ta_bimbingan where id = any(coalesce(p_ids, '{}')) order by id for update loop
+    if not ta_bimbingan_boleh(b.nim) then
+      raise exception 'Catatan bimbingan % dikonfirmasi pembimbingnya, koordinator TA, atau admin.', b.nama; end if;
+    update ta_bimbingan set status = case when p_setuju then 'dikonfirmasi' else 'dikembalikan' end,
+           catatan_pembimbing = v_catatan, konfirmasi_oleh = v_nama, konfirmasi_pada = now(), diperbarui = now()
+     where id = b.id;
+    v_n := v_n + 1;
+  end loop;
+  if v_n = 0 then raise exception 'Pilih catatan bimbingan dulu.'; end if;
+  return v_n;
+end;
+$$;
+
+CREATE FUNCTION public.ta_bimbingan_menunggu() RETURNS TABLE(nim text, nama text, n integer, tertua timestamp with time zone)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select upper(btrim(b.nim)), (array_agg(b.nama order by b.id desc))[1], count(*)::int, min(b.diajukan)
+    from ta_bimbingan b
+   where b.status = 'menunggu' and not ta_bimbingan_sah(b.status, b.diajukan)
+     and exists (select 1 from ta_pembimbing_nim(b.nim) x where x.id = me())
+   group by 1 order by 4
+$$;
+
+CREATE FUNCTION public.ta_bimbingan_rekap() RETURNS TABLE(nim text, nama text, pembimbing text, sah integer, menunggu integer, dikembalikan integer, terakhir date, tahap_lulus text)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  with m as (
+    select upper(btrim(o.nim)) as nim, o.nama, o.diperbarui as waktu from pengajuan_mahasiswa o
+     where o.jenis = 'ta' and o.status not in ('draf', 'ditolak', 'dibatalkan')
+    union all
+    select upper(btrim(b.nim)), b.nama, b.dibuat from ta_bimbingan b),
+  u as (select m.nim, (array_agg(m.nama order by m.waktu desc))[1] as nama from m group by m.nim)
+  select u.nim, u.nama,
+    (select string_agg(x.nama, ', ' order by x.ke) from ta_pembimbing_nim(u.nim) x),
+    (select count(*) from ta_bimbingan b where upper(btrim(b.nim)) = u.nim and ta_bimbingan_sah(b.status, b.diajukan))::int,
+    (select count(*) from ta_bimbingan b where upper(btrim(b.nim)) = u.nim and b.status = 'menunggu' and not ta_bimbingan_sah(b.status, b.diajukan))::int,
+    (select count(*) from ta_bimbingan b where upper(btrim(b.nim)) = u.nim and b.status = 'dikembalikan')::int,
+    (select max(b.tanggal) from ta_bimbingan b where upper(btrim(b.nim)) = u.nim),
+    (select t.tahap from jadwal_ta t where upper(btrim(coalesce(t.nim, ''))) = u.nim and t.status = 'selesai' and t.hasil in ('lulus', 'lulus_revisi')
+      order by case t.tahap when 'sidang_akhir' then 3 when 'seminar_kemajuan' then 2 else 1 end desc limit 1)
+  from u
+  where boleh_pengajuan('ta') or exists (select 1 from ta_pembimbing_nim(u.nim) x where x.id = me())
+  order by 2
+$$;
+
+CREATE FUNCTION public.ta_bimbingan_sah(p_status text, p_diajukan timestamp with time zone) RETURNS boolean
+    LANGUAGE sql STABLE
+    SET search_path TO 'public'
+    AS $$
+  select p_status = 'dikonfirmasi' or (p_status = 'menunggu' and p_diajukan <= now() - interval '14 days')
+$$;
+
+CREATE FUNCTION public.ta_ganti_pembimbing(p_id bigint, p_dosen uuid, p_dosen2 uuid, p_judul text, p_alasan text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare p pengajuan_mahasiswa; v_lama text; v_lama2 text; v_baru text; v_dua text; v_oleh text; v_cocok boolean; v_n int;
+        v_alasan text := nullif(btrim(coalesce(p_alasan, '')), ''); v_judul text := nullif(btrim(coalesce(p_judul, '')), '');
+begin
+  if not boleh_pengajuan('ta') then raise exception 'Pembimbing TA diganti koordinator TA atau admin.'; end if;
+  select * into p from pengajuan_mahasiswa where id = p_id for update;
+  if p.id is null or p.jenis <> 'ta' or coalesce(p.data ->> 'tahap_ta', '') <> 'penetapan_pembimbing' then
+    raise exception 'Pengajuan pembimbing TA tidak ditemukan.'; end if;
+  if p.status <> 'disetujui' then
+    raise exception 'Ganti pembimbing hanya pada penetapan yang sudah disahkan; sebelum itu pakai Tetapkan pembimbing.'; end if;
+  if v_alasan is null or length(v_alasan) < 5 then raise exception 'Tulis alasan penggantian (bimbingan dibatalkan).'; end if;
+  if v_judul is not null and length(v_judul) < 3 then raise exception 'Judul terlalu pendek.'; end if;
+  if not exists (select 1 from pembimbing_pilihan() x where x.id = p_dosen) then raise exception 'Pilih pembimbing 1 dari daftar.'; end if;
+  if p_dosen2 is not null and not exists (select 1 from pembimbing_pilihan() x where x.id = p_dosen2) then
+    raise exception 'Pilih pembimbing 2 dari daftar.'; end if;
+  if p_dosen2 = p_dosen then raise exception 'Pembimbing 2 harus berbeda dari pembimbing 1.'; end if;
+  if p.pembimbing_id = p_dosen and (p.data ->> 'pembimbing_2') is not distinct from p_dosen2::text
+     and (v_judul is null or v_judul = p.data ->> 'judul') then raise exception 'Pembimbing dan judul tidak berubah.'; end if;
+  v_cocok := ta_kk_cocok(p.data ->> 'kk_ta', (select d.kelompok_keahlian from dosen d where d.id = p_dosen));
+  select nama into v_lama from dosen where id = p.pembimbing_id;
+  select nama into v_lama2 from dosen where id::text = p.data ->> 'pembimbing_2';
+  select nama into v_baru from dosen where id = p_dosen;
+  select nama into v_dua from dosen where id = p_dosen2;
+  select nama into v_oleh from dosen where id = me();
+  update pengajuan_mahasiswa set pembimbing_id = p_dosen, diperbarui = now(),
+         data = (data - 'pembimbing_2')
+                || jsonb_build_object('pembimbing_awal', coalesce(nullif(data ->> 'pembimbing_awal', ''), p.pembimbing_id::text))
+                || jsonb_strip_nulls(jsonb_build_object('pembimbing_2', p_dosen2::text, 'judul', v_judul))
+   where id = p.id;
+  update pengajuan_mahasiswa set pembimbing_id = p_dosen, diperbarui = now(),
+         data = (data - 'pembimbing_2') || jsonb_strip_nulls(jsonb_build_object('pembimbing_2', p_dosen2::text))
+   where upper(btrim(nim)) = upper(btrim(p.nim)) and jenis = 'ta' and id <> p.id
+     and coalesce(data ->> 'tahap_ta', '') <> 'penetapan_pembimbing' and status in ('draf', 'pembimbing', 'admin', 'dikembalikan');
+  get diagnostics v_n = row_count;
+  insert into pengajuan_riwayat (pengajuan_id, status, oleh, catatan, tahap)
+  values (p.id, p.status, coalesce(v_oleh, 'prodi') || ' (koordinator TA/admin)',
+          'Bimbingan dibatalkan, pembimbing diganti. Pembimbing 1: ' || coalesce(v_lama, '-') || ' -> ' || v_baru
+          || '; pembimbing 2: ' || coalesce(v_lama2, 'tidak ada') || ' -> ' || coalesce(v_dua, 'tidak ada')
+          || case when v_judul is not null and v_judul is distinct from p.data ->> 'judul'
+                  then '; judul: ' || left(coalesce(p.data ->> 'judul', '-'), 300) || ' -> ' || left(v_judul, 300) else '' end
+          || case when v_cocok then '' else '; di luar kelompok keahlian TA' end
+          || case when v_n > 0 then '; ' || v_n || ' pengajuan TA berjalan ikut dipindah' else '' end
+          || '. Alasan: ' || left(v_alasan, 600), p.tahap);
+  return 'diganti';
+end;
+$$;
+
+CREATE FUNCTION public.ta_jaga_ba() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+declare v_pesan constant text := 'Nilai, berita acara, dan tanda unggah SIUP diisi lewat halaman Penilaian seminar dan sidang TA.';
+begin
+  -- Hanya peran klien; fungsi security definer, SQL Editor, dan pemulihan cadangan berjalan sebagai pemilik.
+  if current_user not in ('authenticated', 'anon') then return coalesce(new, old); end if;
+  if tg_op = 'DELETE' then
+    if old.ba_ditetapkan is not null then
+      raise exception 'Berita acara seminar ini sudah ditetapkan; jadwalnya tidak bisa dihapus.'; end if;
+    return old;
+  end if;
+  if tg_op = 'INSERT' then
+    if new.rubrik_id is not null or new.nilai_akhir is not null or new.ba_ditetapkan is not null
+       or new.ba_oleh is not null or new.ba_dibuka is not null or new.siup_diunggah is not null or new.siup_oleh is not null then
+      raise exception '%', v_pesan; end if;
+    return new;
+  end if;
+  if (new.rubrik_id, new.nilai_akhir, new.ba_ditetapkan, new.ba_oleh, new.ba_dibuka, new.siup_diunggah, new.siup_oleh)
+     is distinct from (old.rubrik_id, old.nilai_akhir, old.ba_ditetapkan, old.ba_oleh, old.ba_dibuka, old.siup_diunggah, old.siup_oleh) then
+    raise exception '%', v_pesan; end if;
+  if old.ba_ditetapkan is not null
+     and (new.tahap, new.nim, new.nama_mahasiswa, new.judul, new.pembimbing, new.penguji, new.penguji_luar, new.tanggal, new.status, new.hasil)
+         is distinct from
+         (old.tahap, old.nim, old.nama_mahasiswa, old.judul, old.pembimbing, old.penguji, old.penguji_luar, old.tanggal, old.status, old.hasil) then
+    raise exception 'Berita acara seminar ini sudah ditetapkan; data seminar dan hasilnya dikunci. Koordinator TA bisa membukanya kembali di Penilaian seminar dan sidang TA.';
+  end if;
+  if old.ba_ditetapkan is null and new.hasil is distinct from old.hasil
+     and exists (select 1 from ta_nilai t where t.jadwal_id = old.id) then
+    raise exception 'Seminar ini sudah dinilai di situs; hasilnya ditetapkan di Penilaian seminar dan sidang TA.'; end if;
+  return new;
+end;
+$$;
+
+CREATE FUNCTION public.ta_jaga_urutan() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_pesan text;
+begin
+  if new.jenis = 'ta' and coalesce(new.data ->> 'tahap_ta', '') in ('seminar_kemajuan', 'sidang_akhir')
+     and old.status in ('draf', 'dikembalikan') and new.status in ('pembimbing', 'admin') then
+    v_pesan := ta_syarat_urutan(new.nim, new.data ->> 'tahap_ta');
+    if v_pesan is not null then raise exception '%', v_pesan; end if;
+  end if;
+  return new;
+end;
+$$;
+
+CREATE FUNCTION public.ta_kecualikan_urutan(p_nim text, p_tahap text, p_alasan text DEFAULT NULL::text) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_nim text := btrim(coalesce(p_nim, '')); v_alasan text := nullif(btrim(coalesce(p_alasan, '')), ''); v_oleh text;
+begin
+  if not boleh_pengajuan('ta') then raise exception 'Pengecualian urutan tahap dicatat koordinator TA atau admin.'; end if;
+  if length(v_nim) not between 3 and 30 then raise exception 'Isi NIM mahasiswa.'; end if;
+  if p_tahap not in ('seminar_kemajuan', 'sidang_akhir') then raise exception 'Pilih tahap: seminar kemajuan atau sidang akhir.'; end if;
+  if v_alasan is null then
+    delete from ta_kecuali_urutan where upper(btrim(nim)) = upper(v_nim) and tahap = p_tahap;
+    return 'dihapus';
+  end if;
+  if length(v_alasan) < 5 then raise exception 'Tulis alasan pengecualian (minimal 5 huruf).'; end if;
+  select nama into v_oleh from dosen where id = me();
+  update ta_kecuali_urutan set alasan = v_alasan, oleh = v_oleh, dibuat = now()
+   where upper(btrim(nim)) = upper(v_nim) and tahap = p_tahap;
+  if not found then
+    insert into ta_kecuali_urutan (nim, tahap, alasan, oleh) values (v_nim, p_tahap, v_alasan, v_oleh);
+  end if;
+  return 'dicatat';
+end;
 $$;
 
 CREATE FUNCTION public.ta_kk_cocok(p_kk_ta text, p_kk_dosen text) RETURNS boolean
@@ -4149,6 +4878,318 @@ CREATE FUNCTION public.ta_kk_cocok(p_kk_ta text, p_kk_dosen text) RETURNS boolea
   select coalesce(p_kk_ta, '') <> '' and coalesce(p_kk_dosen, '') <> ''
      and (p_kk_ta = p_kk_dosen or exists (select 1 from ta_kk_dekat k
           where (k.kk_a = p_kk_ta and k.kk_b = p_kk_dosen) or (k.kk_a = p_kk_dosen and k.kk_b = p_kk_ta)))
+$$;
+
+CREATE FUNCTION public.ta_lampiran_dihapus(p_kunci text, p_id bigint) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  if not mhs_kunci_sah(p_kunci) then raise exception 'Kunci layanan salah.'; end if;
+  update ta_bimbingan set lampiran_url = null, lampiran_dihapus = now(), diperbarui = now()
+   where id = p_id and lampiran_url is not null and ta_lulus_pada(nim) + 30 <= (now() at time zone 'Asia/Jakarta')::date;
+  return case when found then 'dihapus' else 'tidak' end;
+end;
+$$;
+
+CREATE FUNCTION public.ta_lampiran_kedaluwarsa(p_kunci text) RETURNS TABLE(id bigint, url text)
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  if not mhs_kunci_sah(p_kunci) then raise exception 'Kunci layanan salah.'; end if;
+  return query
+    select b.id, b.lampiran_url from ta_bimbingan b
+     where b.lampiran_url is not null and ta_lulus_pada(b.nim) + 30 <= (now() at time zone 'Asia/Jakarta')::date
+     order by b.id limit 200;
+end;
+$$;
+
+CREATE FUNCTION public.ta_lulus_pada(p_nim text) RETURNS date
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select max(case when t.hasil = 'lulus' then t.tanggal when t.hasil = 'lulus_revisi' then t.revisi_selesai end)
+    from jadwal_ta t
+   where upper(btrim(coalesce(t.nim, ''))) = upper(btrim(p_nim)) and t.tahap = 'sidang_akhir' and t.status = 'selesai'
+     and (t.hasil = 'lulus' or (t.hasil = 'lulus_revisi' and t.revisi_selesai is not null))
+$$;
+
+CREATE FUNCTION public.ta_lulus_ta(p_nim text) RETURNS date
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select max(t.tanggal) from jadwal_ta t
+   where upper(btrim(coalesce(t.nim, ''))) = upper(btrim(p_nim)) and t.tahap = 'sidang_akhir' and t.status = 'selesai'
+     and (t.hasil = 'lulus' or (t.hasil = 'lulus_revisi' and t.revisi_selesai is not null))
+$$;
+
+CREATE FUNCTION public.ta_nilai_hapus(p_id bigint) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare n ta_nilai; j jadwal_ta;
+begin
+  select * into n from ta_nilai where id = p_id;
+  if n.id is null then raise exception 'Nilai tidak ditemukan.'; end if;
+  select * into j from jadwal_ta where id = n.jadwal_id for update;
+  if j.ba_ditetapkan is not null then raise exception 'Berita acara sudah ditetapkan; nilai tidak bisa dihapus.'; end if;
+  if not (boleh_tabel('jadwal_ta') or (n.penilai_nidn is not null and n.penilai_nidn = (select nidn from dosen where id = me()))) then
+    raise exception 'Nilai dihapus penilainya sendiri, koordinator TA, atau admin.'; end if;
+  delete from ta_nilai where id = n.id;
+  -- Tanpa nilai lagi: jadwal kembali memakai versi form terbaru.
+  if not exists (select 1 from ta_nilai where jadwal_id = j.id) then update jadwal_ta set rubrik_id = null where id = j.id; end if;
+  return 'dihapus';
+end;
+$$;
+
+CREATE FUNCTION public.ta_nilai_hitung(p_jadwal bigint) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare j jadwal_ta; r ta_rubrik; v_rp numeric; v_rb numeric; v_rm numeric; v_akhir numeric; v_kurang jsonb; v_luar boolean;
+  v_wp numeric; v_wm numeric; v_wb numeric; v_jml numeric := 0; v_w numeric := 0;
+begin
+  select * into j from jadwal_ta where id = p_jadwal;
+  r := ta_rubrik_jadwal(j);
+  v_luar := nullif(btrim(coalesce(j.penguji_luar, '')), '') is not null;
+  v_wp := coalesce(r.bobot_penguji, 0); v_wm := coalesce(r.bobot_bimbingan, 0); v_wb := 100 - v_wp - v_wm;
+  select round(avg(t.total), 2) into v_rp from ta_nilai t where t.jadwal_id = j.id and t.bagian = 'seminar'
+     and (t.penilai_nidn = any(j.penguji) or (t.penilai_nidn is null and v_luar));
+  select round(avg(t.total), 2) into v_rb from ta_nilai t where t.jadwal_id = j.id and t.bagian = 'seminar' and t.penilai_nidn = any(j.pembimbing);
+  if v_wm > 0 then
+    select round(avg(t.total), 2) into v_rm from ta_nilai t where t.jadwal_id = j.id and t.bagian = 'bimbingan' and t.penilai_nidn = any(j.pembimbing);
+  end if;
+  if v_rp is not null and v_wp > 0 then v_jml := v_jml + v_rp * v_wp; v_w := v_w + v_wp; end if;
+  if v_rb is not null and v_wb > 0 then v_jml := v_jml + v_rb * v_wb; v_w := v_w + v_wb; end if;
+  if v_rm is not null and v_wm > 0 then v_jml := v_jml + v_rm * v_wm; v_w := v_w + v_wm; end if;
+  v_akhir := case when v_w > 0 then round(v_jml / v_w, 2) end;
+  select coalesce(jsonb_agg(jsonb_build_object('peran', x.peran, 'bagian', x.bagian, 'nidn', x.nidn, 'nama', coalesce(d.nama, x.nidn))
+                            order by x.urut), '[]')
+    into v_kurang
+    from (select 'pembimbing' as peran, 'seminar' as bagian, u.n as nidn, u.o as urut from unnest(j.pembimbing) with ordinality u(n, o)
+          union all select 'penguji', 'seminar', u.n, 100 + u.o from unnest(j.penguji) with ordinality u(n, o)
+          union all select 'pembimbing', 'bimbingan', u.n, 200 + u.o from unnest(j.pembimbing) with ordinality u(n, o) where v_wm > 0) x
+    left join dosen d on d.nidn = x.nidn
+   where not exists (select 1 from ta_nilai t where t.jadwal_id = j.id and t.bagian = x.bagian and t.penilai_nidn = x.nidn);
+  if v_luar and not exists (select 1 from ta_nilai t where t.jadwal_id = j.id and t.penilai_nidn is null) then
+    v_kurang := v_kurang || jsonb_build_array(jsonb_build_object('peran', 'penguji', 'bagian', 'seminar', 'nidn', null, 'nama', btrim(j.penguji_luar)));
+  end if;
+  return jsonb_build_object('rubrik_id', r.id, 'rata_penguji', v_rp, 'rata_pembimbing', v_rb, 'rata_bimbingan', v_rm,
+    'nilai_akhir', v_akhir, 'kurang', v_kurang,
+    'saran', case when v_akhir is null then null when v_akhir < r.batas_lulus then 'mengulang' else 'lulus' end);
+end;
+$$;
+
+CREATE FUNCTION public.ta_nilai_rekap(p_jadwal bigint) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare j jadwal_ta; r ta_rubrik; v_koor boolean := boleh_tabel('jadwal_ta'); v_luar boolean;
+begin
+  select * into j from jadwal_ta where id = p_jadwal;
+  if j.id is null then raise exception 'Jadwal seminar/sidang tidak ditemukan.'; end if;
+  if not (v_koor or ta_panel_saya(j.id) is not null) then
+    raise exception 'Rekap nilai dibuka pembimbing/penguji seminar ini, koordinator TA, atau admin.'; end if;
+  r := ta_rubrik_jadwal(j);
+  v_luar := nullif(btrim(coalesce(j.penguji_luar, '')), '') is not null;
+  return jsonb_build_object(
+    'jadwal', jsonb_build_object('id', j.id, 'tahap', j.tahap, 'nama_mahasiswa', j.nama_mahasiswa, 'nim', j.nim, 'judul', j.judul,
+      'tanggal', j.tanggal, 'jam', j.jam, 'ruang', j.ruang, 'status', j.status, 'hasil', j.hasil, 'batas_revisi', j.batas_revisi,
+      'catatan_revisi', j.catatan_revisi, 'penguji_luar', j.penguji_luar, 'nilai_akhir', j.nilai_akhir,
+      'ba_ditetapkan', j.ba_ditetapkan, 'ba_oleh', j.ba_oleh, 'ba_dibuka', j.ba_dibuka),
+    'rubrik', case when r.id is null then null else to_jsonb(r) end,
+    'panel', (select coalesce(jsonb_agg(jsonb_build_object('peran', x.peran, 'nidn', x.nidn, 'nama', coalesce(d.nama, x.nidn)) order by x.urut), '[]')
+                from (select 'pembimbing' as peran, u.n as nidn, u.o as urut from unnest(j.pembimbing) with ordinality u(n, o)
+                      union all select 'penguji', u.n, 100 + u.o from unnest(j.penguji) with ordinality u(n, o)) x
+                left join dosen d on d.nidn = x.nidn),
+    'nilai', (select coalesce(jsonb_agg(jsonb_build_object('id', t.id, 'bagian', t.bagian, 'peran', t.peran, 'nidn', t.penilai_nidn,
+                'nama', t.penilai_nama, 'nilai', t.nilai, 'total', t.total, 'catatan', t.catatan, 'diisi_oleh', t.diisi_oleh,
+                'diwakilkan', t.diwakilkan, 'diperbarui', t.diperbarui, 'rubrik_id', t.rubrik_id,
+                'di_panel', case when t.bagian = 'bimbingan' then t.penilai_nidn = any(j.pembimbing)
+                                 else t.penilai_nidn = any(j.pembimbing) or t.penilai_nidn = any(j.penguji) or (t.penilai_nidn is null and v_luar) end)
+                order by t.bagian desc, t.peran, t.penilai_nama), '[]') from ta_nilai t where t.jadwal_id = j.id),
+    'hitung', ta_nilai_hitung(j.id),
+    'saya', jsonb_build_object('peran', ta_panel_saya(j.id), 'koordinator', v_koor));
+end;
+$$;
+
+CREATE FUNCTION public.ta_nilai_simpan(p_jadwal bigint, p_nilai jsonb, p_catatan text DEFAULT NULL::text, p_nidn text DEFAULT NULL::text, p_nama_luar text DEFAULT NULL::text, p_bagian text DEFAULT 'seminar'::text) RETURNS numeric
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare j jadwal_ta; r ta_rubrik; k jsonb; v numeric; v_bersih jsonb := '{}'; v_total numeric := 0; v_jumlah numeric := 0;
+  v_saya dosen; v_peran text; v_nidn text; v_nama text; v_wakil boolean := false; v_kunci text;
+  v_bagian text := coalesce(p_bagian, 'seminar'); v_komp jsonb;
+begin
+  if v_bagian not in ('seminar', 'bimbingan') then raise exception 'Bagian nilai: seminar atau bimbingan.'; end if;
+  select * into j from jadwal_ta where id = p_jadwal for update;
+  if j.id is null then raise exception 'Jadwal seminar/sidang tidak ditemukan.'; end if;
+  if j.ba_ditetapkan is not null then
+    raise exception 'Berita acara sudah ditetapkan; nilai tidak bisa diubah. Minta koordinator TA membukanya kembali.'; end if;
+  if j.status not in ('terjadwal', 'selesai') then
+    raise exception 'Seminar/sidang ini berstatus %; nilai tidak bisa diisi.', j.status; end if;
+  select * into v_saya from dosen where id = me();
+  if v_saya.id is null then raise exception 'Masuk sebagai dosen terdaftar dulu.'; end if;
+
+  if p_nidn is null and nullif(btrim(coalesce(p_nama_luar, '')), '') is null then
+    v_nidn := v_saya.nidn; v_nama := v_saya.nama;                                  -- nilai saya sendiri
+  else
+    if not boleh_tabel('jadwal_ta') then
+      raise exception 'Nilai atas nama penilai lain diisikan koordinator TA atau admin.'; end if;
+    v_wakil := true;
+    if p_nidn is not null then
+      v_nidn := btrim(p_nidn);
+      select nama into v_nama from dosen where nidn = v_nidn;
+      v_nama := coalesce(v_nama, v_nidn);
+      if v_nidn = v_saya.nidn then v_wakil := false; end if;
+    else
+      if nullif(btrim(coalesce(j.penguji_luar, '')), '') is null then
+        raise exception 'Seminar ini tidak punya penguji luar; isi dulu di Data prodi › Jadwal seminar/sidang TA.'; end if;
+      v_nama := btrim(p_nama_luar);
+      if length(v_nama) not between 2 and 200 then raise exception 'Nama penguji luar 2–200 huruf.'; end if;
+      v_peran := 'penguji';
+    end if;
+  end if;
+  if v_peran is null then
+    v_peran := case when v_nidn = any(j.pembimbing) then 'pembimbing' when v_nidn = any(j.penguji) then 'penguji' end;
+    if v_peran is null then
+      raise exception '% bukan pembimbing atau penguji seminar ini.', case when v_wakil then v_nama else 'Anda' end; end if;
+  end if;
+
+  r := ta_rubrik_jadwal(j);
+  if r.id is null then raise exception 'Form penilaian tahap ini belum ada.'; end if;
+  if v_bagian = 'bimbingan' then
+    if v_peran <> 'pembimbing' then raise exception 'Nilai proses bimbingan diisi pembimbing.'; end if;
+    if coalesce(r.bobot_bimbingan, 0) = 0 then raise exception 'Form penilaian tahap ini tidak memakai nilai proses bimbingan.'; end if;
+    v_komp := r.komponen_bimbingan;
+  else
+    v_komp := r.komponen;
+  end if;
+  if jsonb_typeof(p_nilai) is distinct from 'object' then raise exception 'Isi nilai tiap komponen.'; end if;
+  for k in select x from jsonb_array_elements(v_komp) x loop
+    if jsonb_typeof(p_nilai -> (k ->> 'kode')) is distinct from 'number' then
+      raise exception 'Isi nilai "%" (0–100).', k ->> 'label'; end if;
+    v := (p_nilai ->> (k ->> 'kode'))::numeric;
+    if v < 0 or v > 100 then raise exception 'Nilai "%" harus 0–100.', k ->> 'label'; end if;
+    v := round(v, 2);
+    v_bersih := v_bersih || jsonb_build_object(k ->> 'kode', v);
+    v_total := v_total + v * (k ->> 'bobot')::numeric;
+    v_jumlah := v_jumlah + (k ->> 'bobot')::numeric;
+  end loop;
+  if exists (select 1 from jsonb_object_keys(p_nilai) x where not (v_bersih ? x)) then
+    raise exception 'Ada nilai untuk komponen yang tidak ada di form penilaian; muat ulang halaman.'; end if;
+  if length(coalesce(p_catatan, '')) > 2000 then raise exception 'Catatan paling banyak 2000 huruf.'; end if;
+  v_total := round(v_total / v_jumlah, 2);
+
+  if j.rubrik_id is null then update jadwal_ta set rubrik_id = r.id where id = j.id; end if;
+  v_kunci := coalesce(v_nidn, 'luar:' || lower(v_nama));
+  update ta_nilai set peran = v_peran, penilai_nama = v_nama, rubrik_id = r.id, nilai = v_bersih, total = v_total,
+         catatan = nullif(btrim(coalesce(p_catatan, '')), ''), diisi_oleh = v_saya.nama, diwakilkan = v_wakil, diperbarui = now()
+   where jadwal_id = j.id and bagian = v_bagian and coalesce(penilai_nidn, 'luar:' || lower(btrim(penilai_nama))) = v_kunci;
+  if not found then
+    insert into ta_nilai (jadwal_id, rubrik_id, bagian, peran, penilai_nidn, penilai_nama, nilai, total, catatan, diisi_oleh, diwakilkan)
+    values (j.id, r.id, v_bagian, v_peran, v_nidn, v_nama, v_bersih, v_total, nullif(btrim(coalesce(p_catatan, '')), ''), v_saya.nama, v_wakil);
+  end if;
+  return v_total;
+end;
+$$;
+
+CREATE FUNCTION public.ta_nilai_tugas() RETURNS TABLE(jadwal_id bigint, tahap text, nama_mahasiswa text, tanggal date, tugas text)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  with saya as (select nidn from dosen where id = me()),
+       kini as (select (now() at time zone 'Asia/Jakarta')::date as hari)
+  select j.id, j.tahap, j.nama_mahasiswa, j.tanggal, 'nilai'
+    from jadwal_ta j, saya, kini
+   where saya.nidn is not null and (saya.nidn = any(j.pembimbing) or saya.nidn = any(j.penguji))
+     and j.status in ('terjadwal', 'selesai') and j.ba_ditetapkan is null and j.tanggal <= kini.hari
+     and (not exists (select 1 from ta_nilai t where t.jadwal_id = j.id and t.bagian = 'seminar' and t.penilai_nidn = saya.nidn)
+          or (saya.nidn = any(j.pembimbing) and coalesce((public.ta_rubrik_jadwal(j)).bobot_bimbingan, 0) > 0
+              and not exists (select 1 from ta_nilai t where t.jadwal_id = j.id and t.bagian = 'bimbingan' and t.penilai_nidn = saya.nidn)))
+  union all
+  select j.id, j.tahap, j.nama_mahasiswa, j.tanggal, 'tetapkan'
+    from jadwal_ta j, kini
+   where boleh_tabel('jadwal_ta') and j.status in ('terjadwal', 'selesai') and j.ba_ditetapkan is null and j.tanggal <= kini.hari
+     and exists (select 1 from ta_nilai t where t.jadwal_id = j.id)
+  union all
+  select j.id, j.tahap, j.nama_mahasiswa, j.tanggal, 'siup'
+    from jadwal_ta j, saya
+   where saya.nidn is not null and saya.nidn = any(j.pembimbing) and j.ba_ditetapkan is not null and j.siup_diunggah is null
+  union all
+  select (select max(t.id) from jadwal_ta t where upper(btrim(coalesce(t.nim, ''))) = a.nim and t.tahap = 'sidang_akhir'),
+         'sidang_akhir', a.nama, a.lulus, 'arsip'
+    from ta_arsip_siap() a
+   where a.arsip_url is null
+  order by 4, 1
+$$;
+
+CREATE FUNCTION public.ta_panel_saya(p_jadwal bigint) RETURNS text
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select case when d.nidn = any(j.pembimbing) then 'pembimbing' when d.nidn = any(j.penguji) then 'penguji' end
+    from jadwal_ta j, dosen d where j.id = p_jadwal and d.id = me() and d.nidn is not null
+$$;
+
+CREATE FUNCTION public.ta_pembimbing_nim(p_nim text) RETURNS TABLE(id uuid, nama text, ke integer)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  with p as (
+    select o.pembimbing_id, o.data ->> 'pembimbing_2' as p2 from pengajuan_mahasiswa o
+     where upper(btrim(o.nim)) = upper(btrim(p_nim)) and o.jenis = 'ta' and o.pembimbing_id is not null
+       and o.status not in ('draf', 'ditolak', 'dibatalkan')
+     order by (o.data ->> 'tahap_ta' = 'penetapan_pembimbing' and o.status = 'disetujui') desc, o.diperbarui desc, o.id desc
+     limit 1)
+  select d.id, d.nama, 1 from p join dosen d on d.id = p.pembimbing_id
+  union all
+  select d.id, d.nama, 2 from p join dosen d on d.id::text = p.p2 where d.id <> p.pembimbing_id
+  order by 3
+$$;
+
+CREATE FUNCTION public.ta_periksa_berkas() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_kurang text; v_tahap text := coalesce(new.data ->> 'tahap_ta', '');
+begin
+  if new.jenis = 'ta' and v_tahap in ('penetapan_pembimbing', 'seminar_proposal', 'seminar_kemajuan', 'sidang_akhir')
+     and old.status in ('draf', 'dikembalikan') and new.status in ('pembimbing', 'admin') then
+    select string_agg(t.label, ', ' order by t.urut, t.kode) into v_kurang
+      from ta_berkas t
+     where t.tahap = v_tahap and t.aktif and t.wajib
+       and not exists (select 1 from pengajuan_berkas b where b.pengajuan_id = new.id and b.jenis = t.kode);
+    if v_kurang is not null then
+      raise exception 'Berkas wajib % belum lengkap: %.',
+        case v_tahap when 'penetapan_pembimbing' then 'pengajuan pembimbing TA' when 'seminar_proposal' then 'seminar proposal'
+                     when 'seminar_kemajuan' then 'seminar kemajuan' else 'sidang akhir' end,
+        v_kurang;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+CREATE FUNCTION public.ta_periksa_bimbingan() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare h jsonb; v_tahap text := coalesce(new.data ->> 'tahap_ta', '');
+begin
+  if new.jenis = 'ta' and v_tahap in ('seminar_proposal', 'seminar_kemajuan', 'sidang_akhir')
+     and old.status in ('draf', 'dikembalikan') and new.status in ('pembimbing', 'admin') then
+    h := ta_syarat_bimbingan_hitung(new.nim, v_tahap);
+    if not (h ->> 'cukup')::boolean then
+      raise exception 'Bimbingan terkonfirmasi%: baru % dari minimal %. Catat bimbingan Anda di bagian Catatan bimbingan dan minta pembimbing mengonfirmasinya (catatan yang 14 hari tidak ditanggapi terkonfirmasi otomatis).',
+        case when h ->> 'sejak' is not null then ' sejak ' || case v_tahap when 'seminar_kemajuan' then 'seminar proposal' else 'seminar kemajuan' end
+             || ' (' || to_char((h ->> 'sejak')::date, 'DD-MM-YYYY') || ')' else '' end,
+        h ->> 'terhitung', h ->> 'minimal';
+    end if;
+  end if;
+  return new;
+end;
 $$;
 
 CREATE FUNCTION public.ta_revisi_selesai(p_id bigint, p_selesai boolean DEFAULT true) RETURNS date
@@ -4165,6 +5206,227 @@ begin
   if j.hasil is distinct from 'lulus_revisi' then raise exception 'Hasilnya bukan lulus dengan revisi.'; end if;
   update jadwal_ta set revisi_selesai = case when p_selesai then current_date else null end, diperbarui = now() where id = j.id;
   return case when p_selesai then current_date else null end;
+end;
+$$;
+
+CREATE FUNCTION public.ta_rubrik_bersih(p_komponen jsonb, p_awalan text) RETURNS jsonb
+    LANGUAGE plpgsql IMMUTABLE
+    SET search_path TO 'public'
+    AS $_$
+declare k jsonb; v_kode text[] := '{}'; v_jumlah numeric := 0; v_bersih jsonb := '[]'; v_ur jsonb; i int;
+begin
+  if jsonb_typeof(p_komponen) is distinct from 'array' or jsonb_array_length(p_komponen) not between 1 and 12 then
+    raise exception '%Form penilaian berisi 1 sampai 12 komponen.', p_awalan; end if;
+  for k in select x from jsonb_array_elements(p_komponen) x loop
+    if coalesce(k ->> 'kode', '') !~ '^[a-z0-9_]{1,20}$' then
+      raise exception '%Kode komponen hanya huruf kecil, angka, dan garis bawah (paling banyak 20).', p_awalan; end if;
+    if (k ->> 'kode') = any(v_kode) then raise exception '%Kode komponen % dipakai dua kali.', p_awalan, k ->> 'kode'; end if;
+    if length(btrim(coalesce(k ->> 'label', ''))) not between 3 and 200 then
+      raise exception '%Nama komponen % harus 3–200 huruf.', p_awalan, k ->> 'kode'; end if;
+    if jsonb_typeof(k -> 'bobot') is distinct from 'number' or (k ->> 'bobot')::numeric <= 0 or (k ->> 'bobot')::numeric > 100 then
+      raise exception '%Bobot komponen "%" harus lebih dari 0 dan paling besar 100.', p_awalan, btrim(k ->> 'label'); end if;
+    v_ur := coalesce(k -> 'uraian', '[]'::jsonb);
+    if jsonb_typeof(v_ur) is distinct from 'array' or jsonb_array_length(v_ur) <> 4 then
+      raise exception '%Uraian rubrik "%" harus 4 tingkat.', p_awalan, btrim(k ->> 'label'); end if;
+    for i in 0..3 loop
+      if jsonb_typeof(v_ur -> i) is distinct from 'string' or length(v_ur ->> i) > 600 then
+        raise exception '%Uraian rubrik "%" tingkat % berupa teks, paling banyak 600 huruf.', p_awalan, btrim(k ->> 'label'), i + 1; end if;
+    end loop;
+    v_kode := v_kode || (k ->> 'kode');
+    v_jumlah := v_jumlah + (k ->> 'bobot')::numeric;
+    v_bersih := v_bersih || jsonb_build_array(jsonb_build_object('kode', k ->> 'kode', 'label', btrim(k ->> 'label'),
+      'bobot', (k ->> 'bobot')::numeric,
+      'uraian', (select jsonb_agg(btrim(u.x) order by u.n) from jsonb_array_elements_text(v_ur) with ordinality u(x, n))));
+  end loop;
+  if v_jumlah <> 100 then raise exception '%Jumlah bobot komponen harus 100 (sekarang %).', p_awalan, v_jumlah; end if;
+  return v_bersih;
+end;
+$_$;
+
+CREATE TABLE public.jadwal_ta (
+    id bigint NOT NULL,
+    tahap text NOT NULL,
+    nama_mahasiswa text NOT NULL,
+    nim text,
+    judul text NOT NULL,
+    pembimbing text[] DEFAULT '{}'::text[] NOT NULL,
+    penguji text[] DEFAULT '{}'::text[] NOT NULL,
+    penguji_luar text,
+    tanggal date NOT NULL,
+    jam text,
+    ruang text,
+    tautan_daring text,
+    status text DEFAULT 'terjadwal'::text NOT NULL,
+    hasil text,
+    tampil_nama boolean DEFAULT false NOT NULL,
+    sembunyikan_publik boolean DEFAULT false NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh text,
+    pengajuan_id bigint,
+    batas_revisi date,
+    catatan_revisi text,
+    revisi_selesai date,
+    bidang text,
+    rubrik_id bigint,
+    nilai_akhir numeric(5,2),
+    ba_ditetapkan timestamp with time zone,
+    ba_oleh text,
+    ba_dibuka text,
+    siup_diunggah timestamp with time zone,
+    siup_oleh text,
+    CONSTRAINT jadwal_ta_ba_cek CHECK ((((nilai_akhir IS NULL) OR ((nilai_akhir >= (0)::numeric) AND (nilai_akhir <= (100)::numeric))) AND ((ba_dibuka IS NULL) OR (length(ba_dibuka) <= 700)))),
+    CONSTRAINT jadwal_ta_bidang_cek CHECK (((bidang IS NULL) OR (bidang ~ '^[A-Z0-9]{2,12}$'::text))),
+    CONSTRAINT jadwal_ta_hasil_check CHECK (((hasil IS NULL) OR (hasil = ANY (ARRAY['lulus'::text, 'lulus_revisi'::text, 'mengulang'::text])))),
+    CONSTRAINT jadwal_ta_jam_check CHECK (((jam IS NULL) OR (length(jam) <= 40))),
+    CONSTRAINT jadwal_ta_judul_check CHECK (((length(btrim(judul)) >= 3) AND (length(btrim(judul)) <= 400))),
+    CONSTRAINT jadwal_ta_nama_mahasiswa_check CHECK (((length(btrim(nama_mahasiswa)) >= 2) AND (length(btrim(nama_mahasiswa)) <= 200))),
+    CONSTRAINT jadwal_ta_nim_check CHECK (((nim IS NULL) OR (length(nim) <= 100))),
+    CONSTRAINT jadwal_ta_penguji_luar_check CHECK (((penguji_luar IS NULL) OR (length(penguji_luar) <= 300))),
+    CONSTRAINT jadwal_ta_revisi_check CHECK (((catatan_revisi IS NULL) OR (length(catatan_revisi) <= 2000))),
+    CONSTRAINT jadwal_ta_ruang_check CHECK (((ruang IS NULL) OR (length(ruang) <= 120))),
+    CONSTRAINT jadwal_ta_status_check CHECK ((status = ANY (ARRAY['terjadwal'::text, 'selesai'::text, 'ditunda'::text, 'batal'::text]))),
+    CONSTRAINT jadwal_ta_tahap_check CHECK ((tahap = ANY (ARRAY['seminar_proposal'::text, 'seminar_kemajuan'::text, 'sidang_akhir'::text]))),
+    CONSTRAINT jadwal_ta_tautan_daring_check CHECK (((tautan_daring IS NULL) OR (tautan_daring ~* '^https://\S+$'::text)))
+);
+
+CREATE TABLE public.ta_rubrik (
+    id bigint NOT NULL,
+    tahap text NOT NULL,
+    versi integer NOT NULL,
+    komponen jsonb NOT NULL,
+    bobot_penguji numeric(5,2) DEFAULT 40 NOT NULL,
+    batas_lulus numeric(5,2) DEFAULT 55 NOT NULL,
+    tingkat numeric(5,2)[] DEFAULT '{85,70,55,0}'::numeric[] NOT NULL,
+    catatan text,
+    oleh text,
+    dibuat timestamp with time zone DEFAULT now() NOT NULL,
+    bobot_bimbingan numeric(5,2) DEFAULT 0 NOT NULL,
+    komponen_bimbingan jsonb DEFAULT '[]'::jsonb NOT NULL,
+    CONSTRAINT ta_rubrik_batas_lulus_check CHECK (((batas_lulus >= (1)::numeric) AND (batas_lulus <= (100)::numeric))),
+    CONSTRAINT ta_rubrik_bimbingan_cek CHECK (((bobot_bimbingan >= (0)::numeric) AND (bobot_bimbingan <= (100)::numeric))),
+    CONSTRAINT ta_rubrik_bobot_penguji_check CHECK (((bobot_penguji >= (0)::numeric) AND (bobot_penguji <= (100)::numeric))),
+    CONSTRAINT ta_rubrik_catatan_check CHECK (((catatan IS NULL) OR (length(catatan) <= 1000))),
+    CONSTRAINT ta_rubrik_jumlah_cek CHECK (((bobot_penguji + bobot_bimbingan) <= (100)::numeric)),
+    CONSTRAINT ta_rubrik_komponen_bimbingan_cek CHECK ((jsonb_typeof(komponen_bimbingan) = 'array'::text)),
+    CONSTRAINT ta_rubrik_komponen_check CHECK ((jsonb_typeof(komponen) = 'array'::text)),
+    CONSTRAINT ta_rubrik_tahap_check CHECK ((tahap = ANY (ARRAY['seminar_proposal'::text, 'seminar_kemajuan'::text, 'sidang_akhir'::text]))),
+    CONSTRAINT ta_rubrik_versi_check CHECK ((versi >= 1))
+);
+
+CREATE FUNCTION public.ta_rubrik_jadwal(j public.jadwal_ta) RETURNS public.ta_rubrik
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  select r.* from ta_rubrik r
+   where (j.rubrik_id is not null and r.id = j.rubrik_id) or (j.rubrik_id is null and r.tahap = j.tahap)
+   order by r.versi desc limit 1
+$$;
+
+CREATE FUNCTION public.ta_rubrik_simpan(p_tahap text, p_komponen jsonb, p_bobot_penguji numeric, p_batas_lulus numeric, p_tingkat numeric[] DEFAULT '{85,70,55,0}'::numeric[], p_catatan text DEFAULT NULL::text, p_bobot_bimbingan numeric DEFAULT 0, p_komponen_bimbingan jsonb DEFAULT '[]'::jsonb) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_versi int; v_oleh text; v_komp jsonb; v_bimb jsonb := '[]';
+begin
+  if not boleh_tabel('jadwal_ta') then raise exception 'Form penilaian TA diubah koordinator TA atau admin.'; end if;
+  if p_tahap is null or p_tahap not in ('seminar_proposal', 'seminar_kemajuan', 'sidang_akhir') then
+    raise exception 'Pilih tahap: seminar proposal, seminar kemajuan, atau sidang akhir.'; end if;
+  v_komp := ta_rubrik_bersih(p_komponen, '');
+  if p_bobot_penguji is null or p_bobot_penguji not between 0 and 100 then raise exception 'Bobot penguji 0–100 %%.'; end if;
+  if p_bobot_bimbingan is null or p_bobot_bimbingan not between 0 and 100 then raise exception 'Bobot proses bimbingan 0–100 %%.'; end if;
+  if p_bobot_penguji + p_bobot_bimbingan > 100 then
+    raise exception 'Bobot penguji + proses bimbingan paling besar 100 %% (sisanya bobot pembimbing saat seminar/sidang).'; end if;
+  if p_bobot_bimbingan > 0 or jsonb_array_length(coalesce(p_komponen_bimbingan, '[]')) > 0 then
+    v_bimb := ta_rubrik_bersih(coalesce(p_komponen_bimbingan, '[]'), 'Proses bimbingan: '); end if;
+  if p_batas_lulus is null or p_batas_lulus not between 1 and 100 then raise exception 'Batas lulus 1–100.'; end if;
+  if p_tingkat is null or array_length(p_tingkat, 1) is distinct from 4 or p_tingkat[4] <> 0 or p_tingkat[1] > 100
+     or not (p_tingkat[1] > p_tingkat[2] and p_tingkat[2] > p_tingkat[3] and p_tingkat[3] > 0) then
+    raise exception 'Batas bawah 4 tingkat rubrik harus menurun dan tingkat terendah 0 (mis. 85, 70, 55, 0).'; end if;
+  if length(coalesce(p_catatan, '')) > 1000 then raise exception 'Catatan perubahan paling banyak 1000 huruf.'; end if;
+  select nama into v_oleh from dosen where id = me();
+  select coalesce(max(versi), 0) + 1 into v_versi from ta_rubrik where tahap = p_tahap;
+  insert into ta_rubrik (tahap, versi, komponen, komponen_bimbingan, bobot_penguji, bobot_bimbingan, batas_lulus, tingkat, catatan, oleh)
+  values (p_tahap, v_versi, v_komp, v_bimb, p_bobot_penguji, p_bobot_bimbingan, p_batas_lulus, p_tingkat,
+          nullif(btrim(coalesce(p_catatan, '')), ''), v_oleh);
+  return v_versi;
+end;
+$$;
+
+CREATE FUNCTION public.ta_siup_tandai(p_ids bigint[], p_sudah boolean) RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_oleh text; v_nidn text; v_belum text; v_bukan text; v_n int;
+begin
+  if p_sudah is null then raise exception 'Pilih tandai atau batalkan tanda.'; end if;
+  if coalesce(array_length(p_ids, 1), 0) = 0 then raise exception 'Pilih seminar/sidang dulu.'; end if;
+  select nama, nidn into v_oleh, v_nidn from dosen where id = me();
+  if not boleh_tabel('jadwal_ta') then
+    select string_agg(j.nama_mahasiswa, ', ' order by j.tanggal) into v_bukan
+      from jadwal_ta j where j.id = any(p_ids) and not (v_nidn is not null and v_nidn = any(j.pembimbing));
+    if v_bukan is not null then
+      raise exception 'Tanda unggah SIUP diisi pembimbingnya, koordinator TA, atau admin (%).', v_bukan; end if;
+  end if;
+  select string_agg(j.nama_mahasiswa, ', ' order by j.tanggal) into v_belum
+    from jadwal_ta j where j.id = any(p_ids) and j.ba_ditetapkan is null;
+  if v_belum is not null then raise exception 'Berita acara belum ditetapkan: %.', v_belum; end if;
+  update jadwal_ta set siup_diunggah = case when p_sudah then now() end, siup_oleh = case when p_sudah then v_oleh end
+   where id = any(p_ids);
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+CREATE FUNCTION public.ta_syarat_bimbingan_hitung(p_nim text, p_tahap text) RETURNS jsonb
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_min int; v_sejak date; v_n int; v_sebelum text;
+begin
+  select minimal into v_min from ta_syarat_bimbingan where tahap = p_tahap;
+  v_min := coalesce(v_min, 0);
+  v_sebelum := case p_tahap when 'seminar_kemajuan' then 'seminar_proposal' when 'sidang_akhir' then 'seminar_kemajuan' end;
+  if v_sebelum is not null then
+    select max(t.tanggal) into v_sejak from jadwal_ta t
+     where upper(btrim(coalesce(t.nim, ''))) = upper(btrim(p_nim)) and t.tahap = v_sebelum
+       and t.status = 'selesai' and t.hasil in ('lulus', 'lulus_revisi');
+  end if;
+  select count(*) into v_n from ta_bimbingan b
+   where upper(btrim(b.nim)) = upper(btrim(p_nim)) and ta_bimbingan_sah(b.status, b.diajukan) and (v_sejak is null or b.tanggal > v_sejak);
+  return jsonb_build_object('tahap', p_tahap, 'minimal', v_min, 'terhitung', v_n, 'sejak', v_sejak, 'cukup', v_n >= v_min);
+end;
+$$;
+
+CREATE FUNCTION public.ta_syarat_urutan(p_nim text, p_tahap text) RETURNS text
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+declare v_sebelum text; v_nama text; j jadwal_ta; v_nim text := upper(btrim(coalesce(p_nim, '')));
+begin
+  v_sebelum := case p_tahap when 'seminar_kemajuan' then 'seminar_proposal' when 'sidang_akhir' then 'seminar_kemajuan' end;
+  if v_sebelum is null then return null; end if;                                  -- proposal / penetapan pembimbing
+  if exists (select 1 from ta_kecuali_urutan k where upper(btrim(k.nim)) = v_nim and k.tahap = p_tahap) then return null; end if;
+  if exists (select 1 from jadwal_ta t where upper(btrim(coalesce(t.nim, ''))) = v_nim and t.tahap = v_sebelum
+               and t.status = 'selesai'
+               and (t.hasil = 'lulus' or (t.hasil = 'lulus_revisi' and t.revisi_selesai is not null))) then
+    return null; end if;
+
+  v_nama := case v_sebelum when 'seminar_proposal' then 'seminar proposal' else 'seminar kemajuan' end;
+  -- Catatan terakhir tahap sebelumnya (yang batal diabaikan) menentukan pesan.
+  select * into j from jadwal_ta t where upper(btrim(coalesce(t.nim, ''))) = v_nim and t.tahap = v_sebelum and t.status <> 'batal'
+   order by t.tanggal desc, t.id desc limit 1;
+  return (case p_tahap when 'seminar_kemajuan' then 'Seminar kemajuan' else 'Sidang akhir' end)
+    || ' baru bisa didaftarkan setelah ' || v_nama || ' lulus dan revisinya dinyatakan selesai. '
+    || case
+         when j.id is null then 'Belum ada catatan ' || v_nama || ' untuk NIM ini. Bila Anda sudah melaluinya sebelum pendaftaran'
+                              || ' lewat situs, minta koordinator TA mencatatnya.'
+         when j.status in ('terjadwal', 'ditunda') then initcap(v_nama) || ' Anda belum selesai (jadwal '
+                              || to_char(j.tanggal, 'DD-MM-YYYY') || ', ' || j.status || ').'
+         when j.hasil is null then 'Hasil ' || v_nama || ' Anda belum dicatat; hubungi koordinator TA.'
+         when j.hasil = 'mengulang' then 'Hasil ' || v_nama || ' Anda: mengulang. Daftarkan ' || v_nama || ' lagi.'
+         else 'Revisi ' || v_nama || ' Anda belum dinyatakan selesai oleh pembimbing'
+              || coalesce(' (tenggat ' || to_char(j.batas_revisi, 'DD-MM-YYYY') || ')', '') || '.'
+       end;
 end;
 $$;
 
@@ -4519,7 +5781,7 @@ CREATE TABLE public.ami_temuan (
     oleh text,
     diperbarui timestamp with time zone DEFAULT now() NOT NULL,
     standar_id bigint,
-    CONSTRAINT ami_temuan_butir_check CHECK (((butir >= 1) AND (butir <= 60))),
+    CONSTRAINT ami_temuan_butir_rentang CHECK (((butir IS NULL) OR ((butir >= 1) AND (butir <= 999)))),
     CONSTRAINT ami_temuan_kategori_check CHECK ((kategori = ANY (ARRAY['observasi'::text, 'kts_minor'::text, 'kts_mayor'::text, 'peluang'::text]))),
     CONSTRAINT ami_temuan_kode_check CHECK ((length(kode) <= 30)),
     CONSTRAINT ami_temuan_pihak_check CHECK ((pihak = ANY (ARRAY['U'::text, 'F'::text, 'P'::text, 'S'::text, 'D'::text]))),
@@ -4558,7 +5820,7 @@ CREATE TABLE public.butir_bukti (
     dibuat timestamp with time zone DEFAULT now() NOT NULL,
     sha256 text,
     unsur smallint,
-    CONSTRAINT butir_bukti_butir_check CHECK (((butir >= 1) AND (butir <= 60))),
+    CONSTRAINT butir_bukti_butir_rentang CHECK (((butir >= 1) AND (butir <= 999))),
     CONSTRAINT butir_bukti_jenis_dokumen_check CHECK ((jenis_dokumen ~ '^[a-z0-9_]{2,40}$'::text)),
     CONSTRAINT butir_bukti_satu_sumber CHECK ((((((jenis_dokumen IS NOT NULL))::integer + ((dokumen_id IS NOT NULL))::integer) + ((url IS NOT NULL))::integer) = 1)),
     CONSTRAINT butir_bukti_sha256_check CHECK (((sha256 IS NULL) OR (sha256 ~ '^[0-9a-f]{64}$'::text))),
@@ -4973,6 +6235,50 @@ CREATE TABLE public.hibah_tim (
     CONSTRAINT hibah_tim_peran_check CHECK ((peran = ANY (ARRAY['ketua'::text, 'anggota'::text])))
 );
 
+CREATE TABLE public.insentif_pengajuan (
+    id bigint NOT NULL,
+    judul text NOT NULL,
+    tanggal date DEFAULT ((now() AT TIME ZONE 'Asia/Jakarta'::text))::date NOT NULL,
+    catatan text,
+    dibuat_oleh uuid DEFAULT public.me(),
+    dibuat timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT insentif_pengajuan_catatan_check CHECK (((catatan IS NULL) OR (length(catatan) <= 2000))),
+    CONSTRAINT insentif_pengajuan_judul_check CHECK (((length(btrim(judul)) >= 3) AND (length(btrim(judul)) <= 200)))
+);
+
+ALTER TABLE public.insentif_pengajuan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.insentif_pengajuan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+CREATE TABLE public.insentif_publikasi (
+    id bigint NOT NULL,
+    karya_id uuid NOT NULL,
+    pengklaim_id uuid NOT NULL,
+    status text DEFAULT 'diklaim'::text NOT NULL,
+    catatan text,
+    pengajuan_id bigint,
+    diklaim_pada timestamp with time zone DEFAULT now() NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh uuid,
+    CONSTRAINT insentif_pengajuan_status_check CHECK (((status = ANY (ARRAY['diajukan'::text, 'disetujui'::text, 'ditolak'::text, 'cair'::text])) = (pengajuan_id IS NOT NULL))),
+    CONSTRAINT insentif_publikasi_catatan_check CHECK (((catatan IS NULL) OR (length(catatan) <= 2000))),
+    CONSTRAINT insentif_publikasi_status_check CHECK ((status = ANY (ARRAY['diklaim'::text, 'dikembalikan'::text, 'siap'::text, 'diajukan'::text, 'disetujui'::text, 'ditolak'::text, 'cair'::text])))
+);
+
+ALTER TABLE public.insentif_publikasi ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.insentif_publikasi_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE public.jadwal_hari (
     hari smallint NOT NULL,
     CONSTRAINT jadwal_hari_hari_check CHECK (((hari >= 1) AND (hari <= 7)))
@@ -5019,44 +6325,6 @@ ALTER TABLE public.jadwal_slot ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY 
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
-);
-
-CREATE TABLE public.jadwal_ta (
-    id bigint NOT NULL,
-    tahap text NOT NULL,
-    nama_mahasiswa text NOT NULL,
-    nim text,
-    judul text NOT NULL,
-    pembimbing text[] DEFAULT '{}'::text[] NOT NULL,
-    penguji text[] DEFAULT '{}'::text[] NOT NULL,
-    penguji_luar text,
-    tanggal date NOT NULL,
-    jam text,
-    ruang text,
-    tautan_daring text,
-    status text DEFAULT 'terjadwal'::text NOT NULL,
-    hasil text,
-    tampil_nama boolean DEFAULT false NOT NULL,
-    sembunyikan_publik boolean DEFAULT false NOT NULL,
-    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
-    oleh text,
-    pengajuan_id bigint,
-    batas_revisi date,
-    catatan_revisi text,
-    revisi_selesai date,
-    bidang text,
-    CONSTRAINT jadwal_ta_bidang_cek CHECK (((bidang IS NULL) OR (bidang ~ '^[A-Z0-9]{2,12}$'::text))),
-    CONSTRAINT jadwal_ta_hasil_check CHECK (((hasil IS NULL) OR (hasil = ANY (ARRAY['lulus'::text, 'lulus_revisi'::text, 'mengulang'::text])))),
-    CONSTRAINT jadwal_ta_jam_check CHECK (((jam IS NULL) OR (length(jam) <= 40))),
-    CONSTRAINT jadwal_ta_judul_check CHECK (((length(btrim(judul)) >= 3) AND (length(btrim(judul)) <= 400))),
-    CONSTRAINT jadwal_ta_nama_mahasiswa_check CHECK (((length(btrim(nama_mahasiswa)) >= 2) AND (length(btrim(nama_mahasiswa)) <= 200))),
-    CONSTRAINT jadwal_ta_nim_check CHECK (((nim IS NULL) OR (length(nim) <= 100))),
-    CONSTRAINT jadwal_ta_penguji_luar_check CHECK (((penguji_luar IS NULL) OR (length(penguji_luar) <= 300))),
-    CONSTRAINT jadwal_ta_revisi_check CHECK (((catatan_revisi IS NULL) OR (length(catatan_revisi) <= 2000))),
-    CONSTRAINT jadwal_ta_ruang_check CHECK (((ruang IS NULL) OR (length(ruang) <= 120))),
-    CONSTRAINT jadwal_ta_status_check CHECK ((status = ANY (ARRAY['terjadwal'::text, 'selesai'::text, 'ditunda'::text, 'batal'::text]))),
-    CONSTRAINT jadwal_ta_tahap_check CHECK ((tahap = ANY (ARRAY['seminar_proposal'::text, 'seminar_kemajuan'::text, 'sidang_akhir'::text]))),
-    CONSTRAINT jadwal_ta_tautan_daring_check CHECK (((tautan_daring IS NULL) OR (tautan_daring ~* '^https://\S+$'::text)))
 );
 
 ALTER TABLE public.jadwal_ta ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
@@ -5250,7 +6518,7 @@ CREATE TABLE public.karya_bukti (
     oleh uuid DEFAULT public.me(),
     dibuat timestamp with time zone DEFAULT now() NOT NULL,
     sha256 text,
-    CONSTRAINT karya_bukti_jenis_check CHECK ((jenis = ANY (ARRAY['naskah'::text, 'sk'::text, 'korespondensi'::text, 'laporan'::text, 'sertifikat'::text, 'foto'::text, 'daftar_hadir'::text, 'lainnya'::text]))),
+    CONSTRAINT karya_bukti_jenis_check CHECK ((jenis = ANY (ARRAY['naskah'::text, 'sk'::text, 'korespondensi'::text, 'laporan'::text, 'sertifikat'::text, 'foto'::text, 'daftar_hadir'::text, 'indeksasi'::text, 'loa'::text, 'pernyataan'::text, 'lainnya'::text]))),
     CONSTRAINT karya_bukti_sha256_check CHECK (((sha256 IS NULL) OR (sha256 ~ '^[0-9a-f]{64}$'::text))),
     CONSTRAINT karya_bukti_url_check1 CHECK ((url ~* '^https?://[^ ]+$'::text))
 );
@@ -5322,11 +6590,16 @@ CREATE TABLE public.kegiatan (
     diperbarui timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT kegiatan_check CHECK (((selesai IS NULL) OR (selesai >= mulai))),
     CONSTRAINT kegiatan_check1 CHECK (((jam_selesai IS NULL) OR (jam_mulai IS NOT NULL))),
-    CONSTRAINT kegiatan_jenis_check CHECK ((jenis = ANY (ARRAY['ami'::text, 'akademik'::text, 'yudisium'::text, 'wisuda'::text, 'seminar'::text, 'rapat_luar'::text, 'lain'::text]))),
+    CONSTRAINT kegiatan_jenis_check CHECK ((jenis = ANY (ARRAY['ami'::text, 'akademik'::text, 'yudisium'::text, 'wisuda'::text, 'seminar'::text, 'rapat_luar'::text, 'mengawas'::text, 'sidang'::text, 'piket'::text, 'penugasan'::text, 'lain'::text]))),
     CONSTRAINT kegiatan_judul_check CHECK (((length(TRIM(BOTH FROM judul)) >= 2) AND (length(TRIM(BOTH FROM judul)) <= 300))),
     CONSTRAINT kegiatan_keterangan_check CHECK (((keterangan IS NULL) OR (length(keterangan) <= 2000))),
     CONSTRAINT kegiatan_tautan_check CHECK (((tautan IS NULL) OR (tautan ~* '^https?://\S+$'::text))),
     CONSTRAINT kegiatan_tempat_check CHECK (((tempat IS NULL) OR (length(tempat) <= 200)))
+);
+
+CREATE TABLE public.kegiatan_dosen (
+    kegiatan_id bigint NOT NULL,
+    dosen_id uuid NOT NULL
 );
 
 ALTER TABLE public.kegiatan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
@@ -5547,6 +6820,31 @@ ALTER TABLE public.led_tim ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY 
     CACHE 1
 );
 
+CREATE TABLE public.lkps_bimbingan_utama (
+    id bigint NOT NULL,
+    nidn text NOT NULL,
+    tahun_akademik text NOT NULL,
+    jumlah_ps integer DEFAULT 0 NOT NULL,
+    jumlah_ps_lain integer DEFAULT 0 NOT NULL,
+    keterangan text,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh text,
+    CONSTRAINT lkps_bimbingan_utama_jumlah_ps_check CHECK (((jumlah_ps >= 0) AND (jumlah_ps <= 999))),
+    CONSTRAINT lkps_bimbingan_utama_jumlah_ps_lain_check CHECK (((jumlah_ps_lain >= 0) AND (jumlah_ps_lain <= 999))),
+    CONSTRAINT lkps_bimbingan_utama_keterangan_check CHECK (((keterangan IS NULL) OR (length(keterangan) <= 500))),
+    CONSTRAINT lkps_bimbingan_utama_nidn_check CHECK (((length(btrim(nidn)) >= 1) AND (length(btrim(nidn)) <= 30))),
+    CONSTRAINT lkps_bimbingan_utama_tahun_akademik_check CHECK ((tahun_akademik ~ '^\d{4}/\d{4}$'::text))
+);
+
+ALTER TABLE public.lkps_bimbingan_utama ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.lkps_bimbingan_utama_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE public.lkps_bkd (
     id bigint NOT NULL,
     nidn text NOT NULL,
@@ -5613,7 +6911,7 @@ CREATE TABLE public.lkps_bukti (
     CONSTRAINT lkps_bukti_jenis_check CHECK (((jenis IS NULL) OR (jenis = ANY (ARRAY['sertifikat'::text, 'surat_tugas'::text, 'foto'::text, 'lainnya'::text])))),
     CONSTRAINT lkps_bukti_satu_sumber CHECK (((((url IS NOT NULL))::integer + ((dokumen_id IS NOT NULL))::integer) = 1)),
     CONSTRAINT lkps_bukti_sha256_check CHECK (((sha256 IS NULL) OR (sha256 ~ '^[0-9a-f]{64}$'::text))),
-    CONSTRAINT lkps_bukti_tabel_check CHECK ((tabel = ANY (ARRAY['lkps_mahasiswa_ta'::text, 'lkps_kohort_lulusan'::text, 'lkps_tracer_lulusan'::text, 'lkps_kerjasama'::text, 'lkps_bkd'::text, 'lkps_prestasi_mahasiswa'::text, 'lkps_publikasi_mahasiswa'::text, 'lkps_luaran_mahasiswa'::text, 'lkps_kepuasan_pengguna'::text, 'ref_mata_kuliah'::text, 'ref_tema_peta_jalan'::text, 'lkps_vmts'::text, 'lkps_prodi_upps'::text, 'lkps_penggunaan_dana'::text, 'lkps_tendik'::text, 'lkps_prasarana'::text, 'lkps_dokumen_k3l'::text, 'lkps_fasilitas_k3l'::text, 'lkps_spmi_ppepp'::text, 'lkps_target_kinerja'::text, 'lkps_peta_jalan'::text, 'ami_temuan'::text, 'spmi_standar'::text, 'spmi_standar_revisi'::text, 'jadwal_ta'::text]))),
+    CONSTRAINT lkps_bukti_tabel_check CHECK ((tabel = ANY (ARRAY['lkps_mahasiswa_ta'::text, 'lkps_kohort_lulusan'::text, 'lkps_tracer_lulusan'::text, 'lkps_kerjasama'::text, 'lkps_bkd'::text, 'lkps_prestasi_mahasiswa'::text, 'lkps_publikasi_mahasiswa'::text, 'lkps_luaran_mahasiswa'::text, 'lkps_kepuasan_pengguna'::text, 'ref_mata_kuliah'::text, 'ref_tema_peta_jalan'::text, 'lkps_vmts'::text, 'lkps_prodi_upps'::text, 'lkps_penggunaan_dana'::text, 'lkps_tendik'::text, 'lkps_prasarana'::text, 'lkps_dokumen_k3l'::text, 'lkps_fasilitas_k3l'::text, 'lkps_spmi_ppepp'::text, 'lkps_target_kinerja'::text, 'lkps_peta_jalan'::text, 'ami_temuan'::text, 'spmi_standar'::text, 'spmi_standar_revisi'::text, 'jadwal_ta'::text, 'lkps_sarana_standar'::text, 'lkps_bimbingan_utama'::text, 'lkps_keuangan'::text, 'lkps_mahasiswa_angkatan'::text]))),
     CONSTRAINT lkps_bukti_unsur_check CHECK (((unsur IS NULL) OR ((unsur >= 1) AND (unsur <= 4)))),
     CONSTRAINT lkps_bukti_url_check CHECK ((url ~* '^https?://\S+$'::text))
 );
@@ -5734,6 +7032,31 @@ ALTER TABLE public.lkps_kerjasama ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
     CACHE 1
 );
 
+CREATE TABLE public.lkps_keuangan (
+    id bigint NOT NULL,
+    tahun_akademik text NOT NULL,
+    pos text NOT NULL,
+    dana_upps numeric,
+    dana_ps numeric,
+    keterangan text,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh text,
+    CONSTRAINT lkps_keuangan_dana_ps_check CHECK (((dana_ps IS NULL) OR (dana_ps >= (0)::numeric))),
+    CONSTRAINT lkps_keuangan_dana_upps_check CHECK (((dana_upps IS NULL) OR (dana_upps >= (0)::numeric))),
+    CONSTRAINT lkps_keuangan_keterangan_check CHECK (((keterangan IS NULL) OR (length(keterangan) <= 500))),
+    CONSTRAINT lkps_keuangan_pos_check CHECK ((pos ~ '^[a-z0-9_]{2,60}$'::text)),
+    CONSTRAINT lkps_keuangan_tahun_akademik_check CHECK ((tahun_akademik ~ '^\d{4}/\d{4}$'::text))
+);
+
+ALTER TABLE public.lkps_keuangan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.lkps_keuangan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE public.lkps_kohort_lulusan (
     id bigint NOT NULL,
     tahun_masuk integer NOT NULL,
@@ -5786,6 +7109,53 @@ CREATE TABLE public.lkps_luaran_mahasiswa (
 
 ALTER TABLE public.lkps_luaran_mahasiswa ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.lkps_luaran_mahasiswa_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+CREATE TABLE public.lkps_mahasiswa_angkatan (
+    id bigint NOT NULL,
+    tahun_akademik text NOT NULL,
+    daya_tampung integer,
+    pendaftar integer,
+    lulus_seleksi integer,
+    afirmasi integer,
+    transfer integer,
+    asing integer,
+    aktif integer,
+    tidak_aktif integer,
+    lulus integer,
+    gagal integer,
+    asing_penuh_waktu integer,
+    asing_satu_semester integer,
+    asing_pendek_kredit integer,
+    asing_tanpa_kredit integer,
+    keterangan text,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh text,
+    CONSTRAINT lkps_mahasiswa_angkatan_afirmasi_check CHECK ((afirmasi >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_aktif_check CHECK ((aktif >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_asing_check CHECK ((asing >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_asing_pendek_kredit_check CHECK ((asing_pendek_kredit >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_asing_penuh_waktu_check CHECK ((asing_penuh_waktu >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_asing_satu_semester_check CHECK ((asing_satu_semester >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_asing_tanpa_kredit_check CHECK ((asing_tanpa_kredit >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_daya_tampung_check CHECK ((daya_tampung >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_gagal_check CHECK ((gagal >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_keterangan_check CHECK (((keterangan IS NULL) OR (length(keterangan) <= 500))),
+    CONSTRAINT lkps_mahasiswa_angkatan_lulus_check CHECK ((lulus >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_lulus_seleksi_check CHECK ((lulus_seleksi >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_pendaftar_check CHECK ((pendaftar >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_tahun_akademik_check CHECK ((tahun_akademik ~ '^\d{4}/\d{4}$'::text)),
+    CONSTRAINT lkps_mahasiswa_angkatan_tidak_aktif_check CHECK ((tidak_aktif >= 0)),
+    CONSTRAINT lkps_mahasiswa_angkatan_transfer_check CHECK ((transfer >= 0))
+);
+
+ALTER TABLE public.lkps_mahasiswa_angkatan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.lkps_mahasiswa_angkatan_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -6005,6 +7375,41 @@ ALTER TABLE public.lkps_publikasi_mahasiswa ALTER COLUMN id ADD GENERATED ALWAYS
     CACHE 1
 );
 
+CREATE TABLE public.lkps_sarana_standar (
+    id bigint NOT NULL,
+    jenis text NOT NULL,
+    kategori text,
+    nama text NOT NULL,
+    lokasi text,
+    ukuran text,
+    nama_standar text,
+    occupancy text,
+    standar_ditetapkan text,
+    ukuran_eksisting text,
+    urutan integer DEFAULT 100 NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    oleh text,
+    CONSTRAINT lkps_sarana_standar_jenis_check CHECK ((jenis = ANY (ARRAY['belajar'::text, 'kerja'::text, 'diseminasi'::text, 'kesejahteraan'::text]))),
+    CONSTRAINT lkps_sarana_standar_kategori_belajar CHECK (((jenis <> 'belajar'::text) OR (kategori IS NOT NULL))),
+    CONSTRAINT lkps_sarana_standar_kategori_check CHECK (((kategori IS NULL) OR (kategori = ANY (ARRAY['perabot'::text, 'media'::text, 'kenyamanan'::text, 'administrasi'::text, 'k3'::text])))),
+    CONSTRAINT lkps_sarana_standar_lokasi_check CHECK (((lokasi IS NULL) OR (length(lokasi) <= 200))),
+    CONSTRAINT lkps_sarana_standar_nama_check CHECK (((length(btrim(nama)) >= 1) AND (length(btrim(nama)) <= 300))),
+    CONSTRAINT lkps_sarana_standar_nama_standar_check CHECK (((nama_standar IS NULL) OR (length(nama_standar) <= 500))),
+    CONSTRAINT lkps_sarana_standar_occupancy_check CHECK (((occupancy IS NULL) OR (length(occupancy) <= 300))),
+    CONSTRAINT lkps_sarana_standar_standar_ditetapkan_check CHECK (((standar_ditetapkan IS NULL) OR (length(standar_ditetapkan) <= 300))),
+    CONSTRAINT lkps_sarana_standar_ukuran_check CHECK (((ukuran IS NULL) OR (length(ukuran) <= 300))),
+    CONSTRAINT lkps_sarana_standar_ukuran_eksisting_check CHECK (((ukuran_eksisting IS NULL) OR (length(ukuran_eksisting) <= 300)))
+);
+
+ALTER TABLE public.lkps_sarana_standar ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.lkps_sarana_standar_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE public.lkps_spmi_ppepp (
     id bigint NOT NULL,
     tahap text NOT NULL,
@@ -6050,7 +7455,7 @@ CREATE TABLE public.lkps_target_kinerja (
     standar_id bigint,
     CONSTRAINT lkps_target_kinerja_arah_check CHECK ((arah = ANY (ARRAY['minimal'::text, 'maksimal'::text]))),
     CONSTRAINT lkps_target_kinerja_bidang_check CHECK ((bidang = ANY (ARRAY['pendidikan'::text, 'penelitian'::text, 'pkm'::text, 'tata_kelola'::text, 'lainnya'::text]))),
-    CONSTRAINT lkps_target_kinerja_butir_check CHECK (((butir >= 1) AND (butir <= 60))),
+    CONSTRAINT lkps_target_kinerja_butir_rentang CHECK (((butir IS NULL) OR ((butir >= 1) AND (butir <= 999)))),
     CONSTRAINT lkps_target_kinerja_jenis_check CHECK ((jenis = ANY (ARRAY['iku'::text, 'ikt'::text]))),
     CONSTRAINT lkps_target_kinerja_sumber_check CHECK (((sumber IS NULL) OR (sumber ~ '^[a-z0-9_]{2,40}$'::text))),
     CONSTRAINT lkps_target_kinerja_tahun_ts_check CHECK (((tahun_ts >= 2000) AND (tahun_ts <= 2100)))
@@ -6075,8 +7480,12 @@ CREATE TABLE public.lkps_tendik (
     aktif boolean DEFAULT true NOT NULL,
     diperbarui timestamp with time zone DEFAULT now() NOT NULL,
     oleh text,
-    CONSTRAINT lkps_tendik_jabatan_check CHECK (((jabatan IS NULL) OR (jabatan = ANY (ARRAY['laboran'::text, 'teknisi'::text, 'administrator_sistem'::text, 'lainnya'::text])))),
+    status_kerja text DEFAULT 'tetap'::text NOT NULL,
+    laboratorium_id bigint,
+    boleh_tampil boolean DEFAULT false NOT NULL,
+    CONSTRAINT lkps_tendik_jabatan_check CHECK (((jabatan IS NULL) OR (jabatan = ANY (ARRAY['admin_prodi'::text, 'laboran'::text, 'asisten_lab'::text, 'teknisi'::text, 'administrator_sistem'::text, 'lainnya'::text])))),
     CONSTRAINT lkps_tendik_pendidikan_check CHECK (((pendidikan IS NULL) OR (pendidikan = ANY (ARRAY['s3'::text, 's2'::text, 's1'::text, 'd4'::text, 'd3'::text, 'd2'::text, 'd1'::text, 'sma_smk'::text])))),
+    CONSTRAINT lkps_tendik_status_kerja_check CHECK ((status_kerja = ANY (ARRAY['tetap'::text, 'kontrak'::text, 'magang'::text]))),
     CONSTRAINT lkps_tendik_unit_kerja_check CHECK (((unit_kerja IS NULL) OR (unit_kerja = ANY (ARRAY['upps'::text, 'prodi'::text, 'institusi'::text]))))
 );
 
@@ -6522,7 +7931,7 @@ CREATE TABLE public.pengajuan_berkas (
     oleh text DEFAULT 'mahasiswa'::text NOT NULL,
     dibuat timestamp with time zone DEFAULT now() NOT NULL,
     tautan boolean DEFAULT false NOT NULL,
-    CONSTRAINT pengajuan_berkas_jenis_check CHECK (((jenis = ANY (ARRAY['surat_permohonan'::text, 'surat_balasan'::text, 'laporan_kp'::text, 'surat_selesai'::text, 'logbook'::text, 'nilai_lapangan'::text, 'laporan_lomba'::text, 'sertifikat'::text, 'surat_tugas'::text, 'foto'::text, 'lainnya'::text, 'surat_pengantar'::text, 'surat_jadi'::text, 'naskah_ta'::text, 'bukti_luaran'::text])) OR (jenis ~ '^yud_[a-z0-9_]{2,40}$'::text))),
+    CONSTRAINT pengajuan_berkas_jenis_check CHECK (((jenis = ANY (ARRAY['surat_permohonan'::text, 'surat_balasan'::text, 'laporan_kp'::text, 'surat_selesai'::text, 'logbook'::text, 'nilai_lapangan'::text, 'laporan_lomba'::text, 'sertifikat'::text, 'surat_tugas'::text, 'foto'::text, 'lainnya'::text, 'surat_pengantar'::text, 'surat_jadi'::text, 'naskah_ta'::text, 'bukti_luaran'::text])) OR (jenis ~ '^yud_[a-z0-9_]{2,40}$'::text) OR (jenis ~ '^ta_[a-z0-9_]{2,40}$'::text))),
     CONSTRAINT pengajuan_berkas_nama_check CHECK ((length(nama) <= 200)),
     CONSTRAINT pengajuan_berkas_url_check CHECK ((url ~* '^https://\S+$'::text))
 );
@@ -6928,6 +8337,8 @@ CREATE TABLE public.ref_mata_kuliah (
     kurikulum text NOT NULL,
     nama_en text,
     peminatan text,
+    koordinator_nidn text,
+    CONSTRAINT ref_mata_kuliah_koordinator_tim_check CHECK (((koordinator_nidn IS NULL) OR (koordinator_nidn = ANY (pengampu)))),
     CONSTRAINT ref_mata_kuliah_kurikulum_check CHECK ((kurikulum ~ '^K[0-9]{2}$'::text)),
     CONSTRAINT ref_mata_kuliah_nama_en_check CHECK (((nama_en IS NULL) OR (length(nama_en) <= 200))),
     CONSTRAINT ref_mata_kuliah_peminatan_check CHECK (((peminatan IS NULL) OR (peminatan ~ '^[A-Z0-9]{2,12}$'::text))),
@@ -6936,6 +8347,8 @@ CREATE TABLE public.ref_mata_kuliah (
     CONSTRAINT ref_mata_kuliah_sks_check CHECK (((COALESCE(sks_kuliah, (0)::numeric) >= (0)::numeric) AND (COALESCE(sks_seminar, (0)::numeric) >= (0)::numeric) AND (COALESCE(sks_praktikum, (0)::numeric) >= (0)::numeric) AND (COALESCE(sks, (0)::numeric) >= (0)::numeric))),
     CONSTRAINT ref_mata_kuliah_unit_check CHECK (((unit_penyelenggara IS NULL) OR (unit_penyelenggara = ANY (ARRAY['universitas'::text, 'fakultas'::text, 'prodi'::text]))))
 );
+
+COMMENT ON COLUMN public.ref_mata_kuliah.koordinator_nidn IS 'Koordinator MK (158, pemilik 2026-11-23); salah satu anggota pengampu (tim). Ditetapkan Kaprodi aktif atau admin.';
 
 ALTER TABLE public.ref_mata_kuliah ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME public.ref_mata_kuliah_id_seq
@@ -7241,6 +8654,94 @@ ALTER TABLE public.survei_jawaban ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
     CACHE 1
 );
 
+CREATE TABLE public.ta_arsip (
+    nim text NOT NULL,
+    nama text NOT NULL,
+    url text NOT NULL,
+    oleh text,
+    dibuat timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ta_arsip_nama_check CHECK (((length(btrim(nama)) >= 2) AND (length(btrim(nama)) <= 200))),
+    CONSTRAINT ta_arsip_nim_check CHECK (((length(btrim(nim)) >= 3) AND (length(btrim(nim)) <= 30))),
+    CONSTRAINT ta_arsip_url_check CHECK ((url ~ '^https://(drive|docs)\.google\.com/\S+$'::text))
+);
+
+CREATE TABLE public.ta_berkas (
+    tahap text NOT NULL,
+    kode text NOT NULL,
+    label text NOT NULL,
+    keterangan text DEFAULT ''::text NOT NULL,
+    wajib boolean DEFAULT true NOT NULL,
+    urut integer DEFAULT 100 NOT NULL,
+    aktif boolean DEFAULT true NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ta_berkas_keterangan_check CHECK ((length(keterangan) <= 500)),
+    CONSTRAINT ta_berkas_kode_check CHECK (((kode = 'naskah_ta'::text) OR (kode ~ '^ta_[a-z0-9_]{2,40}$'::text))),
+    CONSTRAINT ta_berkas_label_check CHECK (((length(btrim(label)) >= 2) AND (length(btrim(label)) <= 200))),
+    CONSTRAINT ta_berkas_naskah_cek CHECK (((kode <> 'naskah_ta'::text) OR (wajib AND aktif))),
+    CONSTRAINT ta_berkas_naskah_tahap_cek CHECK (((kode <> 'naskah_ta'::text) OR (tahap <> 'penetapan_pembimbing'::text))),
+    CONSTRAINT ta_berkas_tahap_check CHECK ((tahap = ANY (ARRAY['penetapan_pembimbing'::text, 'seminar_proposal'::text, 'seminar_kemajuan'::text, 'sidang_akhir'::text])))
+);
+
+CREATE TABLE public.ta_bimbingan (
+    id bigint NOT NULL,
+    nim text NOT NULL,
+    nama text NOT NULL,
+    tanggal date NOT NULL,
+    cara text NOT NULL,
+    pembimbing_id uuid,
+    topik text NOT NULL,
+    arahan text DEFAULT ''::text NOT NULL,
+    status text DEFAULT 'menunggu'::text NOT NULL,
+    catatan_pembimbing text,
+    konfirmasi_oleh text,
+    konfirmasi_pada timestamp with time zone,
+    diajukan timestamp with time zone DEFAULT now() NOT NULL,
+    dibuat timestamp with time zone DEFAULT now() NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    lampiran_nama text,
+    lampiran_url text,
+    lampiran_dihapus timestamp with time zone,
+    CONSTRAINT ta_bimbingan_arahan_check CHECK ((length(arahan) <= 2000)),
+    CONSTRAINT ta_bimbingan_cara_check CHECK ((cara = ANY (ARRAY['tatap_muka'::text, 'daring'::text]))),
+    CONSTRAINT ta_bimbingan_catatan_pembimbing_check CHECK (((catatan_pembimbing IS NULL) OR (length(catatan_pembimbing) <= 1000))),
+    CONSTRAINT ta_bimbingan_lampiran_cek CHECK (((lampiran_url IS NULL) OR (lampiran_url ~ '^https://(drive|docs)\.google\.com/\S+$'::text))),
+    CONSTRAINT ta_bimbingan_lampiran_nama_cek CHECK (((lampiran_nama IS NULL) OR (length(lampiran_nama) <= 200))),
+    CONSTRAINT ta_bimbingan_nama_check CHECK (((length(btrim(nama)) >= 2) AND (length(btrim(nama)) <= 200))),
+    CONSTRAINT ta_bimbingan_nim_check CHECK (((length(btrim(nim)) >= 3) AND (length(btrim(nim)) <= 30))),
+    CONSTRAINT ta_bimbingan_status_check CHECK ((status = ANY (ARRAY['menunggu'::text, 'dikonfirmasi'::text, 'dikembalikan'::text]))),
+    CONSTRAINT ta_bimbingan_topik_check CHECK (((length(btrim(topik)) >= 5) AND (length(btrim(topik)) <= 1000)))
+);
+
+ALTER TABLE public.ta_bimbingan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.ta_bimbingan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+CREATE TABLE public.ta_kecuali_urutan (
+    id bigint NOT NULL,
+    nim text NOT NULL,
+    tahap text NOT NULL,
+    alasan text NOT NULL,
+    oleh text,
+    dibuat timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ta_kecuali_urutan_alasan_check CHECK (((length(btrim(alasan)) >= 5) AND (length(btrim(alasan)) <= 500))),
+    CONSTRAINT ta_kecuali_urutan_nim_check CHECK (((length(btrim(nim)) >= 3) AND (length(btrim(nim)) <= 30))),
+    CONSTRAINT ta_kecuali_urutan_tahap_check CHECK ((tahap = ANY (ARRAY['seminar_kemajuan'::text, 'sidang_akhir'::text])))
+);
+
+ALTER TABLE public.ta_kecuali_urutan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.ta_kecuali_urutan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE public.ta_kk_dekat (
     kk_a text NOT NULL,
     kk_b text NOT NULL,
@@ -7255,7 +8756,9 @@ CREATE TABLE public.ta_kuota (
     dosen_id uuid,
     kuota integer NOT NULL,
     diubah timestamp with time zone DEFAULT now() NOT NULL,
+    semester text NOT NULL,
     CONSTRAINT ta_kuota_kuota_check CHECK (((kuota >= 0) AND (kuota <= 100))),
+    CONSTRAINT ta_kuota_semester_check CHECK ((semester = ANY (ARRAY['Ganjil'::text, 'Genap'::text]))),
     CONSTRAINT ta_kuota_ts_check CHECK (((ts >= 2000) AND (ts <= 2100)))
 );
 
@@ -7266,6 +8769,57 @@ ALTER TABLE public.ta_kuota ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+CREATE TABLE public.ta_nilai (
+    id bigint NOT NULL,
+    jadwal_id bigint NOT NULL,
+    rubrik_id bigint NOT NULL,
+    peran text NOT NULL,
+    penilai_nidn text,
+    penilai_nama text NOT NULL,
+    nilai jsonb NOT NULL,
+    total numeric(5,2) NOT NULL,
+    catatan text,
+    diisi_oleh text,
+    diwakilkan boolean DEFAULT false NOT NULL,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    bagian text DEFAULT 'seminar'::text NOT NULL,
+    CONSTRAINT ta_nilai_bagian_cek CHECK ((bagian = ANY (ARRAY['seminar'::text, 'bimbingan'::text]))),
+    CONSTRAINT ta_nilai_bimbingan_cek CHECK (((bagian = 'seminar'::text) OR (peran = 'pembimbing'::text))),
+    CONSTRAINT ta_nilai_catatan_check CHECK (((catatan IS NULL) OR (length(catatan) <= 2000))),
+    CONSTRAINT ta_nilai_nilai_check CHECK ((jsonb_typeof(nilai) = 'object'::text)),
+    CONSTRAINT ta_nilai_penilai_nama_check CHECK (((length(btrim(penilai_nama)) >= 2) AND (length(btrim(penilai_nama)) <= 200))),
+    CONSTRAINT ta_nilai_penilai_nidn_check CHECK (((penilai_nidn IS NULL) OR (length(penilai_nidn) <= 30))),
+    CONSTRAINT ta_nilai_peran_check CHECK ((peran = ANY (ARRAY['pembimbing'::text, 'penguji'::text]))),
+    CONSTRAINT ta_nilai_total_check CHECK (((total >= (0)::numeric) AND (total <= (100)::numeric)))
+);
+
+ALTER TABLE public.ta_nilai ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.ta_nilai_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+ALTER TABLE public.ta_rubrik ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.ta_rubrik_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+CREATE TABLE public.ta_syarat_bimbingan (
+    tahap text NOT NULL,
+    minimal integer DEFAULT 4 NOT NULL,
+    oleh text,
+    diperbarui timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT ta_syarat_bimbingan_minimal_check CHECK (((minimal >= 0) AND (minimal <= 50))),
+    CONSTRAINT ta_syarat_bimbingan_tahap_check CHECK ((tahap = ANY (ARRAY['seminar_proposal'::text, 'seminar_kemajuan'::text, 'sidang_akhir'::text])))
 );
 
 CREATE TABLE public.tanya_jawab (
@@ -7548,26 +9102,44 @@ INSERT INTO public.ref_skema_dana (kode, nama, kelompok, kategori, sumber_dana_l
 INSERT INTO public.ref_skema_dana (kode, nama, kelompok, kategori, sumber_dana_lkps, penyelenggara, aktif, urutan, catatan) VALUES ('industri_lainnya', 'Kerja sama industri/swasta lainnya — sebutkan namanya', 'industri', 'keduanya', 'dalam_negeri', NULL, true, 78, 'Penampung. Nama perusahaan wajib ditulis di kolom keterangan.');
 INSERT INTO public.ref_skema_dana (kode, nama, kelompok, kategori, sumber_dana_lkps, penyelenggara, aktif, urutan, catatan) VALUES ('ln_lainnya', 'Pendanaan luar negeri lainnya — sebutkan namanya', 'internasional', 'keduanya', 'luar_negeri', NULL, true, 89, 'Penampung. Nama lembaga penyandang dana wajib ditulis di kolom keterangan.');
 
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('seminar_proposal', 'naskah_ta', 'Naskah proposal TA', 'PDF naskah proposal yang akan diseminarkan.', true, 1, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('seminar_kemajuan', 'naskah_ta', 'Laporan kemajuan TA', 'PDF laporan kemajuan yang akan diseminarkan.', true, 1, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('sidang_akhir', 'naskah_ta', 'Laporan akhir TA', 'PDF laporan akhir yang akan disidangkan.', true, 1, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('sidang_akhir', 'ta_transkrip', 'Transkrip atau KHS', 'Transkrip atau KHS terakhir dari SIUP.', true, 3, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('sidang_akhir', 'ta_artikel', 'Draf artikel atau bukti publikasi', 'Draf artikel ilmiah dari TA, atau LoA/bukti terbit bila sudah dipublikasikan.', true, 4, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('penetapan_pembimbing', 'ta_terdaftar_siup', 'Bukti terdaftar TA di SIUP', 'KRS/KHS atau tangkapan layar SIUP yang menunjukkan mata kuliah Tugas Akhir sudah diambil semester ini.', true, 1, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('seminar_proposal', 'ta_bukti_bimbingan', 'Bukti bimbingan SIUP', 'Tangkapan layar atau cetakan riwayat bimbingan dari SIUP. (dinonaktifkan patch 176)', true, 2, false, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('seminar_kemajuan', 'ta_bukti_bimbingan', 'Bukti bimbingan SIUP', 'Tangkapan layar atau cetakan riwayat bimbingan dari SIUP. (dinonaktifkan patch 176)', true, 2, false, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_berkas (tahap, kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('sidang_akhir', 'ta_bukti_bimbingan', 'Bukti bimbingan SIUP', 'Tangkapan layar atau cetakan riwayat bimbingan dari SIUP. (dinonaktifkan patch 176)', true, 2, false, '2026-11-25 12:04:57.303+00');
+
 INSERT INTO public.ta_kk_dekat (kk_a, kk_b) VALUES ('GEO', 'STR');
 INSERT INTO public.ta_kk_dekat (kk_a, kk_b) VALUES ('MRK', 'STR');
 INSERT INTO public.ta_kk_dekat (kk_a, kk_b) VALUES ('AIR', 'GEO');
 INSERT INTO public.ta_kk_dekat (kk_a, kk_b) VALUES ('GEO', 'TRN');
 
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_form_pendaftaran', 'Form pendaftaran yudisium', '', true, 1, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_laporan_ta', 'Laporan Tugas Akhir', '', true, 2, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_transkrip', 'Transkrip', '', true, 3, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_pem', 'PEM', '', true, 4, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_toefl', 'TOEFL', '', true, 5, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_pustaka', 'SKET bebas pustaka', '', true, 6, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_repository', 'SKET repository', '', true, 7, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_alat_lab', 'Bebas pinjam alat laboratorium', '', true, 8, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_foto_warna', 'Foto warna', '', true, 9, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_foto_bw', 'Foto BW', '', true, 10, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_fasilitas', 'Bebas pinjam fasilitas universitas', '', true, 11, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_plagiasi', 'Bebas plagiasi', '', true, 12, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_form_fpi', 'Form FPI pengumpulan draft publikasi', '', true, 13, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_artikel', 'Artikel ilmiah', '', true, 14, true, '2026-11-23 09:06:30.91+00');
-INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bukti_tambahan', 'Bukti tambahan', '', false, 99, true, '2026-11-23 09:06:30.91+00');
+INSERT INTO public.ta_rubrik (id, tahap, versi, komponen, bobot_penguji, batas_lulus, tingkat, catatan, oleh, dibuat, bobot_bimbingan, komponen_bimbingan) OVERRIDING SYSTEM VALUE VALUES (1, 'sidang_akhir', 1, '[{"kode": "materi", "bobot": 20, "label": "Penguasaan materi dan dasar teori", "uraian": ["Menguasai teori dan konteks rekayasa; mampu mengaitkannya dengan standar dan praktik.", "Menguasai sebagian besar teori yang dipakai.", "Penguasaan teori terbatas.", "Tidak menguasai dasar teori."]}, {"kode": "metode", "bobot": 25, "label": "Metodologi dan analisis", "uraian": ["Metode dan analisis benar, terverifikasi, dan dapat diulang; asumsi dan batasan dijelaskan.", "Metode dan analisis benar dengan kekurangan kecil.", "Ada kesalahan analisis atau asumsi tidak dijelaskan.", "Analisis salah atau tidak sesuai metode."]}, {"kode": "hasil", "bobot": 25, "label": "Hasil, pembahasan, dan kesimpulan", "uraian": ["Hasil menjawab semua tujuan; pembahasan kritis dan dibandingkan dengan pustaka; kesimpulan dan saran didukung data.", "Hasil menjawab tujuan; pembahasan atau saran kurang mendalam.", "Sebagian tujuan belum terjawab atau kesimpulan kurang didukung hasil.", "Hasil tidak menjawab tujuan."]}, {"kode": "penulisan", "bobot": 15, "label": "Penulisan naskah", "uraian": ["Sistematis, bahasa baku dan runtut; gambar, tabel, sitasi, dan daftar pustaka sesuai pedoman.", "Sistematis; ada kesalahan kecil bahasa atau format.", "Banyak kesalahan bahasa, format, atau sitasi.", "Tidak mengikuti pedoman; sulit dipahami."]}, {"kode": "presentasi", "bobot": 15, "label": "Presentasi dan tanya jawab", "uraian": ["Penyajian jelas dan tepat waktu; menjawab pertanyaan dengan tepat dan menguasai materi.", "Penyajian jelas; sebagian jawaban kurang tepat.", "Penyajian kurang runtut; banyak pertanyaan tidak terjawab dengan baik.", "Tidak menguasai materi."]}]', 40.00, 55.00, '{85.00,70.00,55.00,0.00}', 'Draf awal (pemilik 2026-11-25).', 'pemasangan', '2026-11-25 12:04:57.303+00', 50.00, '[{"kode": "keaktifan", "bobot": 30, "label": "Keaktifan dan keteraturan bimbingan", "uraian": ["Bimbingan teratur sesuai jadwal; selalu membawa kemajuan dan pertanyaan yang siap dibahas.", "Bimbingan cukup teratur; sesekali tanpa kemajuan berarti.", "Bimbingan jarang atau tidak teratur.", "Hampir tidak pernah bimbingan."]}, {"kode": "kemandirian", "bobot": 25, "label": "Kemandirian dan inisiatif", "uraian": ["Mencari solusi sendiri, mengusulkan langkah, dan memakai sumber dengan tepat.", "Cukup mandiri; sesekali menunggu arahan.", "Banyak bergantung pada arahan pembimbing.", "Tidak menunjukkan inisiatif."]}, {"kode": "ketepatan", "bobot": 25, "label": "Ketepatan waktu dan kemajuan sesuai rencana", "uraian": ["Tahapan selesai sesuai atau lebih cepat dari rencana.", "Terlambat sedikit dengan alasan yang wajar.", "Sering terlambat dari rencana.", "Jauh tertinggal dari rencana."]}, {"kode": "sikap", "bobot": 20, "label": "Sikap, etika, dan tindak lanjut arahan", "uraian": ["Santun, jujur secara akademik, dan menindaklanjuti semua arahan.", "Baik; sebagian kecil arahan belum ditindaklanjuti.", "Banyak arahan tidak ditindaklanjuti.", "Ada pelanggaran etika atau arahan diabaikan."]}]');
+INSERT INTO public.ta_rubrik (id, tahap, versi, komponen, bobot_penguji, batas_lulus, tingkat, catatan, oleh, dibuat, bobot_bimbingan, komponen_bimbingan) OVERRIDING SYSTEM VALUE VALUES (2, 'seminar_kemajuan', 1, '[{"kode": "tindak_lanjut", "bobot": 20, "label": "Kesesuaian dengan proposal dan tindak lanjut revisi", "uraian": ["Pekerjaan sesuai rencana proposal; semua masukan seminar proposal ditindaklanjuti; perubahan dijelaskan.", "Sebagian besar sesuai rencana dan masukan ditindaklanjuti.", "Banyak bagian menyimpang dari rencana atau masukan belum ditindaklanjuti.", "Tidak sesuai rencana dan masukan diabaikan."]}, {"kode": "data", "bobot": 35, "label": "Data, pengolahan, dan analisis awal", "uraian": ["Data lengkap dan terverifikasi; pengolahan benar dan terdokumentasi; analisis awal menjawab sebagian tujuan.", "Data cukup; pengolahan benar dengan kekurangan kecil.", "Data belum lengkap atau pengolahan mengandung kesalahan.", "Data dan pengolahan belum ada atau salah."]}, {"kode": "pembahasan", "bobot": 20, "label": "Pembahasan sementara", "uraian": ["Hasil sementara ditafsirkan dengan benar dan dibandingkan dengan pustaka; langkah lanjutan jelas.", "Tafsiran benar; perbandingan dengan pustaka atau langkah lanjutan kurang.", "Tafsiran dangkal atau kurang tepat.", "Belum ada pembahasan."]}, {"kode": "penulisan", "bobot": 10, "label": "Penulisan naskah", "uraian": ["Sistematis, bahasa baku dan runtut; gambar, tabel, sitasi, dan daftar pustaka sesuai pedoman.", "Sistematis; ada kesalahan kecil bahasa atau format.", "Banyak kesalahan bahasa, format, atau sitasi.", "Tidak mengikuti pedoman; sulit dipahami."]}, {"kode": "presentasi", "bobot": 15, "label": "Presentasi dan tanya jawab", "uraian": ["Penyajian jelas dan tepat waktu; menjawab pertanyaan dengan tepat dan menguasai materi.", "Penyajian jelas; sebagian jawaban kurang tepat.", "Penyajian kurang runtut; banyak pertanyaan tidak terjawab dengan baik.", "Tidak menguasai materi."]}]', 40.00, 55.00, '{85.00,70.00,55.00,0.00}', 'Draf awal (pemilik 2026-11-25).', 'pemasangan', '2026-11-25 12:04:57.303+00', 0.00, '[]');
+INSERT INTO public.ta_rubrik (id, tahap, versi, komponen, bobot_penguji, batas_lulus, tingkat, catatan, oleh, dibuat, bobot_bimbingan, komponen_bimbingan) OVERRIDING SYSTEM VALUE VALUES (3, 'seminar_proposal', 1, '[{"kode": "masalah", "bobot": 20, "label": "Latar belakang dan rumusan masalah", "uraian": ["Masalah jelas, penting, dan didukung data; rumusan, tujuan, dan batasan tegas serta saling sesuai.", "Masalah dan tujuan jelas; dukungan data atau batasan masih kurang di beberapa bagian.", "Masalah cukup dipahami, tetapi rumusan, tujuan, atau batasan kurang tegas atau kurang sesuai.", "Masalah tidak jelas atau rumusan tidak sesuai dengan tujuan."]}, {"kode": "pustaka", "bobot": 20, "label": "Tinjauan pustaka", "uraian": ["Pustaka mutakhir dan relevan (jurnal, standar); teori dan penelitian terdahulu dirangkum kritis menjadi dasar metode.", "Pustaka relevan dan cukup; rangkuman lebih banyak memaparkan daripada membandingkan.", "Pustaka terbatas atau kurang mutakhir; kaitannya dengan masalah lemah.", "Pustaka sangat kurang atau tidak relevan."]}, {"kode": "metode", "bobot": 30, "label": "Metodologi dan rencana kerja", "uraian": ["Metode tepat dan terperinci (data, alat, langkah analisis); rencana kerja dan jadwal realistis.", "Metode tepat; beberapa langkah atau kebutuhan data belum terperinci.", "Metode kurang sesuai atau banyak langkah belum jelas; jadwal kurang realistis.", "Metode tidak sesuai dengan tujuan atau tidak dapat dijalankan."]}, {"kode": "penulisan", "bobot": 15, "label": "Penulisan naskah", "uraian": ["Sistematis, bahasa baku dan runtut; gambar, tabel, sitasi, dan daftar pustaka sesuai pedoman.", "Sistematis; ada kesalahan kecil bahasa atau format.", "Banyak kesalahan bahasa, format, atau sitasi.", "Tidak mengikuti pedoman; sulit dipahami."]}, {"kode": "presentasi", "bobot": 15, "label": "Presentasi dan tanya jawab", "uraian": ["Penyajian jelas dan tepat waktu; menjawab pertanyaan dengan tepat dan menguasai materi.", "Penyajian jelas; sebagian jawaban kurang tepat.", "Penyajian kurang runtut; banyak pertanyaan tidak terjawab dengan baik.", "Tidak menguasai materi."]}]', 40.00, 55.00, '{85.00,70.00,55.00,0.00}', 'Draf awal (pemilik 2026-11-25).', 'pemasangan', '2026-11-25 12:04:57.303+00', 0.00, '[]');
+
+INSERT INTO public.ta_syarat_bimbingan (tahap, minimal, oleh, diperbarui) VALUES ('seminar_proposal', 4, NULL, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_syarat_bimbingan (tahap, minimal, oleh, diperbarui) VALUES ('seminar_kemajuan', 4, NULL, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.ta_syarat_bimbingan (tahap, minimal, oleh, diperbarui) VALUES ('sidang_akhir', 4, NULL, '2026-11-25 12:04:57.303+00');
+
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_form_pendaftaran', 'Form pendaftaran yudisium', '', true, 1, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_laporan_ta', 'Laporan Tugas Akhir', '', true, 2, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_transkrip', 'Transkrip', '', true, 3, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_pem', 'PEM', '', true, 4, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_toefl', 'TOEFL', '', true, 5, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_pustaka', 'SKET bebas pustaka', '', true, 6, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_repository', 'SKET repository', '', true, 7, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_alat_lab', 'Bebas pinjam alat laboratorium', '', true, 8, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_foto_warna', 'Foto warna', '', true, 9, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_foto_bw', 'Foto BW', '', true, 10, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_fasilitas', 'Bebas pinjam fasilitas universitas', '', true, 11, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bebas_plagiasi', 'Bebas plagiasi', '', true, 12, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_form_fpi', 'Form FPI pengumpulan draft publikasi', '', true, 13, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_artikel', 'Artikel ilmiah', '', true, 14, true, '2026-11-25 12:04:57.303+00');
+INSERT INTO public.yudisium_berkas (kode, label, keterangan, wajib, urut, aktif, diperbarui) VALUES ('yud_bukti_tambahan', 'Bukti tambahan', '', false, 99, true, '2026-11-25 12:04:57.303+00');
 
 SELECT pg_catalog.setval('public.ajuan_bkd_id_seq', 1, false);
 
@@ -7601,6 +9173,10 @@ SELECT pg_catalog.setval('public.evaluasi_tindak_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.hibah_panggilan_id_seq', 1, false);
 
+SELECT pg_catalog.setval('public.insentif_pengajuan_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.insentif_publikasi_id_seq', 1, false);
+
 SELECT pg_catalog.setval('public.jadwal_slot_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.jadwal_ta_id_seq', 1, false);
@@ -7627,6 +9203,8 @@ SELECT pg_catalog.setval('public.laboratorium_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.led_tim_id_seq', 1, false);
 
+SELECT pg_catalog.setval('public.lkps_bimbingan_utama_id_seq', 1, false);
+
 SELECT pg_catalog.setval('public.lkps_bkd_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_bukti_id_seq', 1, false);
@@ -7639,9 +9217,13 @@ SELECT pg_catalog.setval('public.lkps_kepuasan_pengguna_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_kerjasama_id_seq', 1, false);
 
+SELECT pg_catalog.setval('public.lkps_keuangan_id_seq', 1, false);
+
 SELECT pg_catalog.setval('public.lkps_kohort_lulusan_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_luaran_mahasiswa_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.lkps_mahasiswa_angkatan_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_mahasiswa_ta_id_seq', 1, false);
 
@@ -7656,6 +9238,8 @@ SELECT pg_catalog.setval('public.lkps_prestasi_mahasiswa_id_seq', 1, false);
 SELECT pg_catalog.setval('public.lkps_prodi_upps_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_publikasi_mahasiswa_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.lkps_sarana_standar_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.lkps_spmi_ppepp_id_seq', 1, false);
 
@@ -7737,7 +9321,15 @@ SELECT pg_catalog.setval('public.survei_id_seq', 1, false);
 
 SELECT pg_catalog.setval('public.survei_jawaban_id_seq', 1, false);
 
+SELECT pg_catalog.setval('public.ta_bimbingan_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.ta_kecuali_urutan_id_seq', 1, false);
+
 SELECT pg_catalog.setval('public.ta_kuota_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.ta_nilai_id_seq', 1, false);
+
+SELECT pg_catalog.setval('public.ta_rubrik_id_seq', 3, true);
 
 SELECT pg_catalog.setval('public.tanya_jawab_id_seq', 1, false);
 
@@ -7838,6 +9430,15 @@ ALTER TABLE ONLY public.hibah_panggilan
 ALTER TABLE ONLY public.hibah_tim
     ADD CONSTRAINT hibah_tim_pkey PRIMARY KEY (ajuan_id, dosen_id);
 
+ALTER TABLE ONLY public.insentif_pengajuan
+    ADD CONSTRAINT insentif_pengajuan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_karya_id_key UNIQUE (karya_id);
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY public.jadwal_hari
     ADD CONSTRAINT jadwal_hari_pkey PRIMARY KEY (hari);
 
@@ -7882,6 +9483,9 @@ ALTER TABLE ONLY public.karya
 
 ALTER TABLE ONLY public.karya_sitasi
     ADD CONSTRAINT karya_sitasi_pkey PRIMARY KEY (karya_id, tahun);
+
+ALTER TABLE ONLY public.kegiatan_dosen
+    ADD CONSTRAINT kegiatan_dosen_pkey PRIMARY KEY (kegiatan_id, dosen_id);
 
 ALTER TABLE ONLY public.kegiatan
     ADD CONSTRAINT kegiatan_pkey PRIMARY KEY (id);
@@ -7931,6 +9535,12 @@ ALTER TABLE ONLY public.led_tim
 ALTER TABLE ONLY public.led_tim
     ADD CONSTRAINT led_tim_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY public.lkps_bimbingan_utama
+    ADD CONSTRAINT lkps_bimbingan_utama_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.lkps_bimbingan_utama
+    ADD CONSTRAINT lkps_bimbingan_utama_unik UNIQUE (nidn, tahun_akademik);
+
 ALTER TABLE ONLY public.lkps_bkd
     ADD CONSTRAINT lkps_bkd_nidn_tahun_akademik_semester_key UNIQUE (nidn, tahun_akademik, semester);
 
@@ -7955,6 +9565,12 @@ ALTER TABLE ONLY public.lkps_kepuasan_pengguna
 ALTER TABLE ONLY public.lkps_kerjasama
     ADD CONSTRAINT lkps_kerjasama_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY public.lkps_keuangan
+    ADD CONSTRAINT lkps_keuangan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.lkps_keuangan
+    ADD CONSTRAINT lkps_keuangan_unik UNIQUE (tahun_akademik, pos);
+
 ALTER TABLE ONLY public.lkps_kohort_lulusan
     ADD CONSTRAINT lkps_kohort_lulusan_pkey PRIMARY KEY (id);
 
@@ -7963,6 +9579,12 @@ ALTER TABLE ONLY public.lkps_kohort_lulusan
 
 ALTER TABLE ONLY public.lkps_luaran_mahasiswa
     ADD CONSTRAINT lkps_luaran_mahasiswa_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.lkps_mahasiswa_angkatan
+    ADD CONSTRAINT lkps_mahasiswa_angkatan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.lkps_mahasiswa_angkatan
+    ADD CONSTRAINT lkps_mahasiswa_angkatan_tahun_akademik_key UNIQUE (tahun_akademik);
 
 ALTER TABLE ONLY public.lkps_mahasiswa_ta
     ADD CONSTRAINT lkps_mahasiswa_ta_pkey PRIMARY KEY (id);
@@ -7990,6 +9612,9 @@ ALTER TABLE ONLY public.lkps_prodi_upps
 
 ALTER TABLE ONLY public.lkps_publikasi_mahasiswa
     ADD CONSTRAINT lkps_publikasi_mahasiswa_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.lkps_sarana_standar
+    ADD CONSTRAINT lkps_sarana_standar_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY public.lkps_spmi_ppepp
     ADD CONSTRAINT lkps_spmi_ppepp_pkey PRIMARY KEY (id);
@@ -8204,11 +9829,35 @@ ALTER TABLE ONLY public.survei
 ALTER TABLE ONLY public.survei
     ADD CONSTRAINT survei_token_key UNIQUE (token);
 
+ALTER TABLE ONLY public.ta_arsip
+    ADD CONSTRAINT ta_arsip_pkey PRIMARY KEY (nim);
+
+ALTER TABLE ONLY public.ta_berkas
+    ADD CONSTRAINT ta_berkas_pkey PRIMARY KEY (tahap, kode);
+
+ALTER TABLE ONLY public.ta_bimbingan
+    ADD CONSTRAINT ta_bimbingan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.ta_kecuali_urutan
+    ADD CONSTRAINT ta_kecuali_urutan_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY public.ta_kk_dekat
     ADD CONSTRAINT ta_kk_dekat_pkey PRIMARY KEY (kk_a, kk_b);
 
 ALTER TABLE ONLY public.ta_kuota
     ADD CONSTRAINT ta_kuota_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.ta_nilai
+    ADD CONSTRAINT ta_nilai_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.ta_rubrik
+    ADD CONSTRAINT ta_rubrik_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.ta_rubrik
+    ADD CONSTRAINT ta_rubrik_tahap_versi_key UNIQUE (tahap, versi);
+
+ALTER TABLE ONLY public.ta_syarat_bimbingan
+    ADD CONSTRAINT ta_syarat_bimbingan_pkey PRIMARY KEY (tahap);
 
 ALTER TABLE ONLY public.tanya_jawab
     ADD CONSTRAINT tanya_jawab_pkey PRIMARY KEY (id);
@@ -8272,6 +9921,10 @@ CREATE INDEX hibah_tim_dosen ON public.hibah_tim USING btree (dosen_id);
 
 CREATE UNIQUE INDEX hibah_tim_satu_ketua ON public.hibah_tim USING btree (ajuan_id) WHERE (peran = 'ketua'::text);
 
+CREATE INDEX insentif_publikasi_pengajuan ON public.insentif_publikasi USING btree (pengajuan_id);
+
+CREATE INDEX insentif_publikasi_pengklaim ON public.insentif_publikasi USING btree (pengklaim_id);
+
 CREATE UNIQUE INDEX jadwal_ta_pengajuan ON public.jadwal_ta USING btree (pengajuan_id);
 
 CREATE INDEX jadwal_ta_tanggal ON public.jadwal_ta USING btree (tanggal);
@@ -8307,6 +9960,8 @@ CREATE INDEX karya_skema ON public.karya USING btree (skema_kode);
 CREATE INDEX karya_sub_jenis ON public.karya USING btree (kategori, sub_jenis) WHERE (sub_jenis IS NOT NULL);
 
 CREATE INDEX karya_tahun ON public.karya USING btree (tahun);
+
+CREATE INDEX kegiatan_dosen_dosen ON public.kegiatan_dosen USING btree (dosen_id);
 
 CREATE INDEX kegiatan_mulai ON public.kegiatan USING btree (mulai);
 
@@ -8406,7 +10061,13 @@ CREATE INDEX ref_topik_keahlian_bidang ON public.ref_topik_keahlian USING btree 
 
 CREATE INDEX spmi_standar_revisi_standar ON public.spmi_standar_revisi USING btree (standar_id);
 
-CREATE UNIQUE INDEX ta_kuota_unik ON public.ta_kuota USING btree (ts, COALESCE(dosen_id, '00000000-0000-0000-0000-000000000000'::uuid));
+CREATE INDEX ta_bimbingan_nim ON public.ta_bimbingan USING btree (upper(btrim(nim)), tanggal);
+
+CREATE UNIQUE INDEX ta_kecuali_urutan_nim_tahap ON public.ta_kecuali_urutan USING btree (upper(btrim(nim)), tahap);
+
+CREATE UNIQUE INDEX ta_kuota_unik_smt ON public.ta_kuota USING btree (ts, semester, COALESCE(dosen_id, '00000000-0000-0000-0000-000000000000'::uuid));
+
+CREATE UNIQUE INDEX ta_nilai_penilai ON public.ta_nilai USING btree (jadwal_id, bagian, COALESCE(penilai_nidn, ('luar:'::text || lower(btrim(penilai_nama)))));
 
 CREATE INDEX target_dosen_dosen ON public.target_dosen USING btree (dosen_id);
 
@@ -8516,6 +10177,20 @@ CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.spmi_stand
 
 CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.spmi_standar_revisi FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
 
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_arsip FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_berkas FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_bimbingan FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_kecuali_urutan FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_nilai FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_rubrik FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
+CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.ta_syarat_bimbingan FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
+
 CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.target_baku FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
 
 CREATE TRIGGER catat_jejak AFTER INSERT OR DELETE OR UPDATE ON public.target_dosen FOR EACH ROW EXECUTE FUNCTION public.catat_jejak();
@@ -8574,6 +10249,10 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.hibah_tim FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.insentif_pengajuan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.insentif_publikasi FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.jadwal_hari FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.jadwal_kuliah FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
@@ -8602,6 +10281,8 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.kegiatan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.kegiatan_dosen FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.kelas_dosen FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.kelas_kuliah FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
@@ -8626,6 +10307,8 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.led_tim FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_bimbingan_utama FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_bkd FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_bukti FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
@@ -8638,9 +10321,13 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_kerjasama FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_keuangan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_kohort_lulusan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_luaran_mahasiswa FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_mahasiswa_angkatan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_mahasiswa_ta FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
@@ -8655,6 +10342,8 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_prodi_upps FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_publikasi_mahasiswa FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_sarana_standar FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lkps_spmi_ppepp FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
@@ -8762,9 +10451,23 @@ CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON 
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.survei_jawaban FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_arsip FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_berkas FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_bimbingan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_kecuali_urutan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_kk_dekat FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_kuota FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_nilai FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_rubrik FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
+
+CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ta_syarat_bimbingan FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
 CREATE TRIGGER jaga_hanya_baca BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.tanya_jawab FOR EACH STATEMENT EXECUTE FUNCTION public.jaga_hanya_baca();
 
@@ -8811,6 +10514,14 @@ CREATE TRIGGER periksa_keamanan AFTER INSERT ON public.jejak FOR EACH ROW EXECUT
 CREATE TRIGGER ref_mk_padanan_berubah AFTER INSERT OR DELETE OR UPDATE ON public.ref_mk_padanan FOR EACH ROW EXECUTE FUNCTION public.padanan_berubah();
 
 CREATE TRIGGER rps_b_berubah AFTER INSERT OR UPDATE ON public.mk_struktur FOR EACH ROW EXECUTE FUNCTION public.rps_b_berubah();
+
+CREATE TRIGGER ta_jaga_ba BEFORE INSERT OR DELETE OR UPDATE ON public.jadwal_ta FOR EACH ROW EXECUTE FUNCTION public.ta_jaga_ba();
+
+CREATE TRIGGER ta_jaga_urutan BEFORE UPDATE OF status ON public.pengajuan_mahasiswa FOR EACH ROW EXECUTE FUNCTION public.ta_jaga_urutan();
+
+CREATE TRIGGER ta_periksa_berkas BEFORE UPDATE OF status ON public.pengajuan_mahasiswa FOR EACH ROW EXECUTE FUNCTION public.ta_periksa_berkas();
+
+CREATE TRIGGER ta_periksa_bimbingan BEFORE UPDATE OF status ON public.pengajuan_mahasiswa FOR EACH ROW EXECUTE FUNCTION public.ta_periksa_bimbingan();
 
 CREATE TRIGGER trg_turunkan BEFORE INSERT OR UPDATE ON public.karya FOR EACH ROW EXECUTE FUNCTION public.turunkan_kategori_lkps();
 
@@ -8904,11 +10615,29 @@ ALTER TABLE ONLY public.hibah_tim
 ALTER TABLE ONLY public.hibah_tim
     ADD CONSTRAINT hibah_tim_dosen_id_fkey FOREIGN KEY (dosen_id) REFERENCES public.dosen(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY public.insentif_pengajuan
+    ADD CONSTRAINT insentif_pengajuan_dibuat_oleh_fkey FOREIGN KEY (dibuat_oleh) REFERENCES public.dosen(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_karya_id_fkey FOREIGN KEY (karya_id) REFERENCES public.karya(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_oleh_fkey FOREIGN KEY (oleh) REFERENCES public.dosen(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_pengajuan_id_fkey FOREIGN KEY (pengajuan_id) REFERENCES public.insentif_pengajuan(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.insentif_publikasi
+    ADD CONSTRAINT insentif_publikasi_pengklaim_id_fkey FOREIGN KEY (pengklaim_id) REFERENCES public.dosen(id) ON DELETE CASCADE;
+
 ALTER TABLE ONLY public.jadwal_kuliah
     ADD CONSTRAINT jadwal_kuliah_kelas_id_fkey FOREIGN KEY (kelas_id) REFERENCES public.kelas_kuliah(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY public.jadwal_ta
     ADD CONSTRAINT jadwal_ta_pengajuan_id_fkey FOREIGN KEY (pengajuan_id) REFERENCES public.pengajuan_mahasiswa(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.jadwal_ta
+    ADD CONSTRAINT jadwal_ta_rubrik_id_fkey FOREIGN KEY (rubrik_id) REFERENCES public.ta_rubrik(id);
 
 ALTER TABLE ONLY public.kabar_kegiatan
     ADD CONSTRAINT kabar_kegiatan_dilaporkan_oleh_fkey FOREIGN KEY (dilaporkan_oleh) REFERENCES public.dosen(id) ON DELETE SET NULL;
@@ -8954,6 +10683,12 @@ ALTER TABLE ONLY public.karya
 
 ALTER TABLE ONLY public.karya
     ADD CONSTRAINT karya_tema_id_fkey FOREIGN KEY (tema_id) REFERENCES public.ref_tema_peta_jalan(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.kegiatan_dosen
+    ADD CONSTRAINT kegiatan_dosen_dosen_id_fkey FOREIGN KEY (dosen_id) REFERENCES public.dosen(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.kegiatan_dosen
+    ADD CONSTRAINT kegiatan_dosen_kegiatan_id_fkey FOREIGN KEY (kegiatan_id) REFERENCES public.kegiatan(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY public.kelas_dosen
     ADD CONSTRAINT kelas_dosen_dosen_id_fkey FOREIGN KEY (dosen_id) REFERENCES public.dosen(id) ON DELETE CASCADE;
@@ -9005,6 +10740,9 @@ ALTER TABLE ONLY public.lkps_spmi_ppepp
 
 ALTER TABLE ONLY public.lkps_target_kinerja
     ADD CONSTRAINT lkps_target_kinerja_standar_id_fkey FOREIGN KEY (standar_id) REFERENCES public.spmi_standar(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.lkps_tendik
+    ADD CONSTRAINT lkps_tendik_laboratorium_id_fkey FOREIGN KEY (laboratorium_id) REFERENCES public.laboratorium(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY public.mk_padanan_sah_log
     ADD CONSTRAINT mk_padanan_sah_log_oleh_id_fkey FOREIGN KEY (oleh_id) REFERENCES public.dosen(id) ON DELETE SET NULL;
@@ -9120,6 +10858,9 @@ ALTER TABLE ONLY public.ref_cpl_korelasi
 ALTER TABLE ONLY public.ref_cpl_korelasi
     ADD CONSTRAINT ref_cpl_korelasi_kurikulum_tujuan_cpl_tujuan_fkey FOREIGN KEY (kurikulum_tujuan, cpl_tujuan) REFERENCES public.ref_cpl(kurikulum, kode) ON UPDATE CASCADE ON DELETE CASCADE;
 
+ALTER TABLE ONLY public.ref_mata_kuliah
+    ADD CONSTRAINT ref_mata_kuliah_koordinator_fk FOREIGN KEY (koordinator_nidn) REFERENCES public.dosen(nidn) ON UPDATE CASCADE ON DELETE SET NULL;
+
 ALTER TABLE ONLY public.ref_mk_cpl
     ADD CONSTRAINT ref_mk_cpl_kurikulum_cpl_fkey FOREIGN KEY (kurikulum, cpl) REFERENCES public.ref_cpl(kurikulum, kode) ON UPDATE CASCADE ON DELETE CASCADE;
 
@@ -9162,8 +10903,17 @@ ALTER TABLE ONLY public.spmi_standar_revisi
 ALTER TABLE ONLY public.survei_jawaban
     ADD CONSTRAINT survei_jawaban_survei_id_fkey FOREIGN KEY (survei_id) REFERENCES public.survei(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY public.ta_bimbingan
+    ADD CONSTRAINT ta_bimbingan_pembimbing_id_fkey FOREIGN KEY (pembimbing_id) REFERENCES public.dosen(id) ON DELETE SET NULL;
+
 ALTER TABLE ONLY public.ta_kuota
     ADD CONSTRAINT ta_kuota_dosen_id_fkey FOREIGN KEY (dosen_id) REFERENCES public.dosen(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.ta_nilai
+    ADD CONSTRAINT ta_nilai_jadwal_id_fkey FOREIGN KEY (jadwal_id) REFERENCES public.jadwal_ta(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.ta_nilai
+    ADD CONSTRAINT ta_nilai_rubrik_id_fkey FOREIGN KEY (rubrik_id) REFERENCES public.ta_rubrik(id);
 
 ALTER TABLE ONLY public.tanya_jawab
     ADD CONSTRAINT tanya_jawab_sumber_id_fkey FOREIGN KEY (sumber_id) REFERENCES public.masukan_mahasiswa(id) ON DELETE SET NULL;
@@ -9345,6 +11095,16 @@ CREATE POLICY hibah_tim_baca ON public.hibah_tim FOR SELECT TO authenticated USI
 
 CREATE POLICY hibah_tim_ubah ON public.hibah_tim TO authenticated USING ((public.is_admin() OR public.tim_hibah(ajuan_id))) WITH CHECK ((public.is_admin() OR public.tim_hibah(ajuan_id)));
 
+ALTER TABLE public.insentif_pengajuan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY insentif_pengajuan_baca ON public.insentif_pengajuan FOR SELECT TO authenticated USING ((public.pengelola_insentif() OR (EXISTS ( SELECT 1
+   FROM public.insentif_publikasi i
+  WHERE ((i.pengajuan_id = insentif_pengajuan.id) AND ((i.pengklaim_id = public.me()) OR public.penulis_karya(i.karya_id)))))));
+
+ALTER TABLE public.insentif_publikasi ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY insentif_publikasi_baca ON public.insentif_publikasi FOR SELECT TO authenticated USING (((pengklaim_id = public.me()) OR public.penulis_karya(karya_id) OR public.pengelola_insentif()));
+
 ALTER TABLE public.jadwal_hari ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY jadwal_hari_admin ON public.jadwal_hari TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -9446,6 +11206,12 @@ ALTER TABLE public.kegiatan ENABLE ROW LEVEL SECURITY;
 CREATE POLICY kegiatan_admin ON public.kegiatan TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 CREATE POLICY kegiatan_baca ON public.kegiatan FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
+
+ALTER TABLE public.kegiatan_dosen ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY kegiatan_dosen_admin ON public.kegiatan_dosen TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY kegiatan_dosen_baca ON public.kegiatan_dosen FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
 
 ALTER TABLE public.kelas_dosen ENABLE ROW LEVEL SECURITY;
 
@@ -9551,6 +11317,10 @@ CREATE POLICY led_tim_baca ON public.led_tim FOR SELECT TO authenticated USING (
 
 CREATE POLICY led_tim_gkm ON public.led_tim TO authenticated USING (public.boleh_mutu()) WITH CHECK (public.boleh_mutu());
 
+ALTER TABLE public.lkps_bimbingan_utama ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY lkps_bimbingan_utama_admin ON public.lkps_bimbingan_utama TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
 ALTER TABLE public.lkps_bkd ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY lkps_bkd_admin ON public.lkps_bkd TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -9597,6 +11367,10 @@ CREATE POLICY lkps_kerjasama_admin ON public.lkps_kerjasama TO authenticated USI
 
 CREATE POLICY lkps_kerjasama_baca ON public.lkps_kerjasama FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
 
+ALTER TABLE public.lkps_keuangan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY lkps_keuangan_admin ON public.lkps_keuangan TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+
 ALTER TABLE public.lkps_kohort_lulusan ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY lkps_kohort_lulusan_admin ON public.lkps_kohort_lulusan TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -9606,6 +11380,10 @@ ALTER TABLE public.lkps_luaran_mahasiswa ENABLE ROW LEVEL SECURITY;
 CREATE POLICY lkps_luaran_mahasiswa_admin ON public.lkps_luaran_mahasiswa TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 CREATE POLICY lkps_luaran_mahasiswa_koordinator ON public.lkps_luaran_mahasiswa TO authenticated USING (public.boleh_tabel('lkps_luaran_mahasiswa'::text)) WITH CHECK (public.boleh_tabel('lkps_luaran_mahasiswa'::text));
+
+ALTER TABLE public.lkps_mahasiswa_angkatan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY lkps_mahasiswa_angkatan_admin ON public.lkps_mahasiswa_angkatan TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 ALTER TABLE public.lkps_mahasiswa_ta ENABLE ROW LEVEL SECURITY;
 
@@ -9648,6 +11426,10 @@ ALTER TABLE public.lkps_publikasi_mahasiswa ENABLE ROW LEVEL SECURITY;
 CREATE POLICY lkps_publikasi_mahasiswa_admin ON public.lkps_publikasi_mahasiswa TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 CREATE POLICY lkps_publikasi_mahasiswa_koordinator ON public.lkps_publikasi_mahasiswa TO authenticated USING (public.boleh_tabel('lkps_publikasi_mahasiswa'::text)) WITH CHECK (public.boleh_tabel('lkps_publikasi_mahasiswa'::text));
+
+ALTER TABLE public.lkps_sarana_standar ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY lkps_sarana_standar_admin ON public.lkps_sarana_standar TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 ALTER TABLE public.lkps_spmi_ppepp ENABLE ROW LEVEL SECURITY;
 
@@ -9823,7 +11605,7 @@ CREATE POLICY rapat_hapus ON public.rapat FOR DELETE TO authenticated USING (pub
 
 ALTER TABLE public.rapat_peserta ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY rapat_peserta_baca ON public.rapat_peserta FOR SELECT TO authenticated USING (public.rapat_baca(rapat_id));
+CREATE POLICY rapat_peserta_baca ON public.rapat_peserta FOR SELECT TO authenticated USING (((dosen_id = public.me()) OR public.rapat_isi_boleh(rapat_id)));
 
 CREATE POLICY rapat_peserta_ubah ON public.rapat_peserta TO authenticated USING (public.rapat_editor(rapat_id)) WITH CHECK (public.rapat_editor(rapat_id));
 
@@ -9831,7 +11613,7 @@ CREATE POLICY rapat_tambah ON public.rapat FOR INSERT TO authenticated WITH CHEC
 
 ALTER TABLE public.rapat_tindak ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY rapat_tindak_baca ON public.rapat_tindak FOR SELECT TO authenticated USING (public.rapat_baca(rapat_id));
+CREATE POLICY rapat_tindak_baca ON public.rapat_tindak FOR SELECT TO authenticated USING (((pj_dosen_id = public.me()) OR public.rapat_isi_boleh(rapat_id)));
 
 CREATE POLICY rapat_tindak_ubah ON public.rapat_tindak TO authenticated USING (public.rapat_editor(rapat_id)) WITH CHECK (public.rapat_editor(rapat_id));
 
@@ -9939,6 +11721,26 @@ CREATE POLICY survei_jawaban_admin ON public.survei_jawaban TO authenticated USI
 
 CREATE POLICY survei_jawaban_gkm ON public.survei_jawaban TO authenticated USING (public.boleh_mutu()) WITH CHECK (public.boleh_mutu());
 
+ALTER TABLE public.ta_arsip ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_arsip_baca ON public.ta_arsip FOR SELECT TO authenticated USING (public.ta_arsip_boleh(nim));
+
+ALTER TABLE public.ta_berkas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_berkas_baca ON public.ta_berkas FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
+
+CREATE POLICY ta_berkas_tambah ON public.ta_berkas FOR INSERT TO authenticated WITH CHECK (public.boleh_pengajuan('ta'::text));
+
+CREATE POLICY ta_berkas_ubah ON public.ta_berkas FOR UPDATE TO authenticated USING (public.boleh_pengajuan('ta'::text)) WITH CHECK (public.boleh_pengajuan('ta'::text));
+
+ALTER TABLE public.ta_bimbingan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_bimbingan_baca ON public.ta_bimbingan FOR SELECT TO authenticated USING (public.ta_bimbingan_boleh(nim));
+
+ALTER TABLE public.ta_kecuali_urutan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_kecuali_urutan_baca ON public.ta_kecuali_urutan FOR SELECT TO authenticated USING (public.boleh_pengajuan('ta'::text));
+
 ALTER TABLE public.ta_kk_dekat ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY ta_kk_dekat_baca ON public.ta_kk_dekat FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
@@ -9946,6 +11748,20 @@ CREATE POLICY ta_kk_dekat_baca ON public.ta_kk_dekat FOR SELECT TO authenticated
 ALTER TABLE public.ta_kuota ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY ta_kuota_baca ON public.ta_kuota FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
+
+ALTER TABLE public.ta_nilai ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_nilai_baca ON public.ta_nilai FOR SELECT TO authenticated USING ((public.boleh_tabel('jadwal_ta'::text) OR (public.ta_panel_saya(jadwal_id) IS NOT NULL)));
+
+ALTER TABLE public.ta_rubrik ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_rubrik_baca ON public.ta_rubrik FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
+
+ALTER TABLE public.ta_syarat_bimbingan ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ta_syarat_bimbingan_baca ON public.ta_syarat_bimbingan FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
+
+CREATE POLICY ta_syarat_bimbingan_ubah ON public.ta_syarat_bimbingan FOR UPDATE TO authenticated USING (public.boleh_pengajuan('ta'::text)) WITH CHECK (public.boleh_pengajuan('ta'::text));
 
 ALTER TABLE public.tanya_jawab ENABLE ROW LEVEL SECURITY;
 
@@ -9989,7 +11805,8 @@ CREATE POLICY yudisium_berkas_admin ON public.yudisium_berkas TO authenticated U
 
 CREATE POLICY yudisium_berkas_baca ON public.yudisium_berkas FOR SELECT TO authenticated USING ((public.me() IS NOT NULL));
 
--- Hak akses: yang dibatasi dari bawaan Supabase
+-- Hak akses: tabel dan sequence ditulis lengkap (tidak bergantung pada kotak
+-- "Grant API access to new tables automatically"), lalu yang dibatasi dari bawaan Supabase
 revoke all on function public._terapkan_karya(uuid,jsonb) from public, anon, authenticated;
 grant execute on function public._terapkan_karya(uuid,jsonb) to service_role;
 revoke all on function public.ajukan_karya(uuid) from public, anon;
@@ -10078,6 +11895,18 @@ revoke all on function public.hibah_rekap() from public, anon;
 grant execute on function public.hibah_rekap() to authenticated, service_role;
 revoke all on function public.id_dosen_login() from public, anon;
 grant execute on function public.id_dosen_login() to authenticated, service_role;
+revoke all on function public.insentif_ajukan(text,bigint[],text) from public, anon;
+grant execute on function public.insentif_ajukan(text,bigint[],text) to authenticated, service_role;
+revoke all on function public.insentif_batal(uuid) from public, anon;
+grant execute on function public.insentif_batal(uuid) to authenticated, service_role;
+revoke all on function public.insentif_berkas_kurang(uuid) from public, anon;
+grant execute on function public.insentif_berkas_kurang(uuid) to authenticated, service_role;
+revoke all on function public.insentif_hasil(bigint[],text,text) from public, anon;
+grant execute on function public.insentif_hasil(bigint[],text,text) to authenticated, service_role;
+revoke all on function public.insentif_klaim(uuid) from public, anon;
+grant execute on function public.insentif_klaim(uuid) to authenticated, service_role;
+revoke all on function public.insentif_periksa(bigint,text,text) from public, anon;
+grant execute on function public.insentif_periksa(bigint,text,text) to authenticated, service_role;
 revoke all on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated, service_role;
 revoke all on function public.isi_sha256(jsonb) from public, anon;
@@ -10146,8 +11975,20 @@ revoke all on function public.mengajar_kelas(text,text,text,text) from public, a
 grant execute on function public.mengajar_kelas(text,text,text,text) to authenticated, service_role;
 revoke all on function public.mengajar_mk(text,text) from public, anon;
 grant execute on function public.mengajar_mk(text,text) to authenticated, service_role;
+revoke all on function public.mhs_batal(text,text) from public;
+grant execute on function public.mhs_batal(text,text) to anon, authenticated, service_role;
 revoke all on function public.mhs_berkas(text,text,bigint,boolean) from public;
 grant execute on function public.mhs_berkas(text,text,bigint,boolean) to anon, authenticated, service_role;
+revoke all on function public.mhs_bimbingan(text) from public;
+grant execute on function public.mhs_bimbingan(text) to anon, authenticated, service_role;
+revoke all on function public.mhs_bimbingan_hapus(text,bigint) from public;
+grant execute on function public.mhs_bimbingan_hapus(text,bigint) to anon, authenticated, service_role;
+revoke all on function public.mhs_bimbingan_lampiran(text,text,bigint,text,text) from public;
+grant execute on function public.mhs_bimbingan_lampiran(text,text,bigint,text,text) to anon, authenticated, service_role;
+revoke all on function public.mhs_bimbingan_lampiran_url(text,text,bigint) from public;
+grant execute on function public.mhs_bimbingan_lampiran_url(text,text,bigint) to anon, authenticated, service_role;
+revoke all on function public.mhs_bimbingan_simpan(text,bigint,date,text,uuid,text,text) from public;
+grant execute on function public.mhs_bimbingan_simpan(text,bigint,date,text,uuid,text,text) to anon, authenticated, service_role;
 revoke all on function public.mhs_boleh(public.pengajuan_mahasiswa) from public, anon, authenticated;
 grant execute on function public.mhs_boleh(public.pengajuan_mahasiswa) to service_role;
 revoke all on function public.mhs_buat(text,text,text,text,text,uuid,jsonb) from public;
@@ -10190,6 +12031,8 @@ revoke all on function public.mhs_pemeriksa_antrean(text,integer,integer) from p
 grant execute on function public.mhs_pemeriksa_antrean(text,integer,integer) to anon, authenticated, service_role;
 revoke all on function public.mhs_pemeriksa_tandai(text,bigint,text,integer) from public;
 grant execute on function public.mhs_pemeriksa_tandai(text,bigint,text,integer) to anon, authenticated, service_role;
+revoke all on function public.mhs_pratinjau_admin(bigint) from public, anon;
+grant execute on function public.mhs_pratinjau_admin(bigint) to authenticated, service_role;
 revoke all on function public.mhs_rapikan(text,jsonb) from public, anon, authenticated;
 grant execute on function public.mhs_rapikan(text,jsonb) to service_role;
 revoke all on function public.mhs_rapikan_selesai(jsonb) from public, anon, authenticated;
@@ -10218,6 +12061,8 @@ revoke all on function public.mhs_waktu_tahap(public.pengajuan_mahasiswa) from p
 grant execute on function public.mhs_waktu_tahap(public.pengajuan_mahasiswa) to service_role;
 revoke all on function public.mk_atur_pengampu(text,text,text[]) from public, anon;
 grant execute on function public.mk_atur_pengampu(text,text,text[]) to authenticated, service_role;
+revoke all on function public.mk_atur_tim(text,text,text,text[]) from public, anon;
+grant execute on function public.mk_atur_tim(text,text,text,text[]) to authenticated, service_role;
 revoke all on function public.mk_boleh_saya() from public, anon;
 grant execute on function public.mk_boleh_saya() to authenticated, service_role;
 revoke all on function public.mk_simpan_rps(text,text,text,boolean) from public, anon, authenticated;
@@ -10252,6 +12097,8 @@ revoke all on function public.pembimbing_pilihan() from public;
 grant execute on function public.pembimbing_pilihan() to anon, authenticated, service_role;
 revoke all on function public.pembimbing_pilihan_ta() from public;
 grant execute on function public.pembimbing_pilihan_ta() to anon, authenticated, service_role;
+revoke all on function public.pengajuan_batalkan(bigint,text) from public, anon;
+grant execute on function public.pengajuan_batalkan(bigint,text) to authenticated, service_role;
 revoke all on function public.pengajuan_catat_berkas(bigint,text,text,text) from public, anon;
 grant execute on function public.pengajuan_catat_berkas(bigint,text,text,text) to authenticated, service_role;
 revoke all on function public.pengajuan_jadwalkan(bigint,date,text,text,text,text[],text) from public, anon;
@@ -10266,6 +12113,8 @@ revoke all on function public.pengatur_jadwal() from public, anon;
 grant execute on function public.pengatur_jadwal() to authenticated, service_role;
 revoke all on function public.pengatur_kelas() from public, anon;
 grant execute on function public.pengatur_kelas() to authenticated, service_role;
+revoke all on function public.pengelola_insentif() from public, anon;
+grant execute on function public.pengelola_insentif() to authenticated, service_role;
 revoke all on function public.pengumuman_mahasiswa_aktif() from public;
 grant execute on function public.pengumuman_mahasiswa_aktif() to anon, authenticated, service_role;
 revoke all on function public.penulis_karya(uuid) from public, anon;
@@ -10292,6 +12141,10 @@ revoke all on function public.rapat_editor(bigint) from public, anon;
 grant execute on function public.rapat_editor(bigint) to authenticated, service_role;
 revoke all on function public.rapat_hadir(text,uuid,text,text,uuid) from public;
 grant execute on function public.rapat_hadir(text,uuid,text,text,uuid) to anon, authenticated, service_role;
+revoke all on function public.rapat_isi(bigint) from public, anon;
+grant execute on function public.rapat_isi(bigint) to authenticated, service_role;
+revoke all on function public.rapat_isi_boleh(bigint) from public, anon;
+grant execute on function public.rapat_isi_boleh(bigint) to authenticated, service_role;
 revoke all on function public.rapikan_kata_kunci(jsonb) from public, anon;
 grant execute on function public.rapikan_kata_kunci(jsonb) to authenticated, service_role;
 revoke all on function public.rapikan_tautan_lain(jsonb) from public, anon;
@@ -10342,6 +12195,10 @@ revoke all on function public.saya_dtps() from public, anon;
 grant execute on function public.saya_dtps() to authenticated, service_role;
 revoke all on function public.sebutan_pada(uuid,text,timestamp with time zone) from public, anon;
 grant execute on function public.sebutan_pada(uuid,text,timestamp with time zone) to authenticated, service_role;
+revoke all on function public.semester_akhir(integer,text) from public;
+grant execute on function public.semester_akhir(integer,text) to anon, authenticated, service_role;
+revoke all on function public.semester_awal(integer,text) from public;
+grant execute on function public.semester_awal(integer,text) to anon, authenticated, service_role;
 revoke all on function public.setujui_ajuan_bkd(bigint) from public, anon;
 grant execute on function public.setujui_ajuan_bkd(bigint) to authenticated, service_role;
 revoke all on function public.setujui_ajuan_prestasi(bigint) from public, anon;
@@ -10376,14 +12233,84 @@ revoke all on function public.survei_tarik_terbit(bigint) from public, anon;
 grant execute on function public.survei_tarik_terbit(bigint) to authenticated, service_role;
 revoke all on function public.survei_terbitkan(bigint) from public, anon;
 grant execute on function public.survei_terbitkan(bigint) to authenticated, service_role;
-revoke all on function public.ta_atur_kuota(integer,uuid,integer) from public, anon;
-grant execute on function public.ta_atur_kuota(integer,uuid,integer) to authenticated, service_role;
-revoke all on function public.ta_beban(integer) from public, anon;
-grant execute on function public.ta_beban(integer) to authenticated, service_role;
+revoke all on function public.ta_arsip_boleh(text) from public, anon;
+grant execute on function public.ta_arsip_boleh(text) to authenticated, service_role;
+revoke all on function public.ta_arsip_catat(text,text) from public, anon;
+grant execute on function public.ta_arsip_catat(text,text) to authenticated, service_role;
+revoke all on function public.ta_arsip_siap() from public, anon;
+grant execute on function public.ta_arsip_siap() to authenticated, service_role;
+revoke all on function public.ta_arsip_url(text) from public, anon;
+grant execute on function public.ta_arsip_url(text) to authenticated, service_role;
+revoke all on function public.ta_atur_kuota(integer,text,uuid,integer) from public, anon;
+grant execute on function public.ta_atur_kuota(integer,text,uuid,integer) to authenticated, service_role;
+revoke all on function public.ta_ba_buka(bigint,text) from public, anon;
+grant execute on function public.ta_ba_buka(bigint,text) to authenticated, service_role;
+revoke all on function public.ta_ba_tetapkan(bigint,text,date,text) from public, anon;
+grant execute on function public.ta_ba_tetapkan(bigint,text,date,text) to authenticated, service_role;
+revoke all on function public.ta_beban(integer,text) from public, anon;
+grant execute on function public.ta_beban(integer,text) to authenticated, service_role;
+revoke all on function public.ta_berkas_daftar() from public;
+grant execute on function public.ta_berkas_daftar() to anon, authenticated, service_role;
+revoke all on function public.ta_bimbingan_boleh(text) from public, anon;
+grant execute on function public.ta_bimbingan_boleh(text) to authenticated, service_role;
+revoke all on function public.ta_bimbingan_konfirmasi(bigint[],boolean,text) from public, anon;
+grant execute on function public.ta_bimbingan_konfirmasi(bigint[],boolean,text) to authenticated, service_role;
+revoke all on function public.ta_bimbingan_menunggu() from public, anon;
+grant execute on function public.ta_bimbingan_menunggu() to authenticated, service_role;
+revoke all on function public.ta_bimbingan_rekap() from public, anon;
+grant execute on function public.ta_bimbingan_rekap() to authenticated, service_role;
+revoke all on function public.ta_bimbingan_sah(text,timestamp with time zone) from public, anon;
+grant execute on function public.ta_bimbingan_sah(text,timestamp with time zone) to authenticated, service_role;
+revoke all on function public.ta_ganti_pembimbing(bigint,uuid,uuid,text,text) from public, anon;
+grant execute on function public.ta_ganti_pembimbing(bigint,uuid,uuid,text,text) to authenticated, service_role;
+revoke all on function public.ta_jaga_ba() from public, anon, authenticated;
+grant execute on function public.ta_jaga_ba() to service_role;
+revoke all on function public.ta_jaga_urutan() from public, anon, authenticated;
+grant execute on function public.ta_jaga_urutan() to service_role;
+revoke all on function public.ta_kecualikan_urutan(text,text,text) from public, anon;
+grant execute on function public.ta_kecualikan_urutan(text,text,text) to authenticated, service_role;
 revoke all on function public.ta_kk_cocok(text,text) from public, anon;
 grant execute on function public.ta_kk_cocok(text,text) to authenticated, service_role;
+revoke all on function public.ta_lampiran_dihapus(text,bigint) from public;
+grant execute on function public.ta_lampiran_dihapus(text,bigint) to anon, authenticated, service_role;
+revoke all on function public.ta_lampiran_kedaluwarsa(text) from public;
+grant execute on function public.ta_lampiran_kedaluwarsa(text) to anon, authenticated, service_role;
+revoke all on function public.ta_lulus_pada(text) from public, anon;
+grant execute on function public.ta_lulus_pada(text) to authenticated, service_role;
+revoke all on function public.ta_lulus_ta(text) from public, anon;
+grant execute on function public.ta_lulus_ta(text) to authenticated, service_role;
+revoke all on function public.ta_nilai_hapus(bigint) from public, anon;
+grant execute on function public.ta_nilai_hapus(bigint) to authenticated, service_role;
+revoke all on function public.ta_nilai_hitung(bigint) from public, anon, authenticated;
+grant execute on function public.ta_nilai_hitung(bigint) to service_role;
+revoke all on function public.ta_nilai_rekap(bigint) from public, anon;
+grant execute on function public.ta_nilai_rekap(bigint) to authenticated, service_role;
+revoke all on function public.ta_nilai_simpan(bigint,jsonb,text,text,text,text) from public, anon;
+grant execute on function public.ta_nilai_simpan(bigint,jsonb,text,text,text,text) to authenticated, service_role;
+revoke all on function public.ta_nilai_tugas() from public, anon;
+grant execute on function public.ta_nilai_tugas() to authenticated, service_role;
+revoke all on function public.ta_panel_saya(bigint) from public, anon;
+grant execute on function public.ta_panel_saya(bigint) to authenticated, service_role;
+revoke all on function public.ta_pembimbing_nim(text) from public, anon;
+grant execute on function public.ta_pembimbing_nim(text) to authenticated, service_role;
+revoke all on function public.ta_periksa_berkas() from public, anon, authenticated;
+grant execute on function public.ta_periksa_berkas() to service_role;
+revoke all on function public.ta_periksa_bimbingan() from public, anon, authenticated;
+grant execute on function public.ta_periksa_bimbingan() to service_role;
 revoke all on function public.ta_revisi_selesai(bigint,boolean) from public, anon;
 grant execute on function public.ta_revisi_selesai(bigint,boolean) to authenticated, service_role;
+revoke all on function public.ta_rubrik_bersih(jsonb,text) from public, anon, authenticated;
+grant execute on function public.ta_rubrik_bersih(jsonb,text) to service_role;
+revoke all on function public.ta_rubrik_jadwal(public.jadwal_ta) from public, anon, authenticated;
+grant execute on function public.ta_rubrik_jadwal(public.jadwal_ta) to service_role;
+revoke all on function public.ta_rubrik_simpan(text,jsonb,numeric,numeric,numeric[],text,numeric,jsonb) from public, anon;
+grant execute on function public.ta_rubrik_simpan(text,jsonb,numeric,numeric,numeric[],text,numeric,jsonb) to authenticated, service_role;
+revoke all on function public.ta_siup_tandai(bigint[],boolean) from public, anon;
+grant execute on function public.ta_siup_tandai(bigint[],boolean) to authenticated, service_role;
+revoke all on function public.ta_syarat_bimbingan_hitung(text,text) from public, anon, authenticated;
+grant execute on function public.ta_syarat_bimbingan_hitung(text,text) to service_role;
+revoke all on function public.ta_syarat_urutan(text,text) from public, anon, authenticated;
+grant execute on function public.ta_syarat_urutan(text,text) to service_role;
 revoke all on function public.ta_tetapkan_pembimbing(bigint,uuid,uuid,text) from public, anon;
 grant execute on function public.ta_tetapkan_pembimbing(bigint,uuid,uuid,text) to authenticated, service_role;
 revoke all on function public.tanya_jawab_publik() from public;
@@ -10406,6 +12333,681 @@ revoke all on function public.unsur_bukti() from public, anon;
 grant execute on function public.unsur_bukti() to authenticated, service_role;
 revoke all on function public.yudisium_berkas_daftar() from public;
 grant execute on function public.yudisium_berkas_daftar() to anon, authenticated, service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_bkd to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_bkd to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_bkd to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_hapus to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_hapus to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_hapus to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_prestasi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_prestasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_prestasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_ubah to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_ubah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ajuan_ubah to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ami_temuan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ami_temuan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ami_temuan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.berhalangan_konfirmasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.berhalangan_konfirmasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.butir_bukti to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.butir_bukti to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.butir_bukti to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_berkas to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_berkas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_berkas to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_kelas to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_kelas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_kelas to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_ringkasan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_ringkasan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.cpl_ringkasan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dokumen to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.dokumen to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dokumen to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_ampu_ts to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_ampu_ts to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan_rentang to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan_rentang to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan_tgl to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.dosen_berhalangan_tgl to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_mk to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_mk to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_mk to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_tindak to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_tindak to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.evaluasi_tindak to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.hari_libur to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.hari_libur to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_ajuan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_ajuan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_ajuan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_panggilan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_panggilan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_panggilan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_tim to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_tim to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.hibah_tim to service_role;
+grant select, truncate, references, trigger on public.insentif_pengajuan to anon;
+grant select, truncate, references, trigger on public.insentif_pengajuan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.insentif_pengajuan to service_role;
+grant select, truncate, references, trigger on public.insentif_publikasi to anon;
+grant select, truncate, references, trigger on public.insentif_publikasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.insentif_publikasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_hari to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_hari to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_kuliah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_kuliah to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_kuliah_sah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_kuliah_sah to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_slot to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_slot to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_ta to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jadwal_ta to service_role;
+grant select, references, trigger on public.jejak to anon;
+grant select, references, trigger on public.jejak to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.jejak to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kabar_kegiatan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.kabar_kegiatan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kabar_kegiatan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kalender_akademik to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kalender_akademik to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_bukti to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_bukti to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_bukti to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mahasiswa to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mitra to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mitra to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_mitra to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_penulis to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_penulis to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_penulis to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_sitasi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_sitasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.karya_sitasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan_dosen to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan_dosen to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kegiatan_dosen to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kelas_dosen to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kelas_dosen to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kelas_kuliah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kelas_kuliah to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.koordinator to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.koordinator to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kp_instansi_keputusan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kp_instansi_keputusan to service_role;
+grant select, truncate, references, trigger on public.kp_kuota to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kp_kuota to service_role;
+grant select, truncate, references, trigger on public.kp_tolak_instansi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.kp_tolak_instansi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.kunjungan_publik to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.laboratorium to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.laboratorium to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.laboratorium to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.layanan_kunci to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.led_narasi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.led_narasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.led_narasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.led_penugasan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.led_penugasan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.led_penugasan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.led_tim to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.led_tim to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.led_tim to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bimbingan_utama to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bimbingan_utama to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bimbingan_utama to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bkd to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bkd to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bkd to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bukti to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bukti to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_bukti to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_dokumen_k3l to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_dokumen_k3l to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_dokumen_k3l to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_fasilitas_k3l to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_fasilitas_k3l to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_fasilitas_k3l to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kepuasan_pengguna to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kepuasan_pengguna to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kepuasan_pengguna to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kerjasama to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kerjasama to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kerjasama to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_keuangan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_keuangan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_keuangan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kohort_lulusan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kohort_lulusan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_kohort_lulusan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_luaran_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_luaran_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_luaran_mahasiswa to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_angkatan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_angkatan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_angkatan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_ta to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_ta to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_mahasiswa_ta to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_penggunaan_dana to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_penggunaan_dana to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_penggunaan_dana to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_peta_jalan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_peta_jalan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_peta_jalan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prasarana to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prasarana to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prasarana to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prestasi_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prestasi_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prestasi_mahasiswa to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prodi_upps to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prodi_upps to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_prodi_upps to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_publikasi_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_publikasi_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_publikasi_mahasiswa to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_sarana_standar to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_sarana_standar to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_sarana_standar to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_spmi_ppepp to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_spmi_ppepp to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_spmi_ppepp to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_target_kinerja to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_target_kinerja to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_target_kinerja to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tendik to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tendik to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tendik to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tracer_lulusan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tracer_lulusan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_tracer_lulusan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_vmts to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_vmts to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.lkps_vmts to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.masukan_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.masukan_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.masukan_mahasiswa to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mhs_email_alt to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mhs_email_alt to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mhs_email_alt_riwayat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mhs_email_alt_riwayat to service_role;
+grant select, truncate, references, trigger on public.mk_padanan_sah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_padanan_sah to service_role;
+grant select, truncate, references, trigger on public.mk_padanan_sah_log to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_padanan_sah_log to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps to service_role;
+grant select, truncate, references, trigger on public.mk_rps_pengesahan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_pengesahan to service_role;
+grant select, truncate, references, trigger on public.mk_rps_review to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_review to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_riwayat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_riwayat to service_role;
+grant select, insert, update, truncate, references, trigger on public.mk_rps_tinjauan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_tinjauan to service_role;
+grant select, truncate, references, trigger on public.mk_rps_tinjauan_log to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_tinjauan_log to service_role;
+grant select, truncate, references, trigger on public.mk_rps_ttd to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_rps_ttd to service_role;
+grant select, truncate, references, trigger on public.mk_silabus to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_silabus to service_role;
+grant select, truncate, references, trigger on public.mk_silabus_log to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_silabus_log to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur_riwayat to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur_riwayat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.mk_struktur_riwayat to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.pemakaian_halaman to service_role;
+grant select, truncate, references, trigger on public.pengajuan_berkas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengajuan_berkas to service_role;
+grant select, truncate, references, trigger on public.pengajuan_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengajuan_mahasiswa to service_role;
+grant select, truncate, references, trigger on public.pengajuan_riwayat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengajuan_riwayat to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.pengaturan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.pengaturan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengaturan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.pengelola_prodi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.pengelola_prodi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengelola_prodi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.pengumuman_mahasiswa to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.pengumuman_mahasiswa to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.pengumuman_mahasiswa to service_role;
+grant select, references, trigger on public.peringatan_keamanan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.peringatan_keamanan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.portofolio_berkas to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.portofolio_berkas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.portofolio_berkas to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.potret_skor to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.potret_skor to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.potret_skor to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.profil_prodi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.profil_prodi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.profil_prodi to service_role;
+grant insert, update, delete, truncate, references, trigger on public.rapat to anon;
+grant insert, update, delete, truncate, references, trigger on public.rapat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_peserta to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_peserta to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_peserta to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_tindak to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_tindak to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.rapat_tindak to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_bidang_keahlian to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_bidang_keahlian to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_bidang_keahlian to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_cpl to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_cpl to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_cpl_korelasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_cpl_korelasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kata_visi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kata_visi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kata_visi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kategori_publikasi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kategori_publikasi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kategori_publikasi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kelompok_dana to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kelompok_dana to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_kelompok_dana to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mata_kuliah to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mata_kuliah to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mata_kuliah to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mk_cpl to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mk_cpl to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mk_padanan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_mk_padanan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_profil_lulusan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_profil_lulusan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_profil_lulusan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_skema_dana to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_skema_dana to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_skema_dana to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_tema_peta_jalan to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_tema_peta_jalan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_tema_peta_jalan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_topik_keahlian to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_topik_keahlian to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ref_topik_keahlian to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_capaian to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_capaian to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_capaian to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar_revisi to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar_revisi to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.spmi_standar_revisi to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.status_sistem to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.status_sistem to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.survei to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.survei to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.survei to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.survei_jawaban to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.survei_jawaban to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.survei_jawaban to service_role;
+grant select, references, trigger on public.ta_arsip to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_arsip to service_role;
+grant select, insert, update, references, trigger on public.ta_berkas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_berkas to service_role;
+grant select, references, trigger on public.ta_bimbingan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_bimbingan to service_role;
+grant select, references, trigger on public.ta_kecuali_urutan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_kecuali_urutan to service_role;
+grant select, truncate, references, trigger on public.ta_kk_dekat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_kk_dekat to service_role;
+grant select, truncate, references, trigger on public.ta_kuota to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_kuota to service_role;
+grant select, references, trigger on public.ta_nilai to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_nilai to service_role;
+grant select, references, trigger on public.ta_rubrik to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_rubrik to service_role;
+grant select, update, references, trigger on public.ta_syarat_bimbingan to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.ta_syarat_bimbingan to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.tanya_jawab to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.tanya_jawab to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.tanya_jawab to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.target_baku to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.target_baku to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.target_baku to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.target_dosen to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.target_dosen to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.target_dosen to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.tautan_ami to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.tautan_ami to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.tautan_ami to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.templat_email to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.templat_email to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.templat_email to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.testimoni to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.testimoni to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mahasiswa_terlibat to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mahasiswa_terlibat to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mahasiswa_terlibat to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mitra to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mitra to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.v_mitra to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.v_penulis_utama to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.v_penulis_utama to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.v_penulis_utama to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_karya to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_karya to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_karya to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_skema to anon;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_skema to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.v_rekap_skema to service_role;
+grant select, insert, update, delete, truncate, references, trigger on public.yudisium_berkas to authenticated;
+grant select, insert, update, delete, truncate, references, trigger on public.yudisium_berkas to service_role;
+grant usage, select, update on sequence public.ajuan_bkd_id_seq to anon;
+grant usage, select, update on sequence public.ajuan_bkd_id_seq to authenticated;
+grant usage, select, update on sequence public.ajuan_bkd_id_seq to service_role;
+grant usage, select, update on sequence public.ajuan_hapus_id_seq to anon;
+grant usage, select, update on sequence public.ajuan_hapus_id_seq to authenticated;
+grant usage, select, update on sequence public.ajuan_hapus_id_seq to service_role;
+grant usage, select, update on sequence public.ajuan_prestasi_id_seq to anon;
+grant usage, select, update on sequence public.ajuan_prestasi_id_seq to authenticated;
+grant usage, select, update on sequence public.ajuan_prestasi_id_seq to service_role;
+grant usage, select, update on sequence public.ajuan_ubah_id_seq to anon;
+grant usage, select, update on sequence public.ajuan_ubah_id_seq to authenticated;
+grant usage, select, update on sequence public.ajuan_ubah_id_seq to service_role;
+grant usage, select, update on sequence public.ami_temuan_id_seq to anon;
+grant usage, select, update on sequence public.ami_temuan_id_seq to authenticated;
+grant usage, select, update on sequence public.ami_temuan_id_seq to service_role;
+grant usage, select, update on sequence public.butir_bukti_id_seq to anon;
+grant usage, select, update on sequence public.butir_bukti_id_seq to authenticated;
+grant usage, select, update on sequence public.butir_bukti_id_seq to service_role;
+grant usage, select, update on sequence public.cpl_berkas_id_seq to anon;
+grant usage, select, update on sequence public.cpl_berkas_id_seq to authenticated;
+grant usage, select, update on sequence public.cpl_berkas_id_seq to service_role;
+grant usage, select, update on sequence public.cpl_kelas_id_seq to anon;
+grant usage, select, update on sequence public.cpl_kelas_id_seq to authenticated;
+grant usage, select, update on sequence public.cpl_kelas_id_seq to service_role;
+grant usage, select, update on sequence public.cpl_ringkasan_id_seq to anon;
+grant usage, select, update on sequence public.cpl_ringkasan_id_seq to authenticated;
+grant usage, select, update on sequence public.cpl_ringkasan_id_seq to service_role;
+grant usage, select, update on sequence public.dokumen_id_seq to anon;
+grant usage, select, update on sequence public.dokumen_id_seq to authenticated;
+grant usage, select, update on sequence public.dokumen_id_seq to service_role;
+grant usage, select, update on sequence public.dosen_berhalangan_id_seq to anon;
+grant usage, select, update on sequence public.dosen_berhalangan_id_seq to authenticated;
+grant usage, select, update on sequence public.dosen_berhalangan_id_seq to service_role;
+grant usage, select, update on sequence public.dosen_berhalangan_rentang_id_seq to anon;
+grant usage, select, update on sequence public.dosen_berhalangan_rentang_id_seq to authenticated;
+grant usage, select, update on sequence public.dosen_berhalangan_rentang_id_seq to service_role;
+grant usage, select, update on sequence public.dosen_berhalangan_tgl_id_seq to anon;
+grant usage, select, update on sequence public.dosen_berhalangan_tgl_id_seq to authenticated;
+grant usage, select, update on sequence public.dosen_berhalangan_tgl_id_seq to service_role;
+grant usage, select, update on sequence public.evaluasi_mk_id_seq to anon;
+grant usage, select, update on sequence public.evaluasi_mk_id_seq to authenticated;
+grant usage, select, update on sequence public.evaluasi_mk_id_seq to service_role;
+grant usage, select, update on sequence public.evaluasi_tindak_id_seq to anon;
+grant usage, select, update on sequence public.evaluasi_tindak_id_seq to authenticated;
+grant usage, select, update on sequence public.evaluasi_tindak_id_seq to service_role;
+grant usage, select, update on sequence public.hibah_panggilan_id_seq to anon;
+grant usage, select, update on sequence public.hibah_panggilan_id_seq to authenticated;
+grant usage, select, update on sequence public.hibah_panggilan_id_seq to service_role;
+grant usage, select, update on sequence public.insentif_pengajuan_id_seq to anon;
+grant usage, select, update on sequence public.insentif_pengajuan_id_seq to authenticated;
+grant usage, select, update on sequence public.insentif_pengajuan_id_seq to service_role;
+grant usage, select, update on sequence public.insentif_publikasi_id_seq to anon;
+grant usage, select, update on sequence public.insentif_publikasi_id_seq to authenticated;
+grant usage, select, update on sequence public.insentif_publikasi_id_seq to service_role;
+grant usage, select, update on sequence public.jadwal_slot_id_seq to anon;
+grant usage, select, update on sequence public.jadwal_slot_id_seq to authenticated;
+grant usage, select, update on sequence public.jadwal_slot_id_seq to service_role;
+grant usage, select, update on sequence public.jadwal_ta_id_seq to anon;
+grant usage, select, update on sequence public.jadwal_ta_id_seq to authenticated;
+grant usage, select, update on sequence public.jadwal_ta_id_seq to service_role;
+grant usage, select, update on sequence public.jejak_id_seq to anon;
+grant usage, select, update on sequence public.jejak_id_seq to authenticated;
+grant usage, select, update on sequence public.jejak_id_seq to service_role;
+grant usage, select, update on sequence public.kabar_kegiatan_id_seq to anon;
+grant usage, select, update on sequence public.kabar_kegiatan_id_seq to authenticated;
+grant usage, select, update on sequence public.kabar_kegiatan_id_seq to service_role;
+grant usage, select, update on sequence public.kalender_akademik_id_seq to anon;
+grant usage, select, update on sequence public.kalender_akademik_id_seq to authenticated;
+grant usage, select, update on sequence public.kalender_akademik_id_seq to service_role;
+grant usage, select, update on sequence public.karya_bukti_id_seq to anon;
+grant usage, select, update on sequence public.karya_bukti_id_seq to authenticated;
+grant usage, select, update on sequence public.karya_bukti_id_seq to service_role;
+grant usage, select, update on sequence public.kegiatan_id_seq to anon;
+grant usage, select, update on sequence public.kegiatan_id_seq to authenticated;
+grant usage, select, update on sequence public.kegiatan_id_seq to service_role;
+grant usage, select, update on sequence public.kelas_kuliah_id_seq to anon;
+grant usage, select, update on sequence public.kelas_kuliah_id_seq to authenticated;
+grant usage, select, update on sequence public.kelas_kuliah_id_seq to service_role;
+grant usage, select, update on sequence public.koordinator_id_seq to anon;
+grant usage, select, update on sequence public.koordinator_id_seq to authenticated;
+grant usage, select, update on sequence public.koordinator_id_seq to service_role;
+grant usage, select, update on sequence public.kp_kuota_id_seq to anon;
+grant usage, select, update on sequence public.kp_kuota_id_seq to authenticated;
+grant usage, select, update on sequence public.kp_kuota_id_seq to service_role;
+grant usage, select, update on sequence public.kp_tolak_instansi_id_seq to anon;
+grant usage, select, update on sequence public.kp_tolak_instansi_id_seq to authenticated;
+grant usage, select, update on sequence public.kp_tolak_instansi_id_seq to service_role;
+grant usage, select, update on sequence public.laboratorium_id_seq to anon;
+grant usage, select, update on sequence public.laboratorium_id_seq to authenticated;
+grant usage, select, update on sequence public.laboratorium_id_seq to service_role;
+grant usage, select, update on sequence public.led_tim_id_seq to anon;
+grant usage, select, update on sequence public.led_tim_id_seq to authenticated;
+grant usage, select, update on sequence public.led_tim_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_bimbingan_utama_id_seq to anon;
+grant usage, select, update on sequence public.lkps_bimbingan_utama_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_bimbingan_utama_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_bkd_id_seq to anon;
+grant usage, select, update on sequence public.lkps_bkd_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_bkd_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_bukti_id_seq to anon;
+grant usage, select, update on sequence public.lkps_bukti_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_bukti_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_dokumen_k3l_id_seq to anon;
+grant usage, select, update on sequence public.lkps_dokumen_k3l_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_dokumen_k3l_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_fasilitas_k3l_id_seq to anon;
+grant usage, select, update on sequence public.lkps_fasilitas_k3l_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_fasilitas_k3l_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_kepuasan_pengguna_id_seq to anon;
+grant usage, select, update on sequence public.lkps_kepuasan_pengguna_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_kepuasan_pengguna_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_kerjasama_id_seq to anon;
+grant usage, select, update on sequence public.lkps_kerjasama_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_kerjasama_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_keuangan_id_seq to anon;
+grant usage, select, update on sequence public.lkps_keuangan_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_keuangan_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_kohort_lulusan_id_seq to anon;
+grant usage, select, update on sequence public.lkps_kohort_lulusan_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_kohort_lulusan_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_luaran_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.lkps_luaran_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_luaran_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_mahasiswa_angkatan_id_seq to anon;
+grant usage, select, update on sequence public.lkps_mahasiswa_angkatan_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_mahasiswa_angkatan_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_mahasiswa_ta_id_seq to anon;
+grant usage, select, update on sequence public.lkps_mahasiswa_ta_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_mahasiswa_ta_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_penggunaan_dana_id_seq to anon;
+grant usage, select, update on sequence public.lkps_penggunaan_dana_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_penggunaan_dana_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_peta_jalan_id_seq to anon;
+grant usage, select, update on sequence public.lkps_peta_jalan_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_peta_jalan_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_prasarana_id_seq to anon;
+grant usage, select, update on sequence public.lkps_prasarana_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_prasarana_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_prestasi_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.lkps_prestasi_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_prestasi_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_prodi_upps_id_seq to anon;
+grant usage, select, update on sequence public.lkps_prodi_upps_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_prodi_upps_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_publikasi_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.lkps_publikasi_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_publikasi_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_sarana_standar_id_seq to anon;
+grant usage, select, update on sequence public.lkps_sarana_standar_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_sarana_standar_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_spmi_ppepp_id_seq to anon;
+grant usage, select, update on sequence public.lkps_spmi_ppepp_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_spmi_ppepp_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_target_kinerja_id_seq to anon;
+grant usage, select, update on sequence public.lkps_target_kinerja_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_target_kinerja_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_tendik_id_seq to anon;
+grant usage, select, update on sequence public.lkps_tendik_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_tendik_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_tracer_lulusan_id_seq to anon;
+grant usage, select, update on sequence public.lkps_tracer_lulusan_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_tracer_lulusan_id_seq to service_role;
+grant usage, select, update on sequence public.lkps_vmts_id_seq to anon;
+grant usage, select, update on sequence public.lkps_vmts_id_seq to authenticated;
+grant usage, select, update on sequence public.lkps_vmts_id_seq to service_role;
+grant usage, select, update on sequence public.masukan_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.masukan_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.masukan_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.mhs_email_alt_riwayat_id_seq to anon;
+grant usage, select, update on sequence public.mhs_email_alt_riwayat_id_seq to authenticated;
+grant usage, select, update on sequence public.mhs_email_alt_riwayat_id_seq to service_role;
+grant usage, select, update on sequence public.mk_padanan_sah_log_id_seq to anon;
+grant usage, select, update on sequence public.mk_padanan_sah_log_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_padanan_sah_log_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_pengesahan_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_pengesahan_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_pengesahan_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_review_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_review_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_review_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_riwayat_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_riwayat_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_riwayat_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_tinjauan_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_tinjauan_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_tinjauan_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_tinjauan_log_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_tinjauan_log_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_tinjauan_log_id_seq to service_role;
+grant usage, select, update on sequence public.mk_rps_ttd_id_seq to anon;
+grant usage, select, update on sequence public.mk_rps_ttd_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_rps_ttd_id_seq to service_role;
+grant usage, select, update on sequence public.mk_silabus_log_id_seq to anon;
+grant usage, select, update on sequence public.mk_silabus_log_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_silabus_log_id_seq to service_role;
+grant usage, select, update on sequence public.mk_struktur_riwayat_id_seq to anon;
+grant usage, select, update on sequence public.mk_struktur_riwayat_id_seq to authenticated;
+grant usage, select, update on sequence public.mk_struktur_riwayat_id_seq to service_role;
+grant usage, select, update on sequence public.pengajuan_berkas_id_seq to anon;
+grant usage, select, update on sequence public.pengajuan_berkas_id_seq to authenticated;
+grant usage, select, update on sequence public.pengajuan_berkas_id_seq to service_role;
+grant usage, select, update on sequence public.pengajuan_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.pengajuan_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.pengajuan_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.pengajuan_riwayat_id_seq to anon;
+grant usage, select, update on sequence public.pengajuan_riwayat_id_seq to authenticated;
+grant usage, select, update on sequence public.pengajuan_riwayat_id_seq to service_role;
+grant usage, select, update on sequence public.pengelola_prodi_id_seq to anon;
+grant usage, select, update on sequence public.pengelola_prodi_id_seq to authenticated;
+grant usage, select, update on sequence public.pengelola_prodi_id_seq to service_role;
+grant usage, select, update on sequence public.pengumuman_mahasiswa_id_seq to anon;
+grant usage, select, update on sequence public.pengumuman_mahasiswa_id_seq to authenticated;
+grant usage, select, update on sequence public.pengumuman_mahasiswa_id_seq to service_role;
+grant usage, select, update on sequence public.peringatan_keamanan_id_seq to anon;
+grant usage, select, update on sequence public.peringatan_keamanan_id_seq to authenticated;
+grant usage, select, update on sequence public.peringatan_keamanan_id_seq to service_role;
+grant usage, select, update on sequence public.portofolio_berkas_id_seq to anon;
+grant usage, select, update on sequence public.portofolio_berkas_id_seq to authenticated;
+grant usage, select, update on sequence public.portofolio_berkas_id_seq to service_role;
+grant usage, select, update on sequence public.potret_skor_id_seq to anon;
+grant usage, select, update on sequence public.potret_skor_id_seq to authenticated;
+grant usage, select, update on sequence public.potret_skor_id_seq to service_role;
+grant usage, select, update on sequence public.rapat_id_seq to anon;
+grant usage, select, update on sequence public.rapat_id_seq to authenticated;
+grant usage, select, update on sequence public.rapat_id_seq to service_role;
+grant usage, select, update on sequence public.rapat_peserta_id_seq to anon;
+grant usage, select, update on sequence public.rapat_peserta_id_seq to authenticated;
+grant usage, select, update on sequence public.rapat_peserta_id_seq to service_role;
+grant usage, select, update on sequence public.rapat_tindak_id_seq to anon;
+grant usage, select, update on sequence public.rapat_tindak_id_seq to authenticated;
+grant usage, select, update on sequence public.rapat_tindak_id_seq to service_role;
+grant usage, select, update on sequence public.ref_bidang_keahlian_id_seq to anon;
+grant usage, select, update on sequence public.ref_bidang_keahlian_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_bidang_keahlian_id_seq to service_role;
+grant usage, select, update on sequence public.ref_cpl_id_seq to anon;
+grant usage, select, update on sequence public.ref_cpl_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_cpl_id_seq to service_role;
+grant usage, select, update on sequence public.ref_cpl_korelasi_id_seq to anon;
+grant usage, select, update on sequence public.ref_cpl_korelasi_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_cpl_korelasi_id_seq to service_role;
+grant usage, select, update on sequence public.ref_mata_kuliah_id_seq to anon;
+grant usage, select, update on sequence public.ref_mata_kuliah_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_mata_kuliah_id_seq to service_role;
+grant usage, select, update on sequence public.ref_mk_cpl_id_seq to anon;
+grant usage, select, update on sequence public.ref_mk_cpl_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_mk_cpl_id_seq to service_role;
+grant usage, select, update on sequence public.ref_mk_padanan_id_seq to anon;
+grant usage, select, update on sequence public.ref_mk_padanan_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_mk_padanan_id_seq to service_role;
+grant usage, select, update on sequence public.ref_profil_lulusan_id_seq to anon;
+grant usage, select, update on sequence public.ref_profil_lulusan_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_profil_lulusan_id_seq to service_role;
+grant usage, select, update on sequence public.ref_tema_peta_jalan_id_seq to anon;
+grant usage, select, update on sequence public.ref_tema_peta_jalan_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_tema_peta_jalan_id_seq to service_role;
+grant usage, select, update on sequence public.ref_topik_keahlian_id_seq to anon;
+grant usage, select, update on sequence public.ref_topik_keahlian_id_seq to authenticated;
+grant usage, select, update on sequence public.ref_topik_keahlian_id_seq to service_role;
+grant usage, select, update on sequence public.spmi_standar_id_seq to anon;
+grant usage, select, update on sequence public.spmi_standar_id_seq to authenticated;
+grant usage, select, update on sequence public.spmi_standar_id_seq to service_role;
+grant usage, select, update on sequence public.spmi_standar_revisi_id_seq to anon;
+grant usage, select, update on sequence public.spmi_standar_revisi_id_seq to authenticated;
+grant usage, select, update on sequence public.spmi_standar_revisi_id_seq to service_role;
+grant usage, select, update on sequence public.survei_id_seq to anon;
+grant usage, select, update on sequence public.survei_id_seq to authenticated;
+grant usage, select, update on sequence public.survei_id_seq to service_role;
+grant usage, select, update on sequence public.survei_jawaban_id_seq to anon;
+grant usage, select, update on sequence public.survei_jawaban_id_seq to authenticated;
+grant usage, select, update on sequence public.survei_jawaban_id_seq to service_role;
+grant usage, select, update on sequence public.ta_bimbingan_id_seq to anon;
+grant usage, select, update on sequence public.ta_bimbingan_id_seq to authenticated;
+grant usage, select, update on sequence public.ta_bimbingan_id_seq to service_role;
+grant usage, select, update on sequence public.ta_kecuali_urutan_id_seq to anon;
+grant usage, select, update on sequence public.ta_kecuali_urutan_id_seq to authenticated;
+grant usage, select, update on sequence public.ta_kecuali_urutan_id_seq to service_role;
+grant usage, select, update on sequence public.ta_kuota_id_seq to anon;
+grant usage, select, update on sequence public.ta_kuota_id_seq to authenticated;
+grant usage, select, update on sequence public.ta_kuota_id_seq to service_role;
+grant usage, select, update on sequence public.ta_nilai_id_seq to anon;
+grant usage, select, update on sequence public.ta_nilai_id_seq to authenticated;
+grant usage, select, update on sequence public.ta_nilai_id_seq to service_role;
+grant usage, select, update on sequence public.ta_rubrik_id_seq to anon;
+grant usage, select, update on sequence public.ta_rubrik_id_seq to authenticated;
+grant usage, select, update on sequence public.ta_rubrik_id_seq to service_role;
+grant usage, select, update on sequence public.tanya_jawab_id_seq to anon;
+grant usage, select, update on sequence public.tanya_jawab_id_seq to authenticated;
+grant usage, select, update on sequence public.tanya_jawab_id_seq to service_role;
+grant usage, select, update on sequence public.tautan_ami_id_seq to anon;
+grant usage, select, update on sequence public.tautan_ami_id_seq to authenticated;
+grant usage, select, update on sequence public.tautan_ami_id_seq to service_role;
+grant usage, select, update on sequence public.testimoni_id_seq to anon;
+grant usage, select, update on sequence public.testimoni_id_seq to authenticated;
+grant usage, select, update on sequence public.testimoni_id_seq to service_role;
 revoke delete on public.berhalangan_konfirmasi from anon;
 revoke insert on public.berhalangan_konfirmasi from anon;
 revoke references on public.berhalangan_konfirmasi from anon;
@@ -10448,6 +13050,18 @@ revoke select on public.hari_libur from anon;
 revoke trigger on public.hari_libur from anon;
 revoke truncate on public.hari_libur from anon;
 revoke update on public.hari_libur from anon;
+revoke delete on public.insentif_pengajuan from anon;
+revoke insert on public.insentif_pengajuan from anon;
+revoke update on public.insentif_pengajuan from anon;
+revoke delete on public.insentif_pengajuan from authenticated;
+revoke insert on public.insentif_pengajuan from authenticated;
+revoke update on public.insentif_pengajuan from authenticated;
+revoke delete on public.insentif_publikasi from anon;
+revoke insert on public.insentif_publikasi from anon;
+revoke update on public.insentif_publikasi from anon;
+revoke delete on public.insentif_publikasi from authenticated;
+revoke insert on public.insentif_publikasi from authenticated;
+revoke update on public.insentif_publikasi from authenticated;
 revoke delete on public.jadwal_hari from anon;
 revoke insert on public.jadwal_hari from anon;
 revoke references on public.jadwal_hari from anon;
@@ -10745,6 +13359,8 @@ revoke delete on public.peringatan_keamanan from authenticated;
 revoke insert on public.peringatan_keamanan from authenticated;
 revoke truncate on public.peringatan_keamanan from authenticated;
 revoke update on public.peringatan_keamanan from authenticated;
+revoke select on public.rapat from anon;
+revoke select on public.rapat from authenticated;
 revoke delete on public.ref_cpl from anon;
 revoke insert on public.ref_cpl from anon;
 revoke references on public.ref_cpl from anon;
@@ -10780,6 +13396,48 @@ revoke select on public.status_sistem from anon;
 revoke trigger on public.status_sistem from anon;
 revoke truncate on public.status_sistem from anon;
 revoke update on public.status_sistem from anon;
+revoke delete on public.ta_arsip from anon;
+revoke insert on public.ta_arsip from anon;
+revoke references on public.ta_arsip from anon;
+revoke select on public.ta_arsip from anon;
+revoke trigger on public.ta_arsip from anon;
+revoke truncate on public.ta_arsip from anon;
+revoke update on public.ta_arsip from anon;
+revoke delete on public.ta_arsip from authenticated;
+revoke insert on public.ta_arsip from authenticated;
+revoke truncate on public.ta_arsip from authenticated;
+revoke update on public.ta_arsip from authenticated;
+revoke delete on public.ta_berkas from anon;
+revoke insert on public.ta_berkas from anon;
+revoke references on public.ta_berkas from anon;
+revoke select on public.ta_berkas from anon;
+revoke trigger on public.ta_berkas from anon;
+revoke truncate on public.ta_berkas from anon;
+revoke update on public.ta_berkas from anon;
+revoke delete on public.ta_berkas from authenticated;
+revoke truncate on public.ta_berkas from authenticated;
+revoke delete on public.ta_bimbingan from anon;
+revoke insert on public.ta_bimbingan from anon;
+revoke references on public.ta_bimbingan from anon;
+revoke select on public.ta_bimbingan from anon;
+revoke trigger on public.ta_bimbingan from anon;
+revoke truncate on public.ta_bimbingan from anon;
+revoke update on public.ta_bimbingan from anon;
+revoke delete on public.ta_bimbingan from authenticated;
+revoke insert on public.ta_bimbingan from authenticated;
+revoke truncate on public.ta_bimbingan from authenticated;
+revoke update on public.ta_bimbingan from authenticated;
+revoke delete on public.ta_kecuali_urutan from anon;
+revoke insert on public.ta_kecuali_urutan from anon;
+revoke references on public.ta_kecuali_urutan from anon;
+revoke select on public.ta_kecuali_urutan from anon;
+revoke trigger on public.ta_kecuali_urutan from anon;
+revoke truncate on public.ta_kecuali_urutan from anon;
+revoke update on public.ta_kecuali_urutan from anon;
+revoke delete on public.ta_kecuali_urutan from authenticated;
+revoke insert on public.ta_kecuali_urutan from authenticated;
+revoke truncate on public.ta_kecuali_urutan from authenticated;
+revoke update on public.ta_kecuali_urutan from authenticated;
 revoke delete on public.ta_kk_dekat from anon;
 revoke insert on public.ta_kk_dekat from anon;
 revoke references on public.ta_kk_dekat from anon;
@@ -10800,6 +13458,38 @@ revoke update on public.ta_kuota from anon;
 revoke delete on public.ta_kuota from authenticated;
 revoke insert on public.ta_kuota from authenticated;
 revoke update on public.ta_kuota from authenticated;
+revoke delete on public.ta_nilai from anon;
+revoke insert on public.ta_nilai from anon;
+revoke references on public.ta_nilai from anon;
+revoke select on public.ta_nilai from anon;
+revoke trigger on public.ta_nilai from anon;
+revoke truncate on public.ta_nilai from anon;
+revoke update on public.ta_nilai from anon;
+revoke delete on public.ta_nilai from authenticated;
+revoke insert on public.ta_nilai from authenticated;
+revoke truncate on public.ta_nilai from authenticated;
+revoke update on public.ta_nilai from authenticated;
+revoke delete on public.ta_rubrik from anon;
+revoke insert on public.ta_rubrik from anon;
+revoke references on public.ta_rubrik from anon;
+revoke select on public.ta_rubrik from anon;
+revoke trigger on public.ta_rubrik from anon;
+revoke truncate on public.ta_rubrik from anon;
+revoke update on public.ta_rubrik from anon;
+revoke delete on public.ta_rubrik from authenticated;
+revoke insert on public.ta_rubrik from authenticated;
+revoke truncate on public.ta_rubrik from authenticated;
+revoke update on public.ta_rubrik from authenticated;
+revoke delete on public.ta_syarat_bimbingan from anon;
+revoke insert on public.ta_syarat_bimbingan from anon;
+revoke references on public.ta_syarat_bimbingan from anon;
+revoke select on public.ta_syarat_bimbingan from anon;
+revoke trigger on public.ta_syarat_bimbingan from anon;
+revoke truncate on public.ta_syarat_bimbingan from anon;
+revoke update on public.ta_syarat_bimbingan from anon;
+revoke delete on public.ta_syarat_bimbingan from authenticated;
+revoke insert on public.ta_syarat_bimbingan from authenticated;
+revoke truncate on public.ta_syarat_bimbingan from authenticated;
 revoke delete on public.testimoni from anon;
 revoke insert on public.testimoni from anon;
 revoke references on public.testimoni from anon;
@@ -10814,6 +13504,7 @@ revoke select on public.yudisium_berkas from anon;
 revoke trigger on public.yudisium_berkas from anon;
 revoke truncate on public.yudisium_berkas from anon;
 revoke update on public.yudisium_berkas from anon;
+grant select (id, judul, jenis, tanggal, mulai, selesai, tempat, pimpinan, notulis, agenda, terbatas, status, dokumen_id, token_hadir, hadir_sampai, dibuat_oleh, oleh, dibuat, diperbarui) on public.rapat to authenticated;
 
 -- Penyimpanan berkas
 insert into storage.buckets (id, name, public) values ('bukti', 'bukti', false)

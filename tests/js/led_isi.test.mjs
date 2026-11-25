@@ -19,7 +19,8 @@ const X = {
   dosen: [{ nama: 'Zahra', nidn: '2', dtps: true, pendidikan: 'S3', jabatan: 'lektor', bidang_keahlian: 'Air' },
           { nama: 'Staf', nidn: '9', dtps: false }],
   tema: [{ nama: 'Banjir', jenis: 'penelitian' }, { nama: 'Desa', jenis: 'pkm' }, { nama: 'Mitigasi', jenis: 'keduanya' }],
-  tendik: [{ nama: 'Ani', jabatan: 'laboran' }, { nama: 'Budi', jabatan: 'laboran' }, { nama: 'Cici', jabatan: 'teknisi' }],
+  tendik: [{ nama: 'Ani', jabatan: 'laboran' }, { nama: 'Budi', jabatan: 'laboran' }, { nama: 'Cici', jabatan: 'teknisi' },
+           { nama: 'Dedi', jabatan: 'asisten_lab', status_kerja: 'magang' }, { nama: 'Eka', jabatan: 'administrator_sistem' }],
   tracer: [{ tahun_lulus: 2024, jumlah_lulusan: 20, jumlah_terlacak: 10 }, { tahun_lulus: 2025, jumlah_lulusan: 20, jumlah_terlacak: 6 }],
   karya: [{ kategori: 'integrasi', tahun: 2025, mata_kuliah: 'Hidrologi', judul: 'Banjir' }],
   buktiBaris: [{ tabel: 'lkps_tracer_lulusan', baris_id: 1, judul: 'Laporan tracer', url: 'u-tracer' },
@@ -42,11 +43,11 @@ test('faktaNarasi: facts from the system; missing data stays [isi]', () => {
   assert.equal(P.capstone, 'Capstone (4 SKS)');
   assert.equal(P.capstonePendukung, 'Hidrologi');
   assert.equal(P.tema('penelitian'), 'Banjir dan Mitigasi');
-  assert.equal(P.tendik, '2 laboran dan 1 teknisi');
+  assert.equal(P.tendik, '2 laboran, 1 teknisi dan 1 administrator sistem');   // magang Dedi left out (164)
   assert.equal(P.responsTracer, '40% (16 dari 40 lulusan)');
   const K = faktaNarasi({ daftar: {}, dokumen: [], ts: 2026 });
   assert.equal(K.jumlahMK, '[isi: jumlah]');
-  assert.equal(K.tendik, '[isi: jumlah laboran, teknisi, dan administrator]');
+  assert.equal(K.tendik, '[isi: jumlah admin prodi, laboran, asisten laboratorium, dan teknisi]');
 });
 
 test('kalimatTren: values and direction per series', () => {

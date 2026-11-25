@@ -22,8 +22,23 @@ export const JABATAN = [['', 'Belum punya jabatan'], ['tenaga_pengajar', 'Tenaga
 // Kolom riwayat dan sertifikat; [kunci, label, lebar input]
 const KOLOM_RIWAYAT = [['perguruan_tinggi', 'Perguruan tinggi'], ['program_studi', 'Program studi'],
   ['bidang_ilmu', 'Bidang ilmu'], ['negara', 'Negara'], ['tahun_lulus', 'Tahun lulus'], ['url', 'Tautan ijazah']];
+// berlaku_sampai (pemilik 2026-11-24): tanggal YYYY-MM-DD; kosong = tanpa masa berlaku. Kunci JSON baru, tanpa patch SQL
+// (dosen_sertifikat_check hanya mensyaratkan array).
 const KOLOM_SERTIFIKAT = [['bidang', 'Bidang sertifikasi'], ['lembaga', 'Lembaga penerbit'],
-  ['nomor', 'Nomor'], ['tahun', 'Tahun'], ['url', 'Tautan bukti']];
+  ['nomor', 'Nomor'], ['tahun', 'Tahun'], ['berlaku_sampai', 'Berlaku sampai'], ['url', 'Tautan bukti']];
+
+/** Masa berlaku satu sertifikat: null bila tanpa tanggal; selain itu { sampai, hari (sisa hari, negatif = lewat), lewat }. */
+export function masaBerlaku(s, kini = new Date()){
+  const v = String(s?.berlaku_sampai || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  const hari0 = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const [y, m, dd] = v.split('-').map(Number);
+  const hari = Math.round((Date.UTC(y, m - 1, dd) - hari0(kini)) / 86400000);
+  return { sampai: v, hari, lewat: hari < 0 };
+}
+/** Tanggal ISO -> '31 Desember 2027'. */
+const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+export const tanggalPanjang = iso => { const [y, m, d] = String(iso || '').split('-').map(Number); return y && m && d ? `${d} ${BULAN[m - 1]} ${y}` : ''; };
 
 // Isian yang boleh diajukan dosen (urutan formulir dan tabel ajuan).
 export const ISIAN_PROFIL = [
@@ -105,7 +120,8 @@ export function teksPendidikan(riwayat, kelompok){
 const ringkasRiwayat = r => `${label(JENJANG, r.jenjang)}: ${[r.program_studi, r.perguruan_tinggi].filter(Boolean).join(', ')}` +
   (r.bidang_ilmu ? ` (${r.bidang_ilmu})` : '') + (r.tahun_lulus ? `, ${r.tahun_lulus}` : '') + (r.url ? ' · ada ijazah' : '');
 const ringkasSertifikat = s => `${label(JENIS_SERTIFIKAT, s.jenis)}: ${s.bidang || '—'}` +
-  (s.lembaga ? `, ${s.lembaga}` : '') + (s.nomor ? `, no. ${s.nomor}` : '') + (s.url ? ' · ada bukti' : '');
+  (s.lembaga ? `, ${s.lembaga}` : '') + (s.nomor ? `, no. ${s.nomor}` : '') +
+  (s.berlaku_sampai ? `, berlaku s.d. ${tanggalPanjang(s.berlaku_sampai) || s.berlaku_sampai}` : '') + (s.url ? ' · ada bukti' : '');
 
 // Tautan lain (instal-lengkap.sql, pemilik 2026-11-22): satu baris "Label | https://...".
 export const MAKS_TAUTAN = 5;
@@ -148,6 +164,7 @@ const bersihBaris = (r, kolom) => Object.fromEntries(
 const selIsian = (k, v, angka) => k === 'url'
   ? `<td class="ed-url"><input data-k="url" value="${esc(v)}" placeholder="https://… atau unggah">` +
     `<label class="btn ghost kecil ed-unggah">${String(v ?? '').trim() ? 'Ganti berkas' : 'Unggah'}<input type="file" data-unggah hidden></label><small class="ed-status"></small></td>`
+  : k === 'berlaku_sampai' ? `<td><input type="date" data-k="${k}" value="${esc(v)}" title="Kosongkan bila sertifikat tidak punya masa berlaku"></td>`
   : `<td><input data-k="${k}" value="${esc(v)}"${angka ? ' inputmode="numeric" size="5"' : ''}></td>`;
 function barisRiwayat(r, i){
   return `<tr data-i="${i}"><td><select data-k="jenjang">${opsi(JENJANG, r.jenjang || 'sarjana')}</select></td>${
@@ -173,7 +190,8 @@ const CSS = `<style id="gaya-profil-dosen">
   table.ed td{padding:3px 4px;vertical-align:top}
   table.ed input,table.ed select{width:100%;padding:5px 6px;border:1px solid var(--line);font:inherit;font-size:13px;background:#fff}
   .ed-gulir{overflow-x:auto}
-  .ed-gulir table{min-width:720px}
+  .ed-gulir table{min-width:900px}   /* sertifikat 8 kolom sejak 'Berlaku sampai' (2026-11-24) */
+  table.ed select[data-k="jenis"],table.ed select[data-k="jenjang"]{min-width:110px}
   h3.ed-judul{font-size:14px;margin:16px 0 2px;color:var(--biru)}
   table.ed td.ed-url{min-width:190px}
   .ed-unggah{display:none;margin-top:3px;cursor:pointer}
@@ -275,7 +293,8 @@ export function formLKPS(r, { mkProdi = null } = {}){
         <small>Untuk dosen industri/praktisi; kosongkan bila tidak ada.</small></div>
       <div class="fld"><label>Nomor sertifikat pendidik (serdos)</label><input id="f_nomor_serdos" value="${esc(r.nomor_serdos)}"></div>
       <div class="fld"><label>SKIP (sertifikat insinyur profesional)</label><select id="f_skip">${opsi(SKIP, r.skip)}</select></div>
-      <div class="fld"><label>Nomor STRI</label><input id="f_stri" value="${esc(r.stri)}"></div>
+      <div class="fld"><label>Nomor STRI</label><input id="f_stri" value="${esc(r.stri)}">
+        <small>Untuk LKPS Tabel 4.a. Catat juga di tabel sertifikat di bawah sebagai jenis Profesi, dengan masa berlakunya.</small></div>
       ${htmlMkProdi(mkProdi)}
       <div class="fld penuh"><label>Mata kuliah yang diampu di program studi lain</label><input id="f_mk_ps_lain" value="${esc(r.mk_ps_lain)}">
         <small>Pisahkan dengan titik koma. MK di prodi ini diambil dari data kurikulum.</small></div>

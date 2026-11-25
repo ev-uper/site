@@ -4,6 +4,7 @@ Skema lengkap dari semua patch dipasang di PGlite (tools/uji_pengajuan.mjs) lalu
 dijalankan sebagai anon dan authenticated. Butuh node + tools/node_modules; dilewati bila tidak ada.
 """
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -232,8 +233,10 @@ def test_cpmk_structure_and_rps_by_course_coordinator(h):
     for k in ("mk_rps_p1", "mk_rps_bukan_https", "mk_rps_bukan_haknya"):
         gagal(h, k, "permission denied")
     assert nilai(h, "mk_rps_baca") == [{"rps_ada": None, "rps_9_komponen": None, "rps_url": None}]
-    gagal(h, "mk_pengampu_dosen", "ditetapkan admin prodi atau GKM")
-    assert h["mk_pengampu_gkm"]["ok"], h["mk_pengampu_gkm"]
+    # 158 (pemilik 2026-11-23): Kaprodi aktif atau admin; GKM hanya melihat.
+    gagal(h, "mk_pengampu_dosen", "Kaprodi aktif atau admin")
+    gagal(h, "mk_pengampu_gkm", "Kaprodi aktif atau admin")
+    assert h["mk_pengampu_admin"]["ok"], h["mk_pengampu_admin"]
     gagal(h, "mk_pengampu_asing", "bukan dosen terdaftar")
     gagal(h, "mk_data_salah", "mk_struktur_data_check")
 
@@ -444,9 +447,13 @@ def test_ta_advisor_by_expertise_group_and_quota(h):
     assert nilai(h, "t2_setujui") == [{"s": "disetujui"}]
     gagal(h, "t3_anon_beban", "permission denied")
     gagal(h, "t3_atur_bukan_koor", "koordinator TA atau admin")
+    gagal(h, "t3_atur_smt_salah", "Ganjil atau Genap")
     assert nilai(h, "t3_atur") == [{"s": "ok"}]
-    assert nilai(h, "t3_beban") == [{"nama": "Dosen Lain", "kk": "GEO", "kuota": 3, "kuota_sendiri": False, "beban": 0},
-                                    {"nama": "Pembimbing Satu", "kk": "AIR", "kuota": 3, "kuota_sendiri": False, "beban": 1}]
+    # 180: kuota per semester; semester lain belum diisi.
+    assert nilai(h, "t3_beban") == [{"nama": "Dosen Lain", "kk": "GEO", "kuota": 3, "kuota_sendiri": False, "beban": 0, "dibimbing": 0},
+                                    {"nama": "Pembimbing Satu", "kk": "AIR", "kuota": 3, "kuota_sendiri": False, "beban": 1, "dibimbing": 0}]
+    assert nilai(h, "t3_semester_lain") == [{"kuota": None}]
+    assert nilai(h, "t3_batas") == [{"a": "2026-09-01", "b": "2027-03-01", "c": "2027-03-01", "d": "2027-09-01"}]
     # Seminar sesudah penetapan: pembimbing 1 dan 2 mengikuti penetapan, bukan pilihan mahasiswa.
     assert nilai(h, "t4_kirim") == [{"s": "pembimbing"}]
     assert nilai(h, "t4_pembimbing") == [{"p1": True, "p2": True}]
@@ -454,6 +461,23 @@ def test_ta_advisor_by_expertise_group_and_quota(h):
     # Pembimbing 1 di luar KK tanpa alasan tidak bisa disahkan; penetapan tidak dijadwalkan.
     gagal(h, "t5_setujui_luar", "tetapkan pembimbing dengan alasan")
     gagal(h, "t5_jadwalkan", "jadwal_ta_tahap_check")
+    # 180: ganti pembimbing (bimbingan dibatalkan): tanpa pengajuan ulang, beban tetap pada pembimbing pertama.
+    gagal(h, "t6_bukan_koor", "koordinator TA atau admin")
+    gagal(h, "t6_tanpa_alasan", "Tulis alasan")
+    gagal(h, "t6_belum_sah", "sudah disahkan")
+    assert nilai(h, "t6_ganti") == [{"s": "diganti"}]
+    gagal(h, "t6_tetap", "tidak berubah")
+    assert nilai(h, "t6_sesudah") == nilai(h, "t6_sebelum")       # kuota dosen pengganti tidak berkurang
+    assert nilai(h, "t6_data") == [{"baru": True, "awal": True, "judul": "Simpang bersinyal adaptif", "ada_p2": False}]
+    assert nilai(h, "t6_seminar") == [{"baru": True}]              # seminar yang masih berjalan ikut pindah
+    r = nilai(h, "t6_riwayat")[0]["catatan"]
+    assert "Pembimbing 1: Pembimbing Satu -> Dosen Lain" in r and "judul: Simpang bersinyal -> Simpang bersinyal adaptif" in r
+    assert "Alasan: Mahasiswa tidak melanjutkan bimbingan" in r
+    # Penetapan semester lalu, belum lulus: keluar dari beban pembimbing pertama, masuk "masih dibimbing" pembimbing sekarang.
+    lama = {x["nama"]: x for x in nilai(h, "t6_lama")}
+    sebelum = {x["nama"]: x for x in nilai(h, "t6_sebelum")}
+    assert lama["Pembimbing Satu"]["beban"] == sebelum["Pembimbing Satu"]["beban"] - 1
+    assert lama["Dosen Lain"]["dibimbing"] == sebelum["Dosen Lain"]["dibimbing"] + 1
 
 
 def test_rps_k26_storage_and_rights(h):
@@ -715,7 +739,7 @@ def test_system_health_125(h):
     gagal(h, "s_anon_tabel", "permission denied")
     gagal(h, "s_dosen", "Khusus admin dan pimpinan")
     assert nilai(h, "s_dosen_tabel") == [{"n": 0}]
-    assert nilai(h, "s_kosong") == [{"perlu": 6, "n": 7, "ada_ukuran": True}]          # 6 belum pernah melapor + 1 info (127: +Drive)
+    assert nilai(h, "s_kosong") == [{"perlu": 6, "n": 9, "ada_ukuran": True}]          # 6 belum pernah melapor + 1 info (127: +Drive; 170: +2 kapasitas)
     assert nilai(h, "s_lapor") == [{"s": "ok"}]
     gagal(h, "s_lapor_status_salah", "Status tidak dikenal")
     gagal(h, "s_lapor_kunci_salah", "Kunci layanan salah")
@@ -729,6 +753,11 @@ def test_system_health_125(h):
     assert st["apps_script"]["status"] == "perlu_dicek" and "sisa kuota email hari ini 10" in st["apps_script"]["rinci"]
     assert "Drive 33%" in st["apps_script"]["rinci"]
     assert st["situs_terbit"]["status"] == "info"
+    # 170: kapasitas paket gratis (500 MB basis data, 1 GB Storage); basis data uji jauh di bawah 50%.
+    kap = {k: nilai(h, "s_" + k)[0] for k in ["kapasitas_basis_data", "kapasitas_storage"]}
+    assert kap["kapasitas_basis_data"]["status"] == "baik", kap
+    assert re.match(r"^\d+(\.\d)? MB dari 500 MB \(\d+%\) · tabel terbesar \w+ \d+(\.\d)? MB$", kap["kapasitas_basis_data"]["rinci"]), kap
+    assert kap["kapasitas_storage"]["status"] in ("baik", "info"), kap
     k = nilai(h, "s_kunci")[0]
     assert k["perlu"] == 3 and "admin@u.id" in k["admin"] and "p1@u.id" not in k["admin"]
     gagal(h, "s_kunci_salah", "Kunci layanan salah")
@@ -1188,3 +1217,359 @@ def test_leader_is_read_only_everywhere(h):
     gagal(h, "hb7_padanan_bukan_dekan", "hanya-baca")
     assert "hanya-baca" not in str(h["hb7_padanan_dekan"].get("galat", ""))
     gagal(h, "hb7_dekan_karya", "hanya-baca")
+
+
+def test_course_coordinator_and_team(h):
+    """instal-lengkap.sql (pemilik 2026-11-23): satu koordinator + tim; Kaprodi aktif atau admin menetapkan;
+    koordinator harus anggota tim; mk_atur_pengampu mempertahankan koordinator yang masih anggota."""
+    if "k8_admin" not in h:
+        pytest.skip("patch 158 tidak ada di skema")
+    gagal(h, "k8_dosen_tolak", "Kaprodi aktif atau admin")
+    gagal(h, "k8_tanpa_koor", "Pilih koordinator")
+    assert nilai(h, "k8_admin_lihat") == [{"pengampu": ["002", "003"], "koordinator_nidn": "002"}]
+    gagal(h, "k8_cek", "ref_mata_kuliah_koordinator_tim_check")
+    assert nilai(h, "k8_pengampu_tetap_lihat") == [{"pengampu": ["003", "002"], "koordinator_nidn": "002"}]
+    assert nilai(h, "k8_pengampu_ganti_lihat") == [{"pengampu": ["003"], "koordinator_nidn": "003"}]
+    assert nilai(h, "k8_kaprodi_lihat") == [{"pengampu": ["002", "003"], "koordinator_nidn": "002"}]
+
+
+def test_admin_preview_as_student_uses_real_checks_and_changes_nothing(h):
+    """instal-lengkap.sql (pemilik 2026-11-24): admin melihat tampilan mahasiswa dan hasil tombol Kirim
+    tanpa tautan pribadinya; pesannya sama dengan fungsi asli; data, status, riwayat, dan tautan mahasiswa tidak berubah."""
+    if "pv_kurang" not in h:
+        pytest.skip("patch 160 tidak ada di skema")
+    v = nilai(h, "pv_kurang")[0]
+    assert v["nim"] == "104123170" and v["status"] == "draf"
+    assert [x["aksi"] for x in v["periksa"]] == ["kirim_selesai"]          # KP susulan selesai: hanya Kirim laporan selesai
+    assert v["periksa"][0]["lolos"] is False
+    assert v["periksa"][0]["pesan"] == h["pv_kirim_asli"]["galat"]         # bunyi pesan merah = fungsi asli
+    assert "Lengkapi tanggal mulai" in v["periksa"][0]["pesan"]
+    assert nilai(h, "pv_sebelum") == nilai(h, "pv_sesudah")              # tidak ada perubahan
+    assert nilai(h, "pv_tautan_tetap") == [{"nim": "104123170"}]          # tautan mahasiswa tetap berlaku
+    gagal(h, "pv_dosen_tolak", "khusus admin")                         # pembimbing pun tidak
+    assert nilai(h, "pv_koordinator_kp") == [{"nim": "104123170"}]        # koordinator KP boleh
+    gagal(h, "pv_anon_tolak", "permission denied")
+    assert nilai(h, "pv_lengkap")[0]["periksa"] == [{"aksi": "kirim_selesai", "label": "Kirim laporan selesai", "lolos": True, "pesan": None}]
+    assert nilai(h, "pv_lengkap_sesudah")[0]["status"] == "draf"          # lolos, tetapi tidak terkirim
+    b = nilai(h, "pv_biasa")[0]["periksa"]
+    assert [x["aksi"] for x in b] == ["kirim"] and b[0]["lolos"] is False
+    assert b[0]["pesan"] == h["pv_biasa_asli"]["galat"]
+    # Tombol laporan selesai hanya diperiksa bila tampil bagi mahasiswa (sesudah diterima instansi).
+    assert nilai(h, "pv_belum_jawab")[0]["periksa"] == []
+    assert [x["aksi"] for x in nilai(h, "pv_diterima")[0]["periksa"]] == ["kirim_selesai"]
+
+
+def test_cancel_submission_by_student_and_by_admin(h):
+    """instal-lengkap.sql (pemilik 2026-11-24): mahasiswa membatalkan saat draf/dikembalikan; status
+    'dibatalkan' (jejak tetap), tidak dihitung satu KP aktif; terkirim hanya bisa dibatalkan admin/koordinator dengan alasan."""
+    if "bt_batal" not in h:
+        pytest.skip("patch 161 tidak ada di skema")
+    gagal(h, "bt_buat_kedua_tolak", "satu KP aktif")
+    assert nilai(h, "bt_batal") == [{"s": "dibatalkan"}]
+    assert nilai(h, "bt_lihat") == [{"status": "dibatalkan", "ubah": False}]
+    assert not h["bt_ubah_tolak"]["ok"]
+    assert nilai(h, "bt_riwayat_mhs") == [{"oleh": "mahasiswa", "catatan": "Dibatalkan mahasiswa: salah jalur."}]
+    assert nilai(h, "bt_buat_lagi")[0]["t"]                                  # KP baru boleh dibuat
+    assert nilai(h, "bt_kirim") == [{"s": "admin"}]                          # 107: KP langsung ke koordinator/admin
+    gagal(h, "bt_batal_terkirim", "tidak bisa dibatalkan sendiri")
+    gagal(h, "bt_pembimbing_tolak", "khusus admin")
+    gagal(h, "bt_admin_tanpa_alasan", "Tulis alasan")
+    assert nilai(h, "bt_admin") == [{"s": "dibatalkan"}]
+    assert nilai(h, "bt_admin_riwayat") == [{"oleh": "Admin Prodi", "catatan": "Dibatalkan prodi atas permintaan: permintaan mahasiswa."}]
+    assert nilai(h, "bt_akhir") == [{"status": "dibatalkan", "n": 2}]
+
+
+def test_lecturer_agenda_from_admin_162(h):
+    """instal-lengkap.sql (pemilik 2026-11-24): admin menugaskan dosen ke kegiatan (jenis baru mengawas, sidang,
+    piket, penugasan); dosen membaca tetapi tidak menulis; penugasan ikut terhapus bersama kegiatannya."""
+    if "kd_kegiatan" not in h:
+        pytest.skip("patch 162 tidak ada di skema")
+    assert nilai(h, "kd_kegiatan")[0]["id"]
+    assert len(nilai(h, "kd_tugaskan")) == 1
+    gagal(h, "kd_dosen_tolak", "row-level security")
+    assert nilai(h, "kd_dosen_baca") == [{"n": 1}]
+    gagal(h, "kd_jenis_salah", "kegiatan_jenis_check")
+    assert nilai(h, "kd_kaskade") == [{"n": 0}]
+
+
+def test_publication_incentive_claim_163(h):
+    """instal-lengkap.sql (pemilik 2026-11-24): satu klaim per publikasi oleh penulisnya, hanya tahun berjalan;
+    'siap' hanya bila karya terverifikasi dan empat berkas lengkap; admin/Kaprodi memeriksa, mengajukan, mencatat hasil;
+    tulis hanya lewat fungsi; bukan penulis dan bukan pemeriksa tidak melihat klaim."""
+    if "in_klaim" not in h:
+        pytest.skip("patch 163 tidak ada di skema")
+    assert nilai(h, "in_klaim")[0]["id"]
+    gagal(h, "in_klaim_penulis_lain", "satu klaim per publikasi")
+    gagal(h, "in_klaim_bukan_penulis", "Hanya penulis")
+    gagal(h, "in_klaim_tahun_lalu", "hanya untuk publikasi terbit tahun")
+    assert nilai(h, "in_baca_bukan_penulis") == [{"n": 0}]
+    assert nilai(h, "in_baca_penulis_lain") == [{"n": 1}]
+    assert nilai(h, "in_baca_kaprodi") == [{"n": 1}]
+    gagal(h, "in_periksa_dosen", "admin prodi atau Kaprodi aktif")
+    gagal(h, "in_siap_belum_verif", "Verifikasi publikasinya dulu")
+    gagal(h, "in_siap_berkas_kurang", "naskah, indeksasi, loa, pernyataan")
+    gagal(h, "in_kembali_tanpa_catatan", "Tulis catatan")
+    assert h["in_kembali"]["ok"] and h["in_klaim_ulang"]["ok"] and h["in_siap"]["ok"]
+    gagal(h, "in_batal_siap", "tidak bisa dibatalkan")
+    assert nilai(h, "in_ajukan")[0]["id"]
+    gagal(h, "in_ajukan_lagi", "Hanya klaim berstatus siap")
+    gagal(h, "in_cair_langsung", "tidak bisa diubah menjadi cair")
+    assert nilai(h, "in_setuju") == [{"n": 1}] and nilai(h, "in_cair") == [{"n": 1}]
+    assert nilai(h, "in_baca_pengajuan_penulis") == [{"n": 1}]
+    assert nilai(h, "in_baca_pengajuan_bukan") == [{"n": 0}]
+    gagal(h, "in_tulis_langsung", "permission denied")
+    assert nilai(h, "in_akhir") == [{"status": "cair", "diajukan": True, "catatan": None}]
+
+
+def test_notulen_draf_hanya_untuk_peserta(h):
+    """166 (pemilik 2026-11-24): draft minutes only for participants, creator, PJ, admin, pimpinan;
+    the schedule (title, agenda) stays visible; pembahasan is never readable as a column."""
+    assert nilai(h, "rp_isi_luar") == [{"r": {"boleh": False, "pembahasan": None}}]
+    for l in ("rp_isi_peserta", "rp_isi_pj", "rp_isi_admin"):
+        assert nilai(h, l) == [{"r": {"boleh": True, "pembahasan": "Isi rahasia draf"}}], l
+    assert nilai(h, "rp_jadwal_luar") == [{"judul": "Rapat draf uji", "agenda": "Agenda uji"}]
+    gagal(h, "rp_kolom_luar", "permission denied")
+    gagal(h, "rp_kolom_peserta", "permission denied")
+    assert nilai(h, "rp_tindak_luar") == [{"n": 0}] and nilai(h, "rp_peserta_luar") == [{"n": 0}]
+    assert nilai(h, "rp_tindak_pj") == [{"n": 1}]
+    nilai(h, "rp_ubah_admin")
+    assert nilai(h, "rp_isi_luar_final") == [{"r": {"boleh": True, "pembahasan": "Isi final"}}]
+    assert nilai(h, "rp_tindak_luar_final") == [{"n": 1}]
+
+
+def test_ta_stage_order_172(h):
+    """172 (pemilik 2026-11-25): kemajuan setelah proposal lulus + revisi selesai, sidang setelah kemajuan;
+    pengecualian beralasan hanya oleh koordinator TA/admin; tabelnya tidak bisa ditulis langsung."""
+    gagal(h, "ur_kemajuan_tanpa_proposal", "Belum ada catatan seminar proposal")
+    gagal(h, "ur_kemajuan_revisi_belum", "Revisi seminar proposal Anda belum dinyatakan selesai")
+    assert nilai(h, "ur_kemajuan_boleh")[0]["s"] == "pembimbing"
+    gagal(h, "ur_sidang_tanpa_kemajuan", "Sidang akhir baru bisa didaftarkan setelah seminar kemajuan")
+    gagal(h, "ur_kecuali_dosen", "koordinator TA atau admin")
+    gagal(h, "ur_kecuali_tanpa_alasan", "minimal 5 huruf")
+    gagal(h, "ur_kecuali_tahap_salah", "Pilih tahap")
+    assert nilai(h, "ur_kecuali") == [{"r": "dicatat"}]
+    assert nilai(h, "ur_kecuali_baca") == [{"nim": "104199001", "tahap": "sidang_akhir",
+                                            "alasan": "Seminar kemajuan 2025 sebelum situs", "oleh": "Koor TA"}]
+    assert nilai(h, "ur_kecuali_baca_dosen") == [{"n": 0}]
+    gagal(h, "ur_kecuali_baca_anon", "permission denied")
+    gagal(h, "ur_kecuali_tulis_langsung", "permission denied")
+    assert nilai(h, "ur_sidang_dikecualikan")[0]["s"] == "pembimbing"
+    gagal(h, "ur_syarat_anon", "permission denied")
+    assert nilai(h, "ur_kecuali_hapus") == [{"r": "dihapus"}]
+    assert "mengulang. Daftarkan seminar kemajuan lagi" in nilai(h, "ur_pesan_mengulang")[0]["p"]
+
+
+def test_ta_grading_173(h):
+    """173 (pemilik 2026-11-25): form penilaian per tahap (draf versi 1, diubah koordinator TA/admin sebagai versi baru),
+    nilai oleh panel sendiri atau diisikan koordinator; seminar penguji 40 : pembimbing 60; sidang akhir penguji 40,
+    pembimbing saat sidang 10, proses bimbingan 50 (hanya pembimbing); batas lulus 55 (di bawahnya mengulang otomatis);
+    berita acara mengunci nilai dan data seminar, bisa dibuka kembali dengan alasan; Tugas saya."""
+    assert nilai(h, "nl_rubrik_awal") == [
+        {"tahap": "seminar_kemajuan", "versi": 1, "n": 5, "nb": 0, "bp": 40, "bm": 0, "bl": 55},
+        {"tahap": "seminar_proposal", "versi": 1, "n": 5, "nb": 0, "bp": 40, "bm": 0, "bl": 55},
+        {"tahap": "sidang_akhir", "versi": 1, "n": 5, "nb": 4, "bp": 40, "bm": 50, "bl": 55}]
+    gagal(h, "nl_rubrik_anon", "permission denied")
+    gagal(h, "nl_rubrik_tulis_langsung", "permission denied")
+    gagal(h, "nl_rubrik_dosen", "koordinator TA atau admin")
+    gagal(h, "nl_rubrik_bobot_salah", "harus 100 (sekarang 90)")
+    gagal(h, "nl_rubrik_bimbingan_kosong", "Proses bimbingan: Form penilaian berisi 1 sampai 12")
+    gagal(h, "nl_rubrik_bobot_lebih", "paling besar 100 %")
+    # Siapa boleh menilai dan isian yang sah.
+    gagal(h, "nl_simpan_bukan_panel", "bukan pembimbing atau penguji")
+    gagal(h, "nl_simpan_kurang", 'Isi nilai "Tinjauan pustaka"')
+    gagal(h, "nl_simpan_lebih", "harus 0–100")
+    assert nilai(h, "nl_simpan_penguji") == [{"t": 80}]
+    gagal(h, "nl_simpan_dosen_wakil", "diisikan koordinator TA atau admin")
+    gagal(h, "nl_tetapkan_kurang", "Pembimbing Satu, Ir. Luar, M.T. belum menilai")
+    assert nilai(h, "nl_simpan_pembimbing") == [{"t": 70}]
+    assert nilai(h, "nl_simpan_luar") == [{"t": 90}]
+    gagal(h, "nl_bim_proposal", "tidak memakai nilai proses bimbingan")
+    # Hak baca: panel dan koordinator; dosen lain tidak.
+    assert nilai(h, "nl_baca_bukan_panel") == [{"n": 0}]
+    assert nilai(h, "nl_baca_panel") == [{"n": 3}]
+    gagal(h, "nl_rekap_bukan_panel", "Rekap nilai dibuka")
+    r = nilai(h, "nl_rekap")[0]
+    assert r["versi"] == "1"
+    assert {k: r["h"][k] for k in ("rata_penguji", "rata_pembimbing", "rata_bimbingan", "nilai_akhir", "kurang", "saran")} == {
+        "rata_penguji": 85, "rata_pembimbing": 70, "rata_bimbingan": None, "nilai_akhir": 76, "kurang": [],
+        "saran": "lulus"}   # 85×0,4 + 70×0,6
+    # Penjaga jadwal_ta.
+    gagal(h, "nl_hasil_langsung", "sudah dinilai di situs")
+    gagal(h, "nl_kolom_langsung", "lewat halaman Penilaian")
+    # Penetapan.
+    gagal(h, "nl_tetapkan_dosen", "koordinator TA atau admin")
+    gagal(h, "nl_tetapkan_mengulang_salah", "Nilai akhir 76,00 mencapai batas lulus 55,00")
+    gagal(h, "nl_tetapkan_tanpa_tenggat", "tenggat revisi")
+    assert nilai(h, "nl_tetapkan") == [{"h": "lulus_revisi"}]
+    assert nilai(h, "nl_jadwal_sesudah") == [{"status": "selesai", "hasil": "lulus_revisi", "na": 76, "ba_oleh": "Koor TA",
+                                              "catatan_revisi": "Perbaiki bab 3"}]
+    gagal(h, "nl_simpan_terkunci", "sudah ditetapkan")
+    gagal(h, "nl_ubah_terkunci", "dikunci")
+    assert nilai(h, "nl_ubah_ruang") == [{"ruang": "R9"}]
+    gagal(h, "nl_hapus_terkunci", "tidak bisa dihapus")
+    gagal(h, "nl_buka_tanpa_alasan", "alasan")
+    assert nilai(h, "nl_buka") == [{"r": "dibuka"}]
+    assert nilai(h, "nl_sesudah_buka") == [{"hasil": None, "nilai_akhir": None, "terbuka": True, "alasan": True}]
+    # Versi baru form tidak mengubah jadwal yang sudah dinilai.
+    assert nilai(h, "nl_rubrik_baru") == [{"v": 2}]
+    assert nilai(h, "nl_versi_tetap") == [{"versi": "1"}]
+    # Di bawah batas lulus: mengulang otomatis.
+    assert nilai(h, "nl_simpan_rendah") == [{"t": 0}]
+    gagal(h, "nl_tetapkan_lulus_salah", "Nilai akhir 34,00 di bawah batas lulus 55,00: hasilnya mengulang")   # 85×0,4 + 0
+    assert nilai(h, "nl_tetapkan_mengulang") == [{"h": "mengulang"}]
+    # Tugas saya dan hapus nilai.
+    assert nilai(h, "nl_tugas_p1") == [{"tugas": "nilai", "nama_mahasiswa": "Nilai Dua"}]
+    assert nilai(h, "nl_tugas_kta") == [{"tugas": "tetapkan", "nama_mahasiswa": "Nilai Dua"}]
+    gagal(h, "nl_hapus_orang", "penilainya sendiri")
+    assert nilai(h, "nl_hapus_sendiri") == [{"r": "dihapus"}]
+    assert nilai(h, "nl_rubrik_lepas") == [{"rubrik_id": None}]
+    gagal(h, "nl_simpan_anon", "permission denied")
+    # Sidang akhir: proses bimbingan hanya pembimbing, berita acara menunggunya; 80×0,4 + 70×0,1 + 90×0,5 = 84.
+    gagal(h, "nl_bim_penguji", "diisi pembimbing")
+    assert nilai(h, "nl_tugas_p1_bim") == [{"tugas": "nilai"}]
+    gagal(h, "nl_tetapkan_kurang_bim", "Pembimbing Satu (proses bimbingan) belum menilai")
+    assert nilai(h, "nl_simpan_bim") == [{"t": 90}]
+    assert nilai(h, "nl_tugas_p1_lengkap") == [{"n": 0}]
+    s = nilai(h, "nl_rekap_sidang")[0]["h"]
+    assert (s["rata_penguji"], s["rata_pembimbing"], s["rata_bimbingan"], s["nilai_akhir"]) == (80, 70, 90, 84)
+    assert nilai(h, "nl_tetapkan_sidang") == [{"h": "lulus"}]
+    assert nilai(h, "nl_sidang_akhir") == [{"na": 84, "hasil": "lulus"}]
+
+
+def test_ta_berkas_per_tahap_174(h):
+    """174 (pemilik 2026-11-25): berkas pendaftaran seminar/sidang TA per tahap dari ta_berkas (usulan Claude disetujui):
+    proposal/kemajuan = naskah + bukti bimbingan SIUP; sidang + transkrip/KHS + draf artikel. Diubah koordinator TA/admin,
+    tidak dihapus (dinonaktifkan), naskah selalu wajib; diperiksa saat dikirim."""
+    # 176: bukti bimbingan SIUP nonaktif (digantikan catatan bimbingan 175), jadi yang menahan adalah syarat bimbingan.
+    gagal(h, "tb_kirim_tanpa_bimbingan", "Bimbingan terkonfirmasi: baru 0 dari minimal 4")
+    assert nilai(h, "tb_daftar_anon") == [{"tahap": t, "kode": k} for t, k in [
+        ("penetapan_pembimbing", "ta_terdaftar_siup"), ("seminar_kemajuan", "naskah_ta"), ("seminar_proposal", "naskah_ta"),
+        ("sidang_akhir", "naskah_ta"), ("sidang_akhir", "ta_transkrip"), ("sidang_akhir", "ta_artikel")]]
+    gagal(h, "tb_tabel_anon", "permission denied")
+    assert nilai(h, "tb_ubah_dosen") == []                          # RLS: dosen biasa tidak mengubah
+    assert nilai(h, "tb_ubah_koor") == [{"keterangan": "KHS semester terakhir."}]
+    gagal(h, "tb_naskah_opsional", "ta_berkas_naskah_cek")
+    gagal(h, "tb_hapus", "permission denied")
+    gagal(h, "tb_kode_salah", "ta_berkas_kode_check")
+    assert nilai(h, "tb_tambah") == [{"kode": "ta_persetujuan"}]
+    gagal(h, "tb_kode_tak_dikenal", "Jenis berkas tidak dikenal")
+    gagal(h, "tb_kirim_kurang_baru", "belum lengkap: Surat persetujuan pembimbing.")
+    assert nilai(h, "tb_nonaktif") == [{"aktif": False}]
+    gagal(h, "tb_kode_nonaktif", "Jenis berkas tidak dikenal")
+    assert nilai(h, "tb_kirim") == [{"s": "pembimbing"}]
+
+
+def test_ta_bimbingan_175(h):
+    """175 (pemilik 2026-11-25): mahasiswa mencatat bimbingan lewat tautan pribadi; pembimbing mana pun mengonfirmasi
+    atau mengembalikan dengan alasan; 14 hari tanpa tanggapan = terkonfirmasi otomatis; minimal 4 terkonfirmasi sejak
+    tahap sebelumnya sebelum mendaftar; catatan terkonfirmasi terkunci; tabel hanya ditulis lewat fungsi."""
+    gagal(h, "bm_tanpa_pembimbing", "Pembimbing TA Anda belum tercatat")
+    gagal(h, "bm_pembimbing_salah", "Pilih pembimbing yang membimbing")
+    gagal(h, "bm_tanggal_depan", "tidak boleh setelah hari ini")
+    gagal(h, "bm_topik_pendek", "5–1000 huruf")
+    lihat = nilai(h, "bm_lihat")[0]
+    assert (lihat["n"], lihat["pb"]) == (4, "Pembimbing Satu,Dosen Lain")
+    assert lihat["s0"] == {"cukup": False, "sejak": None, "tahap": "seminar_proposal", "minimal": 4, "terhitung": 0}
+    gagal(h, "bm_kirim_kurang", "Bimbingan terkonfirmasi: baru 0 dari minimal 4")
+    assert nilai(h, "bm_baca_dosen_lain") == [{"n": 0}]
+    assert nilai(h, "bm_baca_pembimbing2") == [{"n": 4}]
+    gagal(h, "bm_konfirmasi_dosen_lain", "dikonfirmasi pembimbingnya")
+    gagal(h, "bm_tulis_langsung", "permission denied")
+    assert nilai(h, "bm_menunggu_p1") == [{"nim": "104199175", "n": 4}]
+    gagal(h, "bm_kembali_tanpa_alasan", "Tulis alasan mengembalikan")
+    assert nilai(h, "bm_kembalikan") == [{"n": 1}]
+    assert nilai(h, "bm_konfirmasi") == [{"n": 3}]                 # pembimbing 2 boleh mengonfirmasi
+    gagal(h, "bm_ubah_terkonfirmasi", "tidak bisa diubah")
+    gagal(h, "bm_hapus_terkonfirmasi", "tidak bisa dihapus")
+    assert nilai(h, "bm_ubah_kembali")[0]["id"] > 0
+    assert nilai(h, "bm_status_ubah") == [{"status": "menunggu", "sah": False}]
+    gagal(h, "bm_kirim_3", "baru 3 dari minimal 4")
+    gagal(h, "bm_hapus_otomatis", "tidak bisa dihapus")              # 14 hari: terkonfirmasi otomatis
+    assert nilai(h, "bm_kirim") == [{"s": "pembimbing"}]
+    assert nilai(h, "bm_rekap") == [{"nim": "104199175", "pembimbing": "Pembimbing Satu, Dosen Lain", "sah": 4, "menunggu": 0,
+                                     "dikembalikan": 0, "terakhir": "2026-10-31"}]
+    assert nilai(h, "bm_rekap_dosen_lain") == [{"n": 0}]
+    assert nilai(h, "bm_syarat_kemajuan") == [{"s": {"cukup": False, "sejak": "2026-11-01", "tahap": "seminar_kemajuan",
+                                                     "minimal": 4, "terhitung": 0}}]
+    assert nilai(h, "bm_syarat_dosen") == []
+    assert nilai(h, "bm_syarat_koor") == [{"minimal": 2}]
+    gagal(h, "bm_syarat_batas", "ta_syarat_bimbingan_minimal_check")
+    gagal(h, "bm_tabel_anon", "permission denied")
+    gagal(h, "bm_token_salah", "Tautan tidak berlaku")
+
+
+def test_ta_berkas_siup_176(h):
+    """176 (pemilik 2026-11-25): bukti terdaftar TA di SIUP wajib di pengajuan pembimbing TA; bukti bimbingan SIUP
+    dinonaktifkan (catatan bimbingan 175); naskah tidak dipasang di tahap pengajuan pembimbing; koordinator TA bisa
+    menambah bukti SIUP ke tahap lain."""
+    assert nilai(h, "sp_bukti_bimbingan_nonaktif") == [{"kode": "ta_terdaftar_siup"}]
+    gagal(h, "sp_kirim_tanpa_siup", "Berkas wajib pengajuan pembimbing TA belum lengkap: Bukti terdaftar TA di SIUP.")
+    gagal(h, "sp_bukti_lama", "Jenis berkas tidak dikenal")
+    assert nilai(h, "sp_kirim") == [{"s": "admin"}]
+    gagal(h, "sp_naskah_penetapan", "ta_berkas_naskah_tahap_cek")
+    assert nilai(h, "sp_siup_ke_proposal") == [{"tahap": "seminar_proposal"}]
+
+
+def test_ta_nilai_siup_177(h):
+    """177 (pemilik 2026-11-25): koordinator TA/admin menandai nilai yang sudah diunggah ke SIUP (hanya berita acara yang
+    sudah ditetapkan); tanda hilang bila berita acara dibuka kembali; Tugas saya 'siup'; kolom hanya lewat fungsi."""
+    # 179: tugas 'siup' untuk pembimbing (p1), bukan koordinator; pembimbing boleh menandai, dosen di luar panel tidak.
+    assert nilai(h, "sq_tugas_awal") == [{"nama_mahasiswa": "Nilai Dua"}, {"nama_mahasiswa": "Nilai Satu"}]
+    assert nilai(h, "sq_tugas_dosen") == [{"n": 0}]
+    gagal(h, "sq_tandai_dosen", "pembimbingnya, koordinator TA, atau admin")
+    assert nilai(h, "sq_tandai_pembimbing") == [{"n": 1}]
+    assert nilai(h, "sq_batal_pembimbing") == [{"n": 1}]
+    gagal(h, "sq_tandai_belum_ba", "Berita acara belum ditetapkan: Nilai Tiga.")
+    assert nilai(h, "sq_tandai") == [{"n": 2}]
+    assert nilai(h, "sq_kolom") == [{"siup_oleh": "Koor TA", "ada": True}]
+    gagal(h, "sq_langsung", "tanda unggah SIUP diisi lewat halaman Penilaian")
+    assert nilai(h, "sq_tugas_sesudah") == []
+    assert nilai(h, "sq_buka") == [{"r": "dibuka"}]
+    assert nilai(h, "sq_siup_hilang") == [{"kosong": True, "siup_oleh": None}]
+    assert nilai(h, "sq_batal") == [{"n": 1}]
+    assert nilai(h, "sq_sesudah_batal") == [{"kosong": True}]
+
+
+def test_ta_arsip_178(h):
+    """178 (pemilik 2026-11-25): arsip TA per mahasiswa lulus (sidang lulus, atau lulus dengan revisi yang selesai);
+    dicatat koordinator TA/admin (lewat Apps Script dengan token login), tautan Drive saja; perbarui mengembalikan tautan
+    lama (dibuang Apps Script); dibuka koordinator/admin/pembimbing; Tugas saya 'arsip'."""
+    U1, U2 = "https://drive.google.com/file/d/ARSIP1/view", "https://drive.google.com/file/d/ARSIP2/view"
+    assert nilai(h, "ar_siap_awal") == [{"nim": "104199178", "lulus": "2026-11-20", "ada": False}]
+    assert nilai(h, "ar_siap_dosen") == [{"n": 0}]
+    assert nilai(h, "ar_tugas") == [{"tugas": "arsip", "nama_mahasiswa": "Arsip Lulus"}]
+    gagal(h, "ar_catat_dosen", "koordinator TA atau admin")
+    gagal(h, "ar_catat_belum_lulus", "belum lulus sidang akhir")
+    gagal(h, "ar_catat_bukan_drive", "tautan Google Drive")
+    assert nilai(h, "ar_catat") == [{"lama": None}]
+    assert nilai(h, "ar_perbarui") == [{"lama": U1}]
+    assert nilai(h, "ar_siap_sesudah") == [{"nim": "104199178", "lulus": "2026-11-20", "ada": True}]
+    assert nilai(h, "ar_url_pembimbing") == [{"url": U2}]
+    gagal(h, "ar_url_dosen_lain", "koordinator TA, admin, atau pembimbingnya")
+    gagal(h, "ar_url_belum", "belum disimpan")
+    gagal(h, "ar_tulis_langsung", "permission denied")
+    gagal(h, "ar_anon", "permission denied")
+    assert nilai(h, "ar_tugas_sesudah") == [{"n": 0}]
+
+
+def test_ta_lampiran_bimbingan_179(h):
+    """179 (pemilik 2026-11-25): satu lampiran per catatan bimbingan (Apps Script, kunci layanan), hanya selama belum
+    terkonfirmasi; ganti mengembalikan tautan lama; dihapus 30 hari setelah lulus (lulus dengan revisi: sejak revisi selesai)."""
+    L1, L2 = "https://drive.google.com/file/d/LAMP1/view", "https://drive.google.com/file/d/LAMP2/view"
+    gagal(h, "lp_kunci_salah", "Kunci layanan salah")
+    gagal(h, "lp_terkonfirmasi", "sudah terkonfirmasi")
+    assert nilai(h, "lp_pertama") == [{"lama": None}]
+    assert nilai(h, "lp_ganti") == [{"lama": L1}]
+    assert nilai(h, "lp_url") == [{"url": L2}]
+    assert nilai(h, "lp_lihat") == [{"nama": "bab4.pdf", "ada": True}]
+    assert nilai(h, "lp_staf_baca") == [{"lampiran_url": L2}]
+    assert nilai(h, "lp_staf_lain") == [{"n": 0}]
+    assert nilai(h, "lp_kedaluwarsa_belum") == [{"n": 0}]
+    assert nilai(h, "lp_lulus_pada") == [{"hari": 20}]              # lulus dengan revisi: tanggal revisi selesai
+    assert nilai(h, "lp_kedaluwarsa_20") == [{"n": 0}]
+    assert nilai(h, "lp_hapus_dini") == [{"r": "tidak"}]
+    assert nilai(h, "lp_kedaluwarsa_31") == [{"ini": True, "url": L2}]
+    gagal(h, "lp_hapus_kunci_salah", "Kunci layanan salah")
+    assert nilai(h, "lp_hapus") == [{"r": "dihapus"}]
+    assert nilai(h, "lp_sesudah") == [{"nama": "bab4.pdf", "ada": False, "dihapus": True}]
+    gagal(h, "lp_url_sesudah", "sudah dihapus 30 hari setelah lulus")

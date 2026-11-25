@@ -1,12 +1,13 @@
 // Runs the butir formulas of site/skor.html in an isolated Node context,
 // without a browser or Supabase (owner 2026-11-04: tests for scoring).
 //
-// skor.html keeps its formulas inline in one <script type="module">. The
-// harness copies the named top-level `function` declarations out of that
-// script, so the tests run the exact code the site runs. Card builders are
-// replaced by stubs: kartuButir(no, judul, isi, skor) returns the score.
+// The butir formulas are in site/instrumen/<id>/rumus-butir.js (irisan 3,
+// owner 2026-11-24); the harness wires buatRumus() the way skor.html does.
+// Helpers still inline in skor.html's <script type="module"> (IS, hitungMK, ...)
+// are copied out of that script, so the tests run the exact code the site runs.
+// Card builders are replaced by stubs: kartuButir(no, judul, isi, skor) returns the score.
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 // skor.html imports this from the module; the real one is passed in.
 import { tkKepuasan } from '../../site/butir-manual.js';
@@ -17,10 +18,15 @@ import { BUTIR_MANUAL } from '../../site/butir-manual.js';
 import { bobotButir } from '../../site/bobot.js';
 import { hitungTS, ampuPerTA } from '../../site/dosen-hitung.js';
 
-// SKOR_HTML points the harness at another copy (used to check that a broken
-// formula makes the tests fail).
+// SKOR_HTML / RUMUS_JS point the harness at another copy (used to check that a
+// broken formula makes the tests fail).
 const SKOR = process.env.SKOR_HTML
   || fileURLToPath(new URL('../../site/skor.html', import.meta.url));
+// Butir formulas computed from data moved to site/instrumen/<id>/rumus-butir.js
+// (irisan 3, owner 2026-11-24); loaded through the door site/rumus-butir.js.
+const { buatRumus, PEMBANTU_RUMUS } = await import(process.env.RUMUS_JS
+  ? pathToFileURL(process.env.RUMUS_JS).href
+  : new URL('../../site/rumus-butir.js', import.meta.url).href);
 
 function moduleScript(html) {
   const m = html.match(/<script type="module">([\s\S]*?)<\/script>/);
@@ -68,15 +74,9 @@ function constLine(src, name) {
   return m[0].replace(/^const /, 'var ');
 }
 
+// Functions still in skor.html; the butir formulas come from buatRumus() below.
 const FUNCTIONS = [
-  'jumlahJendela', 'skorRasio', 'IS', 'ndtps', 'taRange', 'tracerJendela',
-  'catatanResponden', 'butir33', 'butir35', 'butir36', 'butir37',
-  'butir49', 'butir50', 'butir51',
-  'siapkanPrestasi', 'butir43', 'butir46', 'reratTA', 'kohort6d', 'skorMS',
-  'butir44', 'butir45',
-  'butir06', 'butirDana', 'butirDanaKarya', 'butir19', 'butirKegMhs', 'butir26',
-  'butir27', 'butir28', 'butirDanaSumber', 'butir34', 'barisTA', 'butir40',
-  'butir41', 'butir42', 'butir47',
+  'IS',
   // Butir 9, 18, 19 dari Data prodi (pemilik 2026-11-10).
   'sksMK', 'hitungMK', 'hitungBOP', 'hitungDosen',
   // Butir 20, 22, 24 dari bukti per unsur (pemilik 2026-11-10).
@@ -86,7 +86,7 @@ const FUNCTIONS = [
   // Langkah tercepat (pemilik 2026-11-11).
   'skorDariUnsur', 'langkahTercepat',
 ];
-const CONSTS = ['esc', 'f2', 'taDari', 'tahunMasukBaris', 'JENIS_BOP'];
+const CONSTS = ['esc', 'f2', 'taDari', 'JENIS_BOP'];
 
 // Stubs keep only the number; the HTML of the cards is not under test.
 const STUBS = `
@@ -95,6 +95,9 @@ const STUBS = `
   function rincianButir() { return ''; }
   function tabelNA() { return ''; }
 `;
+
+// Helpers skor.html imports from site/ modules and passes to buatRumus().
+const IMPOR_RUMUS = { cekPitaWT, adaTingkat, sesuaiTracer, karya4i, tautanPengutip };
 
 export function loadFormulas() {
   const src = moduleScript(readFileSync(SKOR, 'utf8'));
@@ -112,6 +115,16 @@ export function loadFormulas() {
     AMPU: new Map(), hitungTS, ampuPerTA,   // 154: mengampu per TA (kosong = syarat mengampu tidak diterapkan)
     tkKepuasan, cekPitaWT, adaTingkat, sesuaiTracer, karya4i, tautanPengutip, UNSUR, hitungUnsur, skorKunci, KUNCI_UNSUR, UNSUR_BUTIR, unsurAda, BUTIR_MANUAL, bobotButir });
   vm.runInContext(code, ctx, { filename: 'skor.html (extracted)' });
+  // Same wiring as skor.html: page state read at each call, helpers looked up in
+  // the context (so stubs and extracted functions are the ones used).
+  const lokal = PEMBANTU_RUMUS.filter(n => !(n in IMPOR_RUMUS));
+  const rumus = buatRumus({
+    keadaan: () => ({ D: ctx.D, TS: ctx.TS, DANA: ctx.DANA, KARYA_SITASI: ctx.KARYA_SITASI, P_DATA: ctx.P_DATA }),
+    ...Object.fromEntries(lokal.map(n => [n, (...a) => ctx[n](...a)])),
+    ...IMPOR_RUMUS,
+  });
+  Object.assign(ctx, rumus.fungsi);
+  ctx.daftarRumus = rumus.daftar;
   // run(fn, {D, TS, PENG, DANA}, ...args) sets the page globals, then calls
   // fn(...args) (args as in render() of skor.html, e.g. butirDana(9, ...)).
   ctx.run = (name, state, ...args) => {

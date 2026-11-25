@@ -1,14 +1,20 @@
 // Supabase tiruan untuk "python coba_lokal.py" (pemilik 2026-11-12; asalnya alat rekaman video
 // 2026-11-07): data fiktif seed.json (coba/seed.py), perubahan tersimpan di localStorage peramban.
-// Bukan bagian situs terbit: hanya disalin ke folder coba-lokal/. Peran: localStorage.mockSaya =
+// Disalin ke folder coba-lokal/ (mode coba) dan, oleh tools/buat_latihan.py, ke site/latihan/ (mode latihan di situs
+// terbit; salinan itu harus identik, tests/test_latihan.py). Peran (mode coba): localStorage.mockSaya =
 // email, atau 'tamu' untuk pengunjung umum; diganti lewat bilah MODE COBA di bawah halaman.
-const res = await fetch('seed.json');
+// Mode latihan (pemilik 2026-11-24): salinan berkas ini di site/latihan/ dipakai pengajuan.html?latihan=1 di situs terbit untuk
+// sosialisasi; window.LATIHAN = true. Bedanya: seed.json dibaca dari folder berkas ini, penyimpanan memakai kunci latihan*
+// (tidak bercampur dengan mode coba), peran selalu tamu (mahasiswa), dan bilah MODE COBA tidak dipasang.
+const LATIHAN = !!window.LATIHAN;
+const KDB = LATIHAN ? 'latihanDB' : 'mockDB', KN = LATIHAN ? 'latihanN' : 'mockN';
+const res = await fetch(new URL('seed.json', import.meta.url));
 const SEED = await res.json();
-let DB = JSON.parse(localStorage.mockDB || 'null') || SEED;
+let DB = JSON.parse(localStorage[KDB] || 'null') || SEED;
 // Situs coba dibangun ulang (seed baru): data lama di peramban diganti.
-if (DB._versi !== SEED._versi) { DB = SEED; localStorage.removeItem('mockN'); }
-const simpan = () => { try { localStorage.mockDB = JSON.stringify(DB); } catch (e) { /* cukup di memori */ } };
-const email = () => localStorage.mockSaya || 'tamu';
+if (DB._versi !== SEED._versi) { DB = SEED; localStorage.removeItem(KN); }
+const simpan = () => { try { localStorage[KDB] = JSON.stringify(DB); } catch (e) { /* cukup di memori */ } };
+const email = () => (LATIHAN ? 'tamu' : localStorage.mockSaya || 'tamu');
 window.__DB = () => DB;
 // 110: pasangan KK berdekatan untuk pembimbing TA (sama dengan isi awal ta_kk_dekat di patch 110).
 if (!DB.ta_kk_dekat) DB.ta_kk_dekat = [{ kk_a: 'GEO', kk_b: 'STR' }, { kk_a: 'MRK', kk_b: 'STR' }, { kk_a: 'AIR', kk_b: 'GEO' }, { kk_a: 'GEO', kk_b: 'TRN' }];
@@ -34,9 +40,9 @@ function pasangBilah(){
   document.body.appendChild(b);
   document.body.style.paddingBottom = '44px';
 }
-if (document.body) pasangBilah(); else addEventListener('DOMContentLoaded', pasangBilah);
-let n = Number(localStorage.mockN || 500000);
-const baru = () => { n += 1; localStorage.mockN = n; return n; };
+if (!LATIHAN) { if (document.body) pasangBilah(); else addEventListener('DOMContentLoaded', pasangBilah); }
+let n = Number(localStorage[KN] || 500000);
+const baru = () => { n += 1; localStorage[KN] = n; return n; };
 const uuid = () => '00000000-0000-4000-8000-' + String(baru()).padStart(12, '0');
 const TABEL_UUID = new Set(['karya', 'dosen', 'karya_mitra', 'karya_mahasiswa', 'hibah_ajuan']);
 const KUNCI = { pengaturan: ['kunci'], led_narasi: ['kunci'], led_penugasan: ['kelompok'], hibah_tim: ['ajuan_id', 'dosen_id'] };
@@ -50,7 +56,45 @@ const pmToken = t => PM().find(p => p.token === t);
 const pmRiwayat = (p, status, oleh, catatan = null) => (DB.pengajuan_riwayat ||= []).push({ id: baru(), pengajuan_id: p.id, status, oleh, catatan,
   tahap: p.tahap || 'pengajuan', waktu: new Date().toISOString() });
 const pmGagal = message => ({ data: null, error: { message } });
+// 175: pembimbing TA (penetapan disetujui, atau pengajuan TA terakhir yang dikirim), sah = dikonfirmasi atau 14 hari, syarat per tahap.
+function pmPembimbingNim(nim){
+  const xs = PM().filter(o => o.nim === nim && o.jenis === 'ta' && o.pembimbing_id && !['draf', 'ditolak', 'dibatalkan'].includes(o.status));
+  const o = xs.find(x => x.data?.tahap_ta === 'penetapan_pembimbing' && x.status === 'disetujui') || xs.at(-1);
+  if (!o) return [];
+  const d = id => (DB.dosen || []).find(x => x.id === id);
+  return [[o.pembimbing_id, 1], [o.data?.pembimbing_2, 2]].filter(([id], i) => id && d(id) && (i === 0 || id !== o.pembimbing_id))
+    .map(([id, ke]) => ({ id, nama: d(id).nama, ke }));
+}
+// 178: lulus = sidang akhir selesai, lulus atau lulus dengan revisi yang sudah selesai.
+function pmArsipSiap(){
+  const g = new Map();
+  for (const t of (DB.jadwal_ta || []).filter(t => t.nim && t.tahap === 'sidang_akhir' && t.status === 'selesai'
+      && (t.hasil === 'lulus' || (t.hasil === 'lulus_revisi' && t.revisi_selesai))).sort((a, b) => a.tanggal.localeCompare(b.tanggal))) {
+    const a = (DB.ta_arsip || []).find(x => x.nim === t.nim);
+    g.set(t.nim, { nim: t.nim, nama: t.nama_mahasiswa, judul: t.judul, lulus: t.tanggal, arsip_url: a?.url || null, arsip_dibuat: a?.dibuat || null, arsip_oleh: a?.oleh || null });
+  }
+  return [...g.values()];
+}
+const pmBimbSah = b => b.status === 'dikonfirmasi' || (b.status === 'menunggu' && +new Date(b.diajukan) <= Date.now() - 14 * 864e5);
+function pmSyaratBimb(nim, tahap){
+  const minimal = (DB.ta_syarat_bimbingan || []).find(s => s.tahap === tahap)?.minimal ?? 0;
+  const sebelum = { seminar_kemajuan: 'seminar_proposal', sidang_akhir: 'seminar_kemajuan' }[tahap];
+  const sejak = sebelum ? (DB.jadwal_ta || []).filter(t => t.nim === nim && t.tahap === sebelum && t.status === 'selesai' && ['lulus', 'lulus_revisi'].includes(t.hasil))
+    .map(t => t.tanggal).sort().at(-1) || null : null;
+  const terhitung = (DB.ta_bimbingan || []).filter(b => b.nim === nim && pmBimbSah(b) && (!sejak || b.tanggal > sejak)).length;
+  return { tahap, minimal, terhitung, sejak, cukup: terhitung >= minimal };
+}
 function pmRpc(nama, a){
+  // 174: berkas pendaftaran seminar/sidang TA per tahap (daftar aktif, urut seperti ta_berkas_daftar).
+  if (nama === 'ta_berkas_daftar') return { data: (DB.ta_berkas || []).filter(t => t.aktif)
+    .sort((a, b) => a.tahap.localeCompare(b.tahap) || a.urut - b.urut || a.kode.localeCompare(b.kode))
+    .map(({ tahap, kode, label, keterangan, wajib }) => ({ tahap, kode, label, keterangan, wajib })), error: null };
+  // 178: mahasiswa lulus sidang akhir + status arsip (koordinator TA/admin), tiruan.
+  if (nama === 'ta_arsip_siap') {
+    const saya = (DB.dosen || []).find(d => d.email === email());
+    const koor = !!saya && (saya.peran === 'admin' || (DB.koordinator || []).some(k => k.dosen_id === saya.id && k.jabatan === 'koordinator_ta' && !k.selesai));
+    return { data: koor ? pmArsipSiap() : [], error: null };
+  }
   if (nama === 'pembimbing_pilihan') return { data: (DB.dosen || []).filter(d => d.aktif && d.peran !== 'asesor' && (d.dtps || d.kategori) && !d.tugas_belajar)
     .map(d => ({ id: d.id, nama: d.nama })).sort((x, y) => x.nama.localeCompare(y.nama)), error: null };
   // Kuota dan penetapan pembimbing KP (107), tiruan: "koordinator" = admin.
@@ -102,17 +146,44 @@ function pmRpc(nama, a){
   const penetapan = x => x.jenis === 'ta' && x.data?.tahap_ta === 'penetapan_pembimbing';
   if (nama === 'pembimbing_pilihan_ta') return { data: pmRpc('pembimbing_pilihan').data.map(d => { const k = kkDosen(d.id);
     return { ...d, kk: k, kk_cocok: k ? [...new Set([k, ...DB.ta_kk_dekat.filter(x => [x.kk_a, x.kk_b].includes(k)).map(x => x.kk_a === k ? x.kk_b : x.kk_a)])].sort() : [] }; }), error: null };
+  // 180: kuota per semester; beban pada pembimbing pertama (pembimbing_awal); dibimbing = semester sebelumnya, belum lulus.
+  const smtIdx = t => { const m = String(t || '').match(/^(\d{4})-(\d{2})/); if (!m) return null; const y = +m[1], b = +m[2];
+    return b >= 9 ? (y + 1) * 2 : b <= 2 ? y * 2 : y * 2 + 1; };
+  const lulusTA = nim => (DB.jadwal_ta || []).some(j => j.nim === nim && j.tahap === 'sidang_akhir' && j.status === 'selesai'
+    && (j.hasil === 'lulus' || (j.hasil === 'lulus_revisi' && j.revisi_selesai)));
   if (nama === 'ta_beban') {
-    const k = DB.ta_kuota || [], bawaan = k.find(x => x.ts === a.p_ts && !x.dosen_id)?.kuota ?? null;
-    return { data: pmRpc('pembimbing_pilihan').data.map(d => { const sendiri = k.find(x => x.ts === a.p_ts && x.dosen_id === d.id);
+    const k = (DB.ta_kuota || []).filter(x => x.ts === a.p_ts && (x.semester || 'Ganjil') === a.p_sm), bawaan = k.find(x => !x.dosen_id)?.kuota ?? null;
+    const i = a.p_ts * 2 + (a.p_sm === 'Genap' ? 1 : 0), jalan = p => penetapan(p) && !['draf', 'ditolak'].includes(p.status);
+    return { data: pmRpc('pembimbing_pilihan').data.map(d => { const sendiri = k.find(x => x.dosen_id === d.id);
       return { dosen_id: d.id, nama: d.nama, kk: kkDosen(d.id), kuota: sendiri ? sendiri.kuota : bawaan, kuota_sendiri: !!sendiri,
-        beban: PM().filter(p => penetapan(p) && p.pembimbing_id === d.id && !['draf', 'ditolak'].includes(p.status) && tsDari(p.dibuat) === a.p_ts).length }; }), error: null };
+        beban: PM().filter(p => jalan(p) && (p.data?.pembimbing_awal || p.pembimbing_id) === d.id && smtIdx(p.dibuat) === i).length,
+        dibimbing: new Set(PM().filter(p => jalan(p) && p.pembimbing_id === d.id && smtIdx(p.dibuat) < i && !lulusTA(p.nim)).map(p => p.nim)).size }; }),
+      error: null };
   }
   if (nama === 'ta_atur_kuota') {
     if (!sayaAdmin()) return pmGagal('Kuota TA diatur koordinator TA atau admin.');
-    DB.ta_kuota = (DB.ta_kuota || []).filter(x => !(x.ts === a.p_ts && (x.dosen_id || null) === (a.p_dosen || null)));
-    if (a.p_kuota != null) DB.ta_kuota.push({ id: baru(), ts: a.p_ts, dosen_id: a.p_dosen || null, kuota: a.p_kuota });
+    if (!['Ganjil', 'Genap'].includes(a.p_sm)) return pmGagal('Semester harus Ganjil atau Genap.');
+    DB.ta_kuota = (DB.ta_kuota || []).filter(x => !(x.ts === a.p_ts && (x.semester || 'Ganjil') === a.p_sm && (x.dosen_id || null) === (a.p_dosen || null)));
+    if (a.p_kuota != null) DB.ta_kuota.push({ id: baru(), ts: a.p_ts, semester: a.p_sm, dosen_id: a.p_dosen || null, kuota: a.p_kuota });
     simpan(); return { data: 'ok', error: null };
+  }
+  if (nama === 'ta_ganti_pembimbing') {
+    const p = PM().find(x => x.id === a.p_id), alasan = String(a.p_alasan || '').trim(), judul = String(a.p_judul || '').trim();
+    if (!sayaAdmin()) return pmGagal('Pembimbing TA diganti koordinator TA atau admin.');
+    if (!p || !penetapan(p)) return pmGagal('Pengajuan pembimbing TA tidak ditemukan.');
+    if (p.status !== 'disetujui') return pmGagal('Ganti pembimbing hanya pada penetapan yang sudah disahkan; sebelum itu pakai Tetapkan pembimbing.');
+    if (alasan.length < 5) return pmGagal('Tulis alasan penggantian (bimbingan dibatalkan).');
+    if (a.p_dosen2 && a.p_dosen2 === a.p_dosen) return pmGagal('Pembimbing 2 harus berbeda dari pembimbing 1.');
+    const nm = id => (DB.dosen || []).find(d => d.id === id)?.nama || '-';
+    const catatan = `Bimbingan dibatalkan, pembimbing diganti. Pembimbing 1: ${nm(p.pembimbing_id)} -> ${nm(a.p_dosen)}. Alasan: ${alasan}`;
+    p.data = { ...p.data, pembimbing_awal: p.data?.pembimbing_awal || p.pembimbing_id, ...(judul ? { judul } : {}) };
+    if (a.p_dosen2) p.data.pembimbing_2 = a.p_dosen2; else delete p.data.pembimbing_2;
+    for (const o of PM().filter(o => o.nim === p.nim && o.jenis === 'ta' && o.id !== p.id && !penetapan(o)
+      && ['draf', 'pembimbing', 'admin', 'dikembalikan'].includes(o.status))) { o.pembimbing_id = a.p_dosen; o.data = { ...o.data, pembimbing_2: a.p_dosen2 || undefined }; }
+    p.pembimbing_id = a.p_dosen;
+    (DB.pengajuan_riwayat ||= []).push({ id: baru(), pengajuan_id: p.id, status: p.status, oleh: 'Situs coba (koordinator TA/admin)', catatan,
+      tahap: p.tahap, waktu: new Date().toISOString() });
+    simpan(); return { data: 'diganti', error: null };
   }
   if (nama === 'ta_tetapkan_pembimbing') {
     const saya = sayaAdmin(), p = PM().find(x => x.id === a.p_id);
@@ -164,6 +235,68 @@ function pmRpc(nama, a){
     p.status = 'disetujui'; p.diperbarui = new Date().toISOString(); pmRiwayat(p, 'disetujui', saya.nama, 'Dijadwalkan ' + a.p_tanggal); simpan();
     return { data: 1, error: null };
   }
+  // 163: insentif publikasi, tiruan ringkas (aturan sama dengan instal-lengkap.sql).
+  if (nama.startsWith('insentif_')) {
+    const saya = (DB.dosen || []).find(d => d.email === email()), KL = (DB.insentif_publikasi ||= []), PJ = (DB.insentif_pengajuan ||= []);
+    const pengelola = saya?.peran === 'admin';
+    const penulis = kid => (DB.karya_penulis || []).some(p => p.karya_id === kid && p.dosen_id === saya?.id);
+    const kurang = kid => ['naskah', 'indeksasi', 'loa', 'pernyataan'].filter(j => !(DB.karya_bukti || []).some(b => b.karya_id === kid && b.jenis === j));
+    const tahun = new Date(Date.now() + 7 * 3600e3).getUTCFullYear(), kini = new Date().toISOString();
+    if (nama === 'insentif_klaim') {
+      const k = (DB.karya || []).find(x => x.id === a.p_karya);
+      if (!k) return pmGagal('Publikasi tidak ditemukan.');
+      if (!penulis(k.id)) return pmGagal('Hanya penulis publikasi ini yang bisa mengklaim insentif.');
+      if (k.kategori !== 'publikasi') return pmGagal('Insentif hanya untuk publikasi.');
+      if (+k.tahun !== tahun) return pmGagal(`Insentif hanya untuk publikasi terbit tahun ${tahun} (publikasi ini ${k.tahun}).`);
+      const i = KL.find(x => x.karya_id === k.id);
+      if (i && i.pengklaim_id !== saya.id) return pmGagal('Publikasi ini sudah diklaim penulis lain (satu klaim per publikasi).');
+      if (i) { if (i.status === 'dikembalikan') Object.assign(i, { status: 'diklaim', diperbarui: kini }); simpan(); return { data: i.id, error: null }; }
+      const n = { id: baru(), karya_id: k.id, pengklaim_id: saya.id, status: 'diklaim', catatan: null, pengajuan_id: null, diklaim_pada: kini, diperbarui: kini };
+      KL.push(n); simpan(); return { data: n.id, error: null };
+    }
+    if (nama === 'insentif_batal') {
+      const i = KL.find(x => x.karya_id === a.p_karya); if (!i) return { data: null, error: null };
+      if (!['diklaim', 'dikembalikan'].includes(i.status)) return pmGagal(`Klaim berstatus ${i.status} tidak bisa dibatalkan; hubungi admin prodi.`);
+      DB.insentif_publikasi = KL.filter(x => x !== i); simpan(); return { data: null, error: null };
+    }
+    if (!pengelola) return pmGagal('Klaim insentif diperiksa admin prodi atau Kaprodi aktif.');
+    if (nama === 'insentif_periksa') {
+      const i = KL.find(x => x.id === a.p_id); if (!i) return pmGagal('Klaim tidak ditemukan.');
+      if (a.p_status === 'dikembalikan' && !String(a.p_catatan || '').trim()) return pmGagal('Tulis catatan: apa yang perlu diperbaiki dosen.');
+      if (a.p_status === 'siap') {
+        const k = (DB.karya || []).find(x => x.id === i.karya_id);
+        if (k?.status !== 'terverifikasi') return pmGagal(`Verifikasi publikasinya dulu (status sekarang: ${k?.status}).`);
+        if (kurang(i.karya_id).length) return pmGagal(`Berkas belum lengkap: ${kurang(i.karya_id).join(', ')}.`);
+      }
+      Object.assign(i, { status: a.p_status, catatan: String(a.p_catatan || '').trim() || null, diperbarui: kini }); simpan(); return { data: null, error: null };
+    }
+    if (nama === 'insentif_ajukan') {
+      if (!a.p_ids?.length || a.p_ids.some(id => KL.find(x => x.id === id)?.status !== 'siap')) return pmGagal('Hanya klaim berstatus siap yang bisa diajukan.');
+      const p = { id: baru(), judul: a.p_judul, tanggal: kini.slice(0, 10), catatan: a.p_catatan || null, dibuat_oleh: saya.id, dibuat: kini };
+      PJ.push(p); KL.filter(x => a.p_ids.includes(x.id)).forEach(x => Object.assign(x, { status: 'diajukan', pengajuan_id: p.id })); simpan();
+      return { data: p.id, error: null };
+    }
+    if (nama === 'insentif_hasil') {
+      const xs = KL.filter(x => a.p_ids.includes(x.id));
+      if (xs.some(x => !((x.status === 'diajukan' && ['disetujui', 'ditolak', 'siap'].includes(a.p_status)) || (x.status === 'disetujui' && a.p_status === 'cair'))))
+        return pmGagal(`Ada klaim yang statusnya tidak bisa diubah menjadi ${a.p_status}.`);
+      xs.forEach(x => Object.assign(x, { status: a.p_status, pengajuan_id: a.p_status === 'siap' ? null : x.pengajuan_id })); simpan();
+      return { data: xs.length, error: null };
+    }
+  }
+  // 161: batalkan oleh admin atas permintaan mahasiswa, tiruan (sama dengan pengajuan_batalkan).
+  if (nama === 'pengajuan_batalkan') {
+    const p = PM().find(x => x.id === a.p_id), saya = (DB.dosen || []).find(d => d.email === email());
+    if (!p) return pmGagal('Pengajuan tidak ditemukan.');
+    if (!saya || saya.peran !== 'admin') return pmGagal('Pembatalan oleh prodi khusus admin prodi atau koordinator bidangnya.');
+    const al = String(a.p_alasan || '').trim().slice(0, 300);
+    if (!al) return pmGagal('Tulis alasan pembatalan (mis. permintaan mahasiswa: salah jalur).');
+    if (p.status === 'ditolak' || (p.status === 'disetujui' && ((p.tahap || 'pengajuan') === 'selesai' || p.jenis !== 'kp')))
+      return pmGagal('Pengajuan yang sudah diputuskan tidak dibatalkan.');
+    p.status = 'dibatalkan'; p.diperbarui = new Date().toISOString();
+    pmRiwayat(p, 'dibatalkan', saya.nama, 'Dibatalkan prodi atas permintaan: ' + al + '.'); simpan();
+    return { data: 'dibatalkan', error: null };
+  }
   if (nama === 'pengajuan_putuskan') {
     const p = PM().find(x => x.id === a.p_id), saya = (DB.dosen || []).find(d => d.email === email());
     if (!p || !saya) return pmGagal('Pengajuan tidak ditemukan.');
@@ -178,6 +311,60 @@ function pmRpc(nama, a){
     p.diperbarui = new Date().toISOString();
     pmRiwayat(p, p.status, saya.nama, a.p_catatan); simpan();
     return { data: p.status, error: null };
+  }
+  // 160: "Lihat seperti mahasiswa", tiruan: sama dengan patch (fungsi asli dijalankan dengan token sementara, lalu dibatalkan):
+  // data disalin, cabang mhs_lihat / mhs_kirim / mhs_kirim_selesai di bawah dipanggil, lalu data dikembalikan dari salinan.
+  if (nama === 'mhs_pratinjau_admin') {
+    const saya = (DB.dosen || []).find(d => d.email === email());
+    const p0 = PM().find(x => x.id === +a.p_id);
+    if (!p0) return pmGagal('Pengajuan tidak ditemukan.');
+    if (!saya || saya.peran !== 'admin') return pmGagal('Pratinjau pengajuan khusus admin prodi atau koordinator bidangnya.');
+    const salinan = JSON.stringify(DB), T = '__pratinjau__';
+    const coba = n => { const q = PM().find(x => x.id === p0.id); q.token = T; return pmRpc(n, { p_token: T }); };
+    const lihat = coba('mhs_lihat').data;
+    const tahap = p0.tahap || 'pengajuan';
+    const xs = [['kirim', 'Kirim untuk diperiksa', tahap === 'pengajuan' && ['draf', 'dikembalikan'].includes(p0.status) && p0.data?.susulan !== 'selesai'],
+      ['kirim_selesai', 'Kirim laporan selesai', lihat.jendela_selesai && (p0.data?.susulan === 'selesai' || tahap === 'selesai'
+        || p0.data?.jawaban_instansi === 'diterima')]].filter(x => x[2]);   // sama dengan pengajuan.html bukaSelesai
+    const periksa = xs.map(([aksi, label]) => {
+      DB = JSON.parse(salinan);
+      const r = coba(aksi === 'kirim' ? 'mhs_kirim' : 'mhs_kirim_selesai');
+      return { aksi, label, lolos: !r.error, pesan: r.error ? r.error.message : null };
+    });
+    DB = JSON.parse(salinan); simpan();
+    return { data: { lihat: { ...lihat, token: undefined }, periksa }, error: null };
+  }
+  // 175: catatan bimbingan TA, tiruan (aturan sama dengan instal-lengkap.sql).
+  if (['ta_bimbingan_konfirmasi', 'ta_bimbingan_rekap', 'ta_bimbingan_menunggu'].includes(nama)) {
+    const saya = (DB.dosen || []).find(d => d.email === email()), B = (DB.ta_bimbingan ||= []);
+    const koor = !!saya && (saya.peran === 'admin' || (DB.koordinator || []).some(k => k.dosen_id === saya.id && k.jabatan === 'koordinator_ta' && !k.selesai));
+    const pbSaya = nim => pmPembimbingNim(nim).some(x => x.id === saya?.id);
+    if (nama === 'ta_bimbingan_menunggu') {
+      const g = new Map();
+      for (const b of B.filter(b => b.status === 'menunggu' && !pmBimbSah(b) && pbSaya(b.nim))) {
+        const x = g.get(b.nim) || { nim: b.nim, nama: b.nama, n: 0, tertua: b.diajukan }; x.n++; if (b.diajukan < x.tertua) x.tertua = b.diajukan; g.set(b.nim, x); }
+      return { data: [...g.values()], error: null };
+    }
+    if (nama === 'ta_bimbingan_rekap') {
+      const nims = new Map();
+      for (const o of PM().filter(o => o.jenis === 'ta' && !['draf', 'ditolak', 'dibatalkan'].includes(o.status))) nims.set(o.nim, o.nama);
+      for (const b of B) if (!nims.has(b.nim)) nims.set(b.nim, b.nama);
+      const urutT = { sidang_akhir: 3, seminar_kemajuan: 2, seminar_proposal: 1 };
+      return { data: [...nims].filter(([nim]) => koor || pbSaya(nim)).map(([nim, nm]) => { const xs = B.filter(b => b.nim === nim);
+        const lulus = (DB.jadwal_ta || []).filter(t => t.nim === nim && t.status === 'selesai' && ['lulus', 'lulus_revisi'].includes(t.hasil))
+          .sort((a, b) => urutT[b.tahap] - urutT[a.tahap])[0];
+        return { nim, nama: nm, pembimbing: pmPembimbingNim(nim).map(x => x.nama).join(', ') || null, sah: xs.filter(pmBimbSah).length,
+          menunggu: xs.filter(b => b.status === 'menunggu' && !pmBimbSah(b)).length, dikembalikan: xs.filter(b => b.status === 'dikembalikan').length,
+          terakhir: xs.map(b => b.tanggal).sort().at(-1) || null, tahap_lulus: lulus?.tahap || null }; }).sort((a, b) => a.nama.localeCompare(b.nama)), error: null };
+    }
+    if (!saya) return pmGagal('Masuk sebagai dosen terdaftar dulu.');
+    if (!a.p_setuju && String(a.p_catatan || '').trim().length < 3) return pmGagal('Tulis alasan mengembalikan (minimal 3 huruf).');
+    const xs = B.filter(b => (a.p_ids || []).includes(b.id));
+    if (!xs.length) return pmGagal('Pilih catatan bimbingan dulu.');
+    if (xs.some(b => !(koor || pbSaya(b.nim)))) return pmGagal('Catatan bimbingan dikonfirmasi pembimbingnya, koordinator TA, atau admin.');
+    for (const b of xs) Object.assign(b, { status: a.p_setuju ? 'dikonfirmasi' : 'dikembalikan', catatan_pembimbing: String(a.p_catatan || '').trim() || null,
+      konfirmasi_oleh: saya.nama, konfirmasi_pada: new Date().toISOString() });
+    simpan(); return { data: xs.length, error: null };
   }
   if (!nama.startsWith('mhs_')) return null;
   const p = pmToken(a.p_token);
@@ -207,7 +394,13 @@ function pmRpc(nama, a){
   if (nama === 'mhs_ubah_selesai') { if (!jendela) return pmGagal('Laporan selesai KP belum bisa diubah.'); p.data_selesai = a.p_data; simpan(); return { data: 'ok', error: null }; }
   if (nama === 'mhs_kirim_selesai') {
     if (!jendela) return pmGagal('Laporan selesai KP sudah dikirim atau belum bisa dikirim.');
-    for (const j of ['laporan_kp', 'surat_selesai']) if (!(DB.pengajuan_berkas || []).some(b => b.pengajuan_id === p.id && b.jenis === j)) return pmGagal(`Unggah berkas wajib dulu: ${j}.`);
+    // Urutan dan bunyi pesan sama dengan mhs_kirim_selesai (106), 2026-11-24.
+    if (tahap === 'pengajuan' && (!p.data?.instansi || !p.pembimbing_id)) return pmGagal('Isi nama instansi dan pilih dosen pembimbing KP.');
+    const ds = p.data_selesai || {};
+    if (!ds.tanggal_mulai || !ds.tanggal_selesai || !ds.pembimbing_lapangan || String(ds.ringkasan || '').length < 30)
+      return pmGagal('Lengkapi tanggal mulai dan selesai, pembimbing lapangan, dan ringkasan kegiatan (minimal 30 huruf).');
+    for (const j of ['laporan_kp', 'surat_selesai']) if (!(DB.pengajuan_berkas || []).some(b => b.pengajuan_id === p.id && b.jenis === j))
+      return pmGagal(`Unggah berkas wajib dulu: ${j === 'laporan_kp' ? 'laporan KP' : 'surat keterangan selesai'}.`);
     Object.assign(p, { tahap: 'selesai', status: 'pembimbing', diperbarui: new Date().toISOString() });
     (DB.pengajuan_riwayat ||= []).push({ id: baru(), pengajuan_id: p.id, status: 'pembimbing', oleh: 'mahasiswa', tahap: 'selesai', waktu: new Date().toISOString() });
     simpan(); return { data: 'pembimbing', error: null };
@@ -225,6 +418,40 @@ function pmRpc(nama, a){
       judul: o.data?.instansi || o.data?.nama_kegiatan || '' })), pembimbing: (DB.dosen || []).find(d => d.id === p.pembimbing_id)?.nama,
     berkas: (DB.pengajuan_berkas || []).filter(b => b.pengajuan_id === p.id).map(b => ({ ...b, oleh: b.oleh === 'mahasiswa' ? 'mahasiswa' : 'prodi' })),
     riwayat: (DB.pengajuan_riwayat || []).filter(r => r.pengajuan_id === p.id) }, error: null };
+  // 161: batalkan pengajuan oleh mahasiswa, tiruan (sama dengan mhs_batal).
+  if (nama === 'mhs_batal') {
+    if (p.status === 'dibatalkan') return { data: 'dibatalkan', error: null };
+    if (tahap !== 'pengajuan' || !['draf', 'dikembalikan'].includes(p.status))
+      return pmGagal('Pengajuan yang sedang diperiksa atau sudah diputuskan tidak bisa dibatalkan sendiri. Minta pemeriksa mengembalikannya dulu, atau hubungi admin prodi.');
+    const al = String(a.p_alasan || '').trim().slice(0, 300);
+    p.status = 'dibatalkan'; p.diperbarui = new Date().toISOString();
+    pmRiwayat(p, 'dibatalkan', 'mahasiswa', 'Dibatalkan mahasiswa' + (al ? ': ' + al : '') + '.'); simpan();
+    return { data: 'dibatalkan', error: null };
+  }
+  // 175: catatan bimbingan TA mahasiswa, tiruan (tidak bergantung status pengajuan, sama dengan SQL).
+  if (nama === 'mhs_bimbingan' || nama === 'mhs_bimbingan_simpan' || nama === 'mhs_bimbingan_hapus') {
+    if (p.jenis !== 'ta') return pmGagal('Catatan bimbingan ada di pengajuan TA.');
+    const B = (DB.ta_bimbingan ||= []), pb = pmPembimbingNim(p.nim);
+    if (nama === 'mhs_bimbingan') return { data: { hari_otomatis: 14, pembimbing: pb,
+      catatan: B.filter(b => b.nim === p.nim).sort((x, y) => y.tanggal.localeCompare(x.tanggal) || y.id - x.id).map(b => ({ ...b,
+        pembimbing: (DB.dosen || []).find(d => d.id === b.pembimbing_id)?.nama || null, sah: pmBimbSah(b), ada_lampiran: !!b.lampiran_url })),
+      syarat: ['seminar_proposal', 'seminar_kemajuan', 'sidang_akhir'].map(t => pmSyaratBimb(p.nim, t)) }, error: null };
+    if (nama === 'mhs_bimbingan_hapus') {
+      const b = B.find(x => x.id === a.p_id && x.nim === p.nim);
+      if (!b) return pmGagal('Catatan bimbingan tidak ditemukan.');
+      if (pmBimbSah(b)) return pmGagal('Catatan yang sudah terkonfirmasi tidak bisa dihapus.');
+      B.splice(B.indexOf(b), 1); simpan(); return { data: 'dihapus', error: null };
+    }
+    if (!pb.length) return pmGagal('Pembimbing TA Anda belum tercatat; ajukan pembimbing TA dulu.');
+    if (!pb.some(x => x.id === a.p_pembimbing)) return pmGagal('Pilih pembimbing yang membimbing.');
+    const kini = new Date().toISOString(), isi = { tanggal: a.p_tanggal, cara: a.p_cara, pembimbing_id: a.p_pembimbing,
+      topik: String(a.p_topik || '').trim(), arahan: String(a.p_arahan || '').trim(), status: 'menunggu', diajukan: kini };
+    if (!a.p_id) { const b = { id: baru(), nim: p.nim, nama: p.nama, dibuat: kini, ...isi }; B.push(b); simpan(); return { data: b.id, error: null }; }
+    const b = B.find(x => x.id === a.p_id && x.nim === p.nim);
+    if (!b) return pmGagal('Catatan bimbingan tidak ditemukan.');
+    if (pmBimbSah(b)) return pmGagal('Catatan yang sudah terkonfirmasi tidak bisa diubah.');
+    Object.assign(b, isi); simpan(); return { data: b.id, error: null };
+  }
   if (!['draf', 'dikembalikan'].includes(p.status)) return pmGagal('Pengajuan sedang diperiksa; isian tidak bisa diubah.');
   if (nama === 'mhs_ubah') { Object.assign(p, { nama: a.p_nama, pembimbing_id: a.p_pembimbing, data: a.p_data, diperbarui: new Date().toISOString() }); simpan(); return { data: 'ok', error: null }; }
   // 122: tautan Google Drive untuk berkas yudisium yang terlalu besar.
@@ -248,8 +475,20 @@ function pmRpc(nama, a){
         return pmGagal('Pembimbing 1 harus dari kelompok keahlian TA Anda atau yang berdekatan; pilih dari daftar.');
     }
     if (p.jenis === 'ta' && !aju && tetapTA) { p.pembimbing_id = tetapTA.pembimbing_id; p.data = { ...p.data, pembimbing_2: tetapTA.data.pembimbing_2 }; }
-    const wajib = p.jenis === 'lomba' ? 'laporan_lomba' : p.jenis === 'ta' && !aju ? 'naskah_ta' : p.jenis === 'luaran' ? 'bukti_luaran' : null;   // surat (93): tanpa berkas wajib
-    if (wajib && !(DB.pengajuan_berkas || []).some(b => b.pengajuan_id === p.id && b.jenis === wajib)) return pmGagal(`Unggah berkas wajib dulu: ${wajib.replace('_', ' ')}.`);
+    // Berkas wajib dan bunyi pesannya sama dengan mhs_kirim (144); kabar = foto kegiatan (2026-11-24: sebelumnya tidak ditiru).
+    const wajib = p.jenis === 'lomba' ? 'laporan_lomba' : p.jenis === 'ta' && !aju ? 'naskah_ta' : p.jenis === 'luaran' ? 'bukti_luaran'
+      : p.jenis === 'kabar' ? 'foto' : null;   // surat (93): tanpa berkas wajib
+    const namaWajib = { naskah_ta: 'naskah TA', bukti_luaran: 'bukti publikasi/luaran', foto: 'foto kegiatan' };
+    if (wajib && !(DB.pengajuan_berkas || []).some(b => b.pengajuan_id === p.id && b.jenis === wajib))
+      return pmGagal(`Unggah berkas wajib dulu: ${namaWajib[wajib] || wajib.replace(/_/g, ' ')}.`);
+    // 174: seminar/sidang TA = berkas wajib tahapnya (ta_berkas), pesan sama dengan ta_periksa_berkas.
+    const tahapTA = p.jenis === 'ta' ? p.data?.tahap_ta : null;   // 176: termasuk pengajuan pembimbing TA
+    const kurangTA = (DB.ta_berkas || []).filter(t => t.tahap === tahapTA && t.aktif && t.wajib
+      && !(DB.pengajuan_berkas || []).some(b => b.pengajuan_id === p.id && b.jenis === t.kode)).sort((a, b) => a.urut - b.urut).map(t => t.label);
+    // 175: minimal bimbingan terkonfirmasi sejak tahap sebelumnya (sesudah pemeriksaan berkas, sama dengan urutan trigger).
+    if (tahapTA && !aju && !kurangTA.length) { const s = pmSyaratBimb(p.nim, tahapTA);
+      if (!s.cukup) return pmGagal(`Bimbingan terkonfirmasi${s.sejak ? ' sejak tahap sebelumnya (' + s.sejak.split('-').reverse().join('-') + ')' : ''}: baru ${s.terhitung} dari minimal ${s.minimal}. Catat bimbingan Anda di bagian Catatan bimbingan dan minta pembimbing mengonfirmasinya (catatan yang 14 hari tidak ditanggapi terkonfirmasi otomatis).`); }
+    if (kurangTA.length) return pmGagal(`Berkas wajib ${{ penetapan_pembimbing: 'pengajuan pembimbing TA', seminar_proposal: 'seminar proposal', seminar_kemajuan: 'seminar kemajuan', sidang_akhir: 'sidang akhir' }[tahapTA]} belum lengkap: ${kurangTA.join(', ')}.`);
     // 122: yudisium = 14 berkas wajib (daftar bawaan patch 122), langsung ke admin prodi.
     if (p.jenis === 'yudisium') {
       const ada = new Set((DB.pengajuan_berkas || []).filter(b => b.pengajuan_id === p.id).map(b => b.jenis));
@@ -271,18 +510,28 @@ function emailCoba(ke, xs){
   d.style.cssText = 'position:fixed;right:12px;bottom:130px;z-index:99999;max-width:360px;background:#fff;color:#1a1a1a;border:2px solid #7a4a00;'
     + 'border-radius:10px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:14px/1.45 system-ui,sans-serif';
   const e = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  d.innerHTML = `<b>EMAIL TIRUAN (situs coba)</b><button type="button" aria-label="Tutup" style="float:right;border:0;background:none;font-size:18px;cursor:pointer">×</button>
+  d.innerHTML = `<b>EMAIL TIRUAN (${LATIHAN ? 'latihan' : 'situs coba'})</b><button type="button" aria-label="Tutup" style="float:right;border:0;background:none;font-size:18px;cursor:pointer">×</button>
     <div style="color:#555;margin:2px 0 8px">Ke: ${e(ke)}. Di situs sungguhan tautan ini dikirim ke email kampus.</div>
-    ${xs.length ? xs.map(([l, t]) => `<div style="margin:4px 0"><a href="pengajuan.html?dari=email-coba#t=${e(t)}" style="color:#0b4ea2;font-weight:600">Buka tautan pribadi</a> · ${e(l)}</div>`).join('')
+    ${xs.length ? xs.map(([l, t]) => `<div style="margin:4px 0"><a href="pengajuan.html?dari=email-coba${LATIHAN ? '&latihan=1' : ''}#t=${e(t)}" style="color:#0b4ea2;font-weight:600">Buka tautan pribadi</a> · ${e(l)}</div>`).join('')
       : '<div>Tidak ada pengajuan untuk NIM ini.</div>'}`;
   d.querySelector('button').onclick = () => d.remove();
   document.body.appendChild(d);
 }
 function pmAppsScript(q){
   const isi = { ok: true, name: 'contoh.txt', mime: 'text/plain', data: btoa('Berkas contoh (situs coba)') };
+  // 179: lampiran catatan bimbingan TA (tiruan): unggah mencatat nama + tautan contoh; buka mengembalikan berkas contoh.
+  if (q.kind === 'mhs_bimbingan_unggah' || q.kind === 'mhs_bimbingan_buka' || q.kind === 'ta_bimbingan_buka') {
+    const b = (DB.ta_bimbingan || []).find(x => x.id === +q.id && (q.kind === 'ta_bimbingan_buka' || x.nim === pmToken(q.t)?.nim));
+    if (!b) return { ok: false, error: 'Catatan bimbingan tidak ditemukan.' };
+    if (q.kind !== 'mhs_bimbingan_unggah') return b.lampiran_url ? isi : { ok: false, error: 'Lampiran tidak ada (atau sudah dihapus 30 hari setelah lulus).' };
+    if (!/\.(pdf|jpe?g|png)$/i.test(q.filename || '')) return { ok: false, error: 'Mahasiswa hanya bisa mengunggah PDF, JPG, atau PNG. Simpan berkas Word/Excel sebagai PDF dulu.' };
+    if (pmBimbSah(b)) return { ok: false, error: 'Catatan yang sudah terkonfirmasi tidak bisa diberi lampiran.' };
+    Object.assign(b, { lampiran_nama: q.filename, lampiran_url: `https://drive.google.com/file/d/contohlampiran${baru()}abcdefghij/view`, lampiran_dihapus: null });
+    simpan(); return { ok: true, name: q.filename };
+  }
   if (q.kind === 'mhs_ajukan') {
     // 106/107: satu KP aktif per NIM.
-    if (q.jenis === 'kp' && PM().some(o => o.nim === q.nim && o.jenis === 'kp' && o.status !== 'ditolak' && !(o.tahap === 'selesai' && o.status === 'disetujui')))
+    if (q.jenis === 'kp' && PM().some(o => o.nim === q.nim && o.jenis === 'kp' && !['ditolak', 'dibatalkan'].includes(o.status) && !(o.tahap === 'selesai' && o.status === 'disetujui')))
       return { ok: false, error: 'NIM ini masih punya KP yang dalam proses; satu mahasiswa hanya satu KP aktif. Bila surat pengantar ditolak instansi, buka tautan pengajuan itu dan laporkan di "Jawaban instansi" (ditolak); sesudah itu pengajuan baru bisa dibuat. Tautan hilang? Minta tautan baru.' };
     const t = 'tokencoba' + baru() + 'x'.repeat(30), p = { id: baru(), jenis: q.jenis, nim: q.nim, nama: q.nama, email: q.nim + '@student.contoh.ac.id',
       pembimbing_id: q.pembimbing_id, data: q.data, status: 'draf', token: t, dibuat: new Date().toISOString(), diperbarui: new Date().toISOString() };
@@ -298,6 +547,22 @@ function pmAppsScript(q){
   }
   // RPS (102; 113: RPS bertanda tangan Dekan), tiruan: tautan Drive palsu.
   if (q.kind === 'rps') return { ok: true, url: `https://drive.google.com/file/d/contohrps${baru()}abcdefghij/view`, name: q.filename };
+  // 178: arsip TA (tiruan Apps Script): isi HTML disimpan di peramban; "Buka" mengembalikannya sebagai HTML.
+  if (q.kind === 'ta_arsip_simpan' || q.kind === 'ta_arsip_buka') {
+    const saya = (DB.dosen || []).find(d => d.email === email());
+    const koor = !!saya && (saya.peran === 'admin' || (DB.koordinator || []).some(k => k.dosen_id === saya.id && k.jabatan === 'koordinator_ta' && !k.selesai));
+    if (!koor) return { ok: false, error: 'Arsip TA disimpan koordinator TA atau admin.' };
+    const A = (DB.ta_arsip ||= []);
+    if (q.kind === 'ta_arsip_buka') { const a = A.find(x => x.nim === q.nim);
+      if (!a) return { ok: false, error: 'Arsip TA mahasiswa ini belum disimpan.' };
+      return { ok: true, name: `Arsip TA ${a.nim}.html`, mime: 'text/html', data: btoa(unescape(encodeURIComponent(a.html))) }; }
+    if (!pmArsipSiap().some(r => r.nim === q.nim)) return { ok: false, error: `Mahasiswa ${q.nim} belum lulus sidang akhir (atau revisinya belum selesai).` };
+    const lama = A.find(x => x.nim === q.nim);
+    const baris = { nim: q.nim, nama: q.nama, url: `https://drive.google.com/file/d/contoharsip${baru()}abcdefghij/view`, oleh: saya.nama,
+      dibuat: new Date().toISOString(), html: q.html };
+    if (lama) Object.assign(lama, baris); else A.push(baris);
+    simpan(); return { ok: true, url: baris.url, name: `Arsip TA ${q.nim} ${q.nama}.pdf` };
+  }
   if (q.kind === 'mhs_unggah' || q.kind === 'mhs_unggah_prodi') {
     // Mahasiswa hanya PDF dan gambar (sama dengan MHS_EXT di Code.gs, pemilik 2026-11-20).
     if (q.kind === 'mhs_unggah' && !/\.(pdf|jpe?g|png)$/i.test(q.filename || '')) return { ok: false, error: 'Mahasiswa hanya bisa mengunggah PDF, JPG, atau PNG. Simpan berkas Word/Excel sebagai PDF dulu.' };
@@ -330,7 +595,8 @@ window.fetch = (u, o) => {
   if (!String(u).includes('script.google.com')) return asli(u, o);
   const q = JSON.parse(o.body);
   const id = 'contohberkas' + baru() + 'abcdefghij';
-  const pm = String(q.kind || '').startsWith('mhs_') || q.kind === 'rps_review_kabari' ? pmAppsScript(q) : null;
+  const pm = String(q.kind || '').startsWith('mhs_') || String(q.kind || '').startsWith('ta_arsip_') || q.kind === 'ta_bimbingan_buka'
+    || q.kind === 'rps_review_kabari' ? pmAppsScript(q) : null;   // 178: arsip TA; 179: lampiran bimbingan
   const out = pm ? pm : q.kind === 'sidik' ? { ok: true, hasil: [] }
     : { ok: true, url: `https://drive.google.com/file/d/${id}/view`, name: q.filename || 'berkas.pdf', id, ...(q.privat || q.kind === 'bkd' ? { privat: true } : {}) };
   return new Promise(r => setTimeout(() => r(new Response(JSON.stringify(out))), 500));
@@ -426,10 +692,142 @@ function q(t){
   };
   return f;
 }
+// 173: penilaian seminar/sidang TA, tiruan ringkas (aturan sama dengan instal-lengkap.sql, kecuali trigger penjaga
+// jadwal_ta). Hitungan dari penilaian-ta.js, dimuat dari folder HALAMAN karena berkas ini juga disalin ke site/latihan/.
+const TA_NILAI = new Set(['ta_nilai_simpan', 'ta_nilai_hapus', 'ta_nilai_rekap', 'ta_ba_tetapkan', 'ta_ba_buka', 'ta_rubrik_simpan', 'ta_nilai_tugas', 'ta_siup_tandai']);
+async function taNilaiRpc(nama, a){
+  const P = await import(new URL('penilaian-ta.js', location.href).href);
+  const gagal = message => ({ data: null, error: { message } }), ok = data => ({ data, error: null });
+  const saya = (DB.dosen || []).find(d => d.email === email());
+  const koor = !!saya && (saya.peran === 'admin' || (DB.koordinator || []).some(k => k.dosen_id === saya.id && k.jabatan === 'koordinator_ta' && !k.selesai));
+  const R = (DB.ta_rubrik ||= []), N = (DB.ta_nilai ||= []), J = DB.jadwal_ta || [];
+  const nama_ = nidn => (DB.dosen || []).find(d => d.nidn === nidn)?.nama || nidn;
+  const rubrikJadwal = j => j.rubrik_id ? R.find(r => r.id === j.rubrik_id) : R.filter(r => r.tahap === j.tahap).sort((x, y) => y.versi - x.versi)[0];
+  const panel = j => [...(j.pembimbing || []).map(n => ({ peran: 'pembimbing', nidn: n, nama: nama_(n) })),
+                      ...(j.penguji || []).map(n => ({ peran: 'penguji', nidn: n, nama: nama_(n) }))];
+  const peranDi = (j, nidn) => (j.pembimbing || []).includes(nidn) ? 'pembimbing' : (j.penguji || []).includes(nidn) ? 'penguji' : null;
+  const diPanel = (j, n) => n.bagian === 'bimbingan' ? peranDi(j, n.penilai_nidn) === 'pembimbing'
+    : !!peranDi(j, n.penilai_nidn) || (!n.penilai_nidn && !!String(j.penguji_luar || '').trim());
+  const hitung = j => { const r = rubrikJadwal(j);
+    const x = P.rekapNilai({ rubrik: r, panel: panel(j), penguji_luar: j.penguji_luar,
+      nilai: N.filter(n => n.jadwal_id === j.id && diPanel(j, n)).map(n => ({ bagian: n.bagian || 'seminar', nidn: n.penilai_nidn, nama: n.penilai_nama, total: n.total })) });
+    return { rubrik_id: r?.id, rata_penguji: x.rataPenguji, rata_pembimbing: x.rataPembimbing, rata_bimbingan: x.rataBimbingan,
+      nilai_akhir: x.akhir, kurang: x.kurang, saran: x.saran }; };
+  const punyaNilai = (j, nidn, bagian) => N.some(n => n.jadwal_id === j.id && n.penilai_nidn === nidn && (n.bagian || 'seminar') === bagian);
+  const kini = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  if (nama === 'ta_nilai_tugas') {
+    if (!saya) return ok([]);
+    return ok(J.filter(j => ['terjadwal', 'selesai'].includes(j.status) && !j.ba_ditetapkan && j.tanggal <= kini).flatMap(j => [
+      ...(saya.nidn && peranDi(j, saya.nidn) && (!punyaNilai(j, saya.nidn, 'seminar') || (peranDi(j, saya.nidn) === 'pembimbing'
+        && P.bobotBagian(rubrikJadwal(j)).bimbingan > 0 && !punyaNilai(j, saya.nidn, 'bimbingan'))) ? [{ tugas: 'nilai' }] : []),
+      ...(koor && N.some(n => n.jadwal_id === j.id) ? [{ tugas: 'tetapkan' }] : [])]
+      .map(t => ({ jadwal_id: j.id, tahap: j.tahap, nama_mahasiswa: j.nama_mahasiswa, tanggal: j.tanggal, ...t })))
+      // 177: nilai belum diunggah ke SIUP (koordinator TA/admin).
+      // 179: nilai belum diunggah ke SIUP -> pembimbing jadwal itu.
+      .concat(saya?.nidn ? J.filter(j => j.ba_ditetapkan && !j.siup_diunggah && (j.pembimbing || []).includes(saya.nidn))
+        .map(j => ({ jadwal_id: j.id, tahap: j.tahap, nama_mahasiswa: j.nama_mahasiswa, tanggal: j.tanggal, tugas: 'siup' })) : [])
+      // 178: mahasiswa lulus yang arsipnya belum disimpan.
+      .concat(koor ? pmArsipSiap().filter(r => !r.arsip_url).map(r => ({ jadwal_id: null, tahap: 'sidang_akhir', nama_mahasiswa: r.nama,
+        tanggal: r.lulus, tugas: 'arsip' })) : []));
+  }
+  if (nama === 'ta_rubrik_simpan') {
+    if (!koor) return gagal('Form penilaian TA diubah koordinator TA atau admin.');
+    const g = P.cekRubrik({ komponen: a.p_komponen || [], komponen_bimbingan: a.p_komponen_bimbingan || [], bobot_penguji: a.p_bobot_penguji,
+      bobot_bimbingan: a.p_bobot_bimbingan ?? 0, batas_lulus: a.p_batas_lulus, tingkat: a.p_tingkat });
+    if (g.length) return gagal(g[0]);
+    const versi = Math.max(0, ...R.filter(r => r.tahap === a.p_tahap).map(r => r.versi)) + 1;
+    R.push({ id: baru(), tahap: a.p_tahap, versi, komponen: a.p_komponen, komponen_bimbingan: a.p_komponen_bimbingan || [],
+      bobot_penguji: a.p_bobot_penguji, bobot_bimbingan: a.p_bobot_bimbingan ?? 0, batas_lulus: a.p_batas_lulus,
+      tingkat: a.p_tingkat, catatan: a.p_catatan || null, oleh: saya.nama, dibuat: new Date().toISOString() });
+    simpan(); return ok(versi);
+  }
+  // 177: tanda sudah diunggah ke SIUP (koordinator TA/admin; hanya berita acara yang sudah ditetapkan).
+  if (nama === 'ta_siup_tandai') {
+    const xs = J.filter(j => (a.p_ids || []).includes(j.id));
+    if (!xs.length) return gagal('Pilih seminar/sidang dulu.');
+    // 179: pembimbing jadwal itu juga boleh.
+    const bukan = xs.filter(j => !koor && !(saya?.nidn && (j.pembimbing || []).includes(saya.nidn)));
+    if (bukan.length) return gagal(`Tanda unggah SIUP diisi pembimbingnya, koordinator TA, atau admin (${bukan.map(j => j.nama_mahasiswa).join(', ')}).`);
+    const belum = xs.filter(j => !j.ba_ditetapkan);
+    if (belum.length) return gagal(`Berita acara belum ditetapkan: ${belum.map(j => j.nama_mahasiswa).join(', ')}.`);
+    for (const j of xs) Object.assign(j, { siup_diunggah: a.p_sudah ? new Date().toISOString() : null, siup_oleh: a.p_sudah ? saya.nama : null });
+    simpan(); return ok(xs.length);
+  }
+  const j = J.find(x => x.id === (a.p_jadwal ?? N.find(n => n.id === a.p_id)?.jadwal_id));
+  if (!j) return gagal('Jadwal seminar/sidang tidak ditemukan.');
+  if (nama === 'ta_nilai_rekap') {
+    const sp = saya?.nidn ? peranDi(j, saya.nidn) : null;
+    if (!koor && !sp) return gagal('Rekap nilai dibuka pembimbing/penguji seminar ini, koordinator TA, atau admin.');
+    return ok({ jadwal: j, rubrik: rubrikJadwal(j) || null, panel: panel(j), hitung: hitung(j), saya: { peran: sp, koordinator: koor },
+      nilai: N.filter(n => n.jadwal_id === j.id).map(n => ({ id: n.id, bagian: n.bagian || 'seminar', peran: n.peran, nidn: n.penilai_nidn, nama: n.penilai_nama, nilai: n.nilai,
+        total: n.total, catatan: n.catatan, diisi_oleh: n.diisi_oleh, diwakilkan: n.diwakilkan, diperbarui: n.diperbarui, rubrik_id: n.rubrik_id,
+        di_panel: diPanel(j, n) })) });
+  }
+  if (nama === 'ta_nilai_simpan') {
+    if (j.ba_ditetapkan) return gagal('Berita acara sudah ditetapkan; nilai tidak bisa diubah. Minta koordinator TA membukanya kembali.');
+    if (!['terjadwal', 'selesai'].includes(j.status)) return gagal(`Seminar/sidang ini berstatus ${j.status}; nilai tidak bisa diisi.`);
+    if (!saya) return gagal('Masuk sebagai dosen terdaftar dulu.');
+    let nidn = saya.nidn, nm = saya.nama, wakil = false, peran = null;
+    if (a.p_nidn || String(a.p_nama_luar || '').trim()) {
+      if (!koor) return gagal('Nilai atas nama penilai lain diisikan koordinator TA atau admin.');
+      wakil = true;
+      if (a.p_nidn) { nidn = a.p_nidn; nm = nama_(nidn); wakil = nidn !== saya.nidn; }
+      else { nidn = null; nm = String(a.p_nama_luar).trim(); peran = 'penguji'; }
+    }
+    peran ||= peranDi(j, nidn);
+    if (!peran) return gagal(`${wakil ? nm : 'Anda'} bukan pembimbing atau penguji seminar ini.`);
+    const r = rubrikJadwal(j), bagian = a.p_bagian || 'seminar';
+    if (!r) return gagal('Form penilaian tahap ini belum ada.');
+    if (bagian === 'bimbingan' && peran !== 'pembimbing') return gagal('Nilai proses bimbingan diisi pembimbing.');
+    if (bagian === 'bimbingan' && !(P.bobotBagian(r).bimbingan > 0)) return gagal('Form penilaian tahap ini tidak memakai nilai proses bimbingan.');
+    const komp = bagian === 'bimbingan' ? r.komponen_bimbingan : r.komponen;
+    const g = P.cekNilai(komp, a.p_nilai);
+    if (g) return gagal(g);
+    const total = P.totalNilai(komp, a.p_nilai);
+    j.rubrik_id ||= r.id;
+    const kunci = n => n.penilai_nidn || 'luar:' + String(n.penilai_nama).toLowerCase().trim();
+    let n = N.find(x => x.jadwal_id === j.id && (x.bagian || 'seminar') === bagian && kunci(x) === (nidn || 'luar:' + nm.toLowerCase()));
+    if (!n) N.push(n = { id: baru(), jadwal_id: j.id, bagian, penilai_nidn: nidn });
+    Object.assign(n, { rubrik_id: r.id, peran, penilai_nama: nm, nilai: a.p_nilai, total, catatan: String(a.p_catatan || '').trim() || null,
+      diisi_oleh: saya.nama, diwakilkan: wakil, diperbarui: new Date().toISOString() });
+    simpan(); return ok(total);
+  }
+  if (nama === 'ta_nilai_hapus') {
+    const n = N.find(x => x.id === a.p_id);
+    if (j.ba_ditetapkan) return gagal('Berita acara sudah ditetapkan; nilai tidak bisa dihapus.');
+    if (!(koor || (n.penilai_nidn && n.penilai_nidn === saya?.nidn))) return gagal('Nilai dihapus penilainya sendiri, koordinator TA, atau admin.');
+    N.splice(N.indexOf(n), 1);
+    if (!N.some(x => x.jadwal_id === j.id)) j.rubrik_id = null;
+    simpan(); return ok('dihapus');
+  }
+  if (!koor) return gagal('Berita acara ditetapkan koordinator TA atau admin.');
+  if (nama === 'ta_ba_buka') {
+    if (String(a.p_alasan || '').trim().length < 5) return gagal('Tulis alasan membuka kembali (5–500 huruf).');
+    if (!j.ba_ditetapkan) return gagal('Berita acara seminar ini belum ditetapkan.');
+    Object.assign(j, { ba_ditetapkan: null, ba_oleh: null, nilai_akhir: null, hasil: null, revisi_selesai: null, siup_diunggah: null, siup_oleh: null,
+      ba_dibuka: `${new Date().toISOString().slice(0, 16).replace('T', ' ')}, ${saya.nama}: ${String(a.p_alasan).trim()}` });
+    simpan(); return ok('dibuka');
+  }
+  // ta_ba_tetapkan
+  if (j.ba_ditetapkan) return gagal('Berita acara seminar ini sudah ditetapkan.');
+  if (!N.some(n => n.jadwal_id === j.id)) return gagal('Belum ada nilai untuk seminar ini.');
+  const h = hitung(j), r = rubrikJadwal(j);
+  if (h.kurang.length) return gagal(`Nilai belum lengkap: ${h.kurang.map(k => k.nama + (k.bagian === 'bimbingan' ? ' (proses bimbingan)' : '')).join(', ')} belum menilai.`);
+  let hasil = a.p_hasil;
+  if (h.nilai_akhir < r.batas_lulus) {
+    if ((hasil || 'mengulang') !== 'mengulang') return gagal(`Nilai akhir ${P.angka(h.nilai_akhir)} di bawah batas lulus ${P.angka(r.batas_lulus)}: hasilnya mengulang.`);
+    hasil = 'mengulang';
+  } else if (!['lulus', 'lulus_revisi'].includes(hasil)) return gagal(`Nilai akhir ${P.angka(h.nilai_akhir)} mencapai batas lulus ${P.angka(r.batas_lulus)}: pilih lulus atau lulus dengan revisi.`);
+  if (hasil === 'lulus_revisi' && !a.p_batas_revisi) return gagal('Isi tenggat revisi.');
+  Object.assign(j, { status: 'selesai', hasil, nilai_akhir: h.nilai_akhir, rubrik_id: r.id, ba_ditetapkan: new Date().toISOString(), ba_oleh: saya.nama,
+    batas_revisi: hasil === 'lulus_revisi' ? a.p_batas_revisi : null, catatan_revisi: hasil === 'lulus_revisi' ? (String(a.p_catatan_revisi || '').trim() || null) : null });
+  simpan(); return ok(hasil);
+}
 const sesi = () => email() === 'tamu' ? null : { access_token: 'contoh', user: { email: email() } };
 export function createClient(){
   return { from: q,
     rpc(nama, a){
+      if (TA_NILAI.has(nama)) return taNilaiRpc(nama, a || {});
       const pm = pmRpc(nama, a || {});
       if (pm) return Promise.resolve(pm);
       // Login dengan email utama atau alternatif (instal-lengkap.sql), tiruan.
@@ -921,6 +1319,17 @@ export function createClient(){
         simpan(); return Promise.resolve({ data: n, error: null }); }
       // CPMK dan portofolio MK (102/103), tiruan: semua MK boleh (peran contoh), kelas dan refleksi apa adanya.
       // boleh_mk (102), tiruan: admin/GKM semua MK; dosen lain MK yang pengampunya memuat NIDN-nya (kelas semester terakhir tidak ditiru).
+      // Koordinator dan tim MK (158), tiruan: Kaprodi aktif atau admin; koordinator di depan daftar pengampu.
+      if (nama === 'mk_atur_tim') { const e = String(email()).toLowerCase(), d = (DB.dosen || []).find(x => String(x.email || '').toLowerCase() === e);
+        const kap = !!d && (DB.koordinator || []).some(k => k.dosen_id === d.id && k.jabatan === 'kaprodi' && !k.selesai);
+        const gagal = message => Promise.resolve({ data: null, error: { message } });
+        if (!(d?.peran === 'admin' || kap)) return gagal('Koordinator dan tim MK ditetapkan Kaprodi aktif atau admin prodi.');
+        const m = (DB.ref_mata_kuliah || []).find(x => x.kurikulum === a.p_kurikulum && x.kode === a.p_kode);
+        if (!m) return gagal('Mata kuliah tidak ditemukan.');
+        const koor = a.p_koordinator || null, tim = [...new Set((a.p_tim || []).filter(n => n && n !== koor))];
+        if (!koor && tim.length) return gagal('Pilih koordinator MK lebih dulu.');
+        m.koordinator_nidn = koor; m.pengampu = koor ? [koor, ...tim] : []; simpan();
+        return Promise.resolve({ data: null, error: null }); }
       if (nama === 'mk_boleh_saya') { const e = String(email()).toLowerCase(), d = (DB.dosen || []).find(x => String(x.email || '').toLowerCase() === e);
         const gkm = !!d && (DB.koordinator || []).some(k => k.dosen_id === d.id && k.jabatan === 'gkm' && !k.selesai);
         // 137: juga MK kelas yang saya ajar (kelas_dosen, termasuk team teaching) pada semester berjalan atau sesudahnya.
@@ -970,6 +1379,12 @@ export function createClient(){
           const x = g.get(k); x.n++; x.dana_usulan += +h.dana_usulan || 0; x.dana_disetujui += +h.dana_disetujui || 0; }
         return Promise.resolve({ data: [...g.values()], error: null }); }
       // Rapat (instal-lengkap.sql), tiruan sederhana.
+      // 166: isi notulen (pembahasan) hanya bila final atau saya pembuat/admin/pimpinan/peserta/PJ.
+      if (nama === 'rapat_isi') { const r = (DB.rapat || []).find(x => x.id === a.p_id), d = (DB.dosen || []).find(x => x.email === email());
+        const boleh = !!r && !!d && (r.status === 'final' && !r.terbatas || r.dibuat_oleh === d.id || ['admin', 'pimpinan'].includes(d.peran)
+          || (DB.rapat_peserta || []).some(p => p.rapat_id === r.id && p.dosen_id === d.id)
+          || (DB.rapat_tindak || []).some(t => t.rapat_id === r.id && t.pj_dosen_id === d.id));
+        return Promise.resolve({ data: { boleh, pembahasan: boleh ? r.pembahasan ?? null : null }, error: null }); }
       if (nama === 'perbarui_tindak_lanjut') { const t = (DB.rapat_tindak || []).find(x => x.id === a.p_id);
         if (t) { t.status = a.p_status; if (a.p_catatan) t.catatan = a.p_catatan; t.tanggal_selesai = a.p_status === 'selesai' ? new Date().toISOString().slice(0, 10) : null; simpan(); }
         return Promise.resolve({ data: null, error: t ? null : { message: 'Tindak lanjut tidak ditemukan.' } }); }

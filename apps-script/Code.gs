@@ -126,6 +126,9 @@ function doPost(e) {
     if (req.kind === 'mhs_unggah') return json_(mhsUnggah_(cfg, req));
     if (req.kind === 'mhs_buka') return json_(mhsBerkas_(cfg, req, false));
     if (req.kind === 'mhs_buang') return json_(mhsBerkas_(cfg, req, true));
+    // 179: lampiran catatan bimbingan TA (mahasiswa, token tautan pribadi).
+    if (req.kind === 'mhs_bimbingan_unggah') return json_(mhsBimbinganUnggah_(cfg, req));
+    if (req.kind === 'mhs_bimbingan_buka') return json_(mhsBimbinganBuka_(cfg, req));
     // Portofolio MK lewat tautan AMI (instal-lengkap.sql, pemilik 2026-11-17): auditor tanpa akun;
     // basis data memeriksa token AMI berlaku dan berkas dalam periodenya.
     if (req.kind === 'ami_portofolio_buka') {
@@ -146,6 +149,10 @@ function doPost(e) {
     // Pembimbing/admin: berkas pengajuan mahasiswa dibaca dengan token login mereka (RLS menentukan boleh).
     if (req.kind === 'mhs_buka_prodi') return json_(mhsBukaProdi_(cfg, req));
     if (req.kind === 'mhs_unggah_prodi') return json_(mhsUnggahProdi_(cfg, lecturer, req));
+    // 178: arsip TA mahasiswa lulus (PDF di Drive prodi); hak diperiksa basis data dengan token login.
+    if (req.kind === 'ta_arsip_simpan') return json_(taArsipSimpan_(cfg, lecturer, req));
+    if (req.kind === 'ta_arsip_buka') return json_(taArsipBuka_(cfg, req));
+    if (req.kind === 'ta_bimbingan_buka') return json_(taBimbinganBuka_(cfg, req));   // 179
     if (req.kind === 'mhs_kabari') return json_(mhsKabari_(cfg, lecturer, req));
     var kind = req.kind || 'karya';
     // Pengingat email (pemilik 2026-11-11): admin mengirim dari akun Google prodi.
@@ -381,7 +388,7 @@ function doGet() {
     var folder = DriveApp.getFolderById(cfg.folderId);
     // `versi`: penanda untuk memastikan dari luar bahwa deployment sudah baru.
     return json_({ ok: true, folder: folder.getName(), maxMb: cfg.maxMb,
-                   allowedExt: cfg.allowedExt, versi: '2026-11-23-pangkas-cadangan' });
+                   allowedExt: cfg.allowedExt, versi: '2026-11-25-lampiran-bimbingan' });
   } catch (err) {
     return json_({ ok: false, error: String((err && err.message) || err) });
   }
@@ -1252,6 +1259,8 @@ var MHS_BERKAS = { kp: ['surat_permohonan', 'surat_balasan', 'laporan_kp', 'sura
                    kabar: ['foto', 'lainnya'] };   // 144: kabar kegiatan dari mahasiswa (foto tampil di situs publik)
 // 122: berkas yudisium berkode yud_* dari tabel yudisium_berkas (admin bisa mengubah daftarnya); kodenya diperiksa SQL.
 var MHS_BERKAS_YUDISIUM = /^yud_[a-z0-9_]{2,40}$/;
+// 174: berkas pendaftaran seminar/sidang TA berkode ta_* dari tabel ta_berkas (koordinator TA bisa mengubah); diperiksa SQL.
+var MHS_BERKAS_TA = /^ta_[a-z0-9_]{2,40}$/;
 // Mahasiswa hanya mengunggah PDF dan gambar (pemilik 2026-11-20): berkas Office bisa membawa kode berbahaya ke komputer
 // pemeriksa. Berlaku untuk semua jenis pengajuan; berkas dari prodi (surat pengantar, dll.) tetap mengikuti ALLOWED_EXT.
 var MHS_EXT = ['pdf', 'jpg', 'jpeg', 'png'];
@@ -1392,7 +1401,8 @@ function mhsUnggah_(cfg, req) {
   var p = rpc_(cfg, 'mhs_cek', { p_kunci: m.kunci, p_token: String(req.t || '') });
   if (!p.boleh_ubah) throw new Error('Pengajuan sedang diperiksa; berkas tidak bisa ditambah.');
   var jb = String(req.jenis_berkas || '');
-  var sah = p.jenis === 'yudisium' ? MHS_BERKAS_YUDISIUM.test(jb) : (MHS_BERKAS[p.jenis] || []).indexOf(jb) >= 0;
+  var sah = p.jenis === 'yudisium' ? MHS_BERKAS_YUDISIUM.test(jb)
+    : (MHS_BERKAS[p.jenis] || []).indexOf(jb) >= 0 || (p.jenis === 'ta' && MHS_BERKAS_TA.test(jb));
   if (!sah) throw new Error('Jenis berkas tidak dikenal.');
   var maks = p.jenis === 'yudisium' ? 40 : 20;   // 122: yudisium 14 berkas wajib + tambahan
   if (p.berkas >= maks) throw new Error('Paling banyak ' + maks + ' berkas per pengajuan.');
@@ -1428,6 +1438,101 @@ function mhsBaca_(cfg, token, tabel, kolom, id) {
   var rows = JSON.parse(res.getContentText());
   if (!rows.length) throw new Error('Tidak ditemukan, atau bukan pengajuan yang Anda bimbing.');
   return rows[0];
+}
+
+// ---------- Arsip TA per mahasiswa lulus (instal-lengkap.sql, pemilik 2026-11-25) ----------
+// Situs mengirim isi arsip (dokumen HTML utuh: ringkasan, riwayat bimbingan, berita acara); Apps Script mengubahnya
+// menjadi PDF di folder privat arsip-ta/<tahun lulus>/<NIM nama>, lalu mencatat tautannya dengan token login pengirim
+// (ta_arsip_catat memeriksa koordinator TA/admin dan status lulus). Gagal mencatat -> PDF baru dibuang; arsip diperbarui
+// -> PDF lama dibuang ke Sampah Drive.
+var TA_ARSIP_MAKS = 5 * 1024 * 1024;   // isi HTML paling besar 5 MB (teks; tanpa gambar)
+function taArsipSimpan_(cfg, lecturer, req) {
+  var nim = String(req.nim || '').trim().toUpperCase(), nama = String(req.nama || '').trim().slice(0, 120);
+  var html = String(req.html || '');
+  if (!/^[A-Z0-9]{3,30}$/.test(nim)) throw new Error('NIM tidak sah.');
+  if (!html || html.length > TA_ARSIP_MAKS) throw new Error('Isi arsip kosong atau terlalu besar.');
+  var tahun = /^\d{4}$/.test(String(req.tahun || '')) ? String(req.tahun) : Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy');
+  var pdf = Utilities.newBlob(html, 'text/html', 'arsip.html').getAs(MimeType.PDF)
+    .setName('Arsip TA ' + nim + ' ' + nama.replace(/[\\\/:*?"<>|]/g, '') + '.pdf');
+  var file = privatFolder_(cfg, ['arsip-ta', tahun, nim + ' ' + nama]).createFile(pdf);
+  file.setDescription('Arsip TA ' + nim + ', disimpan ' + lecturer.email);
+  var lama;
+  try { lama = rpc_(cfg, 'ta_arsip_catat', { p_nim: nim, p_url: file.getUrl() }, req.token); }
+  catch (e) { file.setTrashed(true); throw e; }
+  if (lama) {
+    try {
+      var f = DriveApp.getFileById(idBerkas_(lama));
+      if (f.getId() !== file.getId() && diDalamFolder_(f, cfg.folderId)) f.setTrashed(true);
+    } catch (e) { /* berkas lama sudah tidak ada */ }
+  }
+  return { ok: true, url: file.getUrl(), name: file.getName() };
+}
+
+function taArsipBuka_(cfg, req) {
+  var url = rpc_(cfg, 'ta_arsip_url', { p_nim: String(req.nim || '') }, req.token);
+  var file = DriveApp.getFileById(idBerkas_(url));
+  if (!diDalamFolder_(file, cfg.folderId)) throw new Error('Berkas di luar folder prodi.');
+  return isiBerkas_(file);
+}
+
+// ---------- Lampiran catatan bimbingan TA (instal-lengkap.sql, pemilik 2026-11-25) ----------
+// Mahasiswa (token tautan pribadi) mengunggah satu lampiran per catatan bimbingan ke folder privat
+// mahasiswa/ta-bimbingan/<NIM nama>; basis data menolak bila catatan sudah terkonfirmasi. 30 hari setelah lulus, pemicu per jam
+// (kirimKabarPemeriksa, sekali sehari) membuang lampiran ke Sampah Drive dan menandainya; teks catatan tetap.
+function buangBerkasLama_(cfg, url, baru) {
+  if (!url) return;
+  try {
+    var f = DriveApp.getFileById(idBerkas_(url));
+    if ((!baru || f.getId() !== baru.getId()) && diDalamFolder_(f, cfg.folderId)) f.setTrashed(true);
+  } catch (e) { /* berkas lama sudah tidak ada */ }
+}
+
+function mhsBimbinganUnggah_(cfg, req) {
+  var m = mhsConfig_();
+  var p = rpc_(cfg, 'mhs_cek', { p_kunci: m.kunci, p_token: String(req.t || '') });
+  if (p.jenis !== 'ta') throw new Error('Lampiran bimbingan ada di pengajuan TA.');
+  var ext = (String(req.filename || '').match(/\.([A-Za-z0-9]+)$/) || [, ''])[1].toLowerCase();
+  if (MHS_EXT.indexOf(ext) < 0) throw new Error('Mahasiswa hanya bisa mengunggah PDF, JPG, atau PNG. Simpan berkas Word/Excel sebagai PDF dulu.');
+  var file = privatFolder_(cfg, ['mahasiswa', 'ta-bimbingan', p.nim + ' ' + p.nama]).createFile(makeBlob_(cfg, req));
+  file.setDescription('Lampiran bimbingan TA ' + p.nim + ' (catatan #' + Number(req.id) + ')');
+  var lama;
+  try {
+    lama = rpc_(cfg, 'mhs_bimbingan_lampiran', { p_kunci: m.kunci, p_token: String(req.t), p_id: Number(req.id),
+                                                 p_nama: String(req.filename || '').slice(0, 200), p_url: file.getUrl() });
+  } catch (e) { file.setTrashed(true); throw e; }
+  buangBerkasLama_(cfg, lama, file);
+  return { ok: true, name: file.getName() };
+}
+
+function mhsBimbinganBuka_(cfg, req) {
+  var m = mhsConfig_();
+  var url = rpc_(cfg, 'mhs_bimbingan_lampiran_url', { p_kunci: m.kunci, p_token: String(req.t || ''), p_id: Number(req.id) });
+  var file = DriveApp.getFileById(idBerkas_(url));
+  if (!diDalamFolder_(file, cfg.folderId)) throw new Error('Berkas di luar folder prodi.');
+  return isiBerkas_(file);
+}
+
+// Staf: dibaca dengan token login (RLS ta_bimbingan: koordinator TA/admin atau pembimbing mahasiswa itu).
+function taBimbinganBuka_(cfg, req) {
+  var b = mhsBaca_(cfg, req.token, 'ta_bimbingan', 'lampiran_url', req.id);
+  if (!b.lampiran_url) throw new Error('Lampiran tidak ada (atau sudah dihapus 30 hari setelah lulus).');
+  var file = DriveApp.getFileById(idBerkas_(b.lampiran_url));
+  if (!diDalamFolder_(file, cfg.folderId)) throw new Error('Berkas di luar folder prodi.');
+  return isiBerkas_(file);
+}
+
+var LAMPIRAN_BIMBINGAN_HARI = 'LAMPIRAN_BIMBINGAN_TERAKHIR';   // Script Property: tanggal WIB putaran terakhir
+function hapusLampiranBimbingan_() {
+  var props = PropertiesService.getScriptProperties(), hari = tanggalWib_(new Date());
+  if (props.getProperty(LAMPIRAN_BIMBINGAN_HARI) === hari) return;
+  var cfg = readConfig_(), m = mhsConfig_();
+  var xs = rpc_(cfg, 'ta_lampiran_kedaluwarsa', { p_kunci: m.kunci }) || [];
+  xs.forEach(function (x) {
+    buangBerkasLama_(cfg, x.url, null);
+    rpc_(cfg, 'ta_lampiran_dihapus', { p_kunci: m.kunci, p_id: x.id });
+  });
+  if (xs.length < 200) props.setProperty(LAMPIRAN_BIMBINGAN_HARI, hari);   // 200 = batas sekali jalan: lanjut jam berikutnya
+  if (xs.length) Logger.log('Lampiran bimbingan TA dihapus (30 hari setelah lulus): ' + xs.length);
 }
 
 function mhsBukaProdi_(cfg, req) {
@@ -1526,6 +1631,7 @@ function kirimKabarPemeriksa() {
   // Kesehatan sistem (125): tiap jam, juga di luar jam kerja, melapor bahwa pemicu ini hidup (+ kuota email, Drive).
   laporAppsScript_();
   kirimPeringatanKeamanan_();   // 126: kapan pun, tidak menunggu jam kerja
+  try { hapusLampiranBimbingan_(); } catch (e) { Logger.log('Lampiran bimbingan: ' + e.message); }   // 179: sekali sehari
   if (!jamKerja_()) { Logger.log('Di luar jam kerja (Senin-Jumat 09.00-16.00 WIB): tidak mengirim.'); return; }
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;   // putaran sebelumnya masih berjalan

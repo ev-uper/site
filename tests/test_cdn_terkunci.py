@@ -12,12 +12,13 @@ CDN = re.compile(r"https://(?:cdn\.jsdelivr\.net/npm|unpkg\.com|esm\.sh)/((?:@[\
 
 def test_every_cdn_library_has_exact_version():
     longgar = []
-    for p in sorted((ROOT / "site").glob("*.*")):
+    # rglob: modul instrumen di site/instrumen/<id>/ ikut diperiksa (2026-11-24).
+    for p in sorted((ROOT / "site").rglob("*.*")):
         if p.suffix not in {".html", ".js", ".mjs"}:
             continue
         for m in CDN.finditer(p.read_text(encoding="utf-8")):
             if not re.fullmatch(r"\d+\.\d+\.\d+", m.group(2)):
-                longgar.append(f"{p.name}: {m.group(1)}@{m.group(2)}")
+                longgar.append(f"{p.relative_to(ROOT / 'site').as_posix()}: {m.group(1)}@{m.group(2)}")
     assert not longgar, "Kunci ke versi pasti (x.y.z): " + ", ".join(longgar)
 
 

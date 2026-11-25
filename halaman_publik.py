@@ -216,11 +216,14 @@ def halaman_dosen(D: dict, dosen: dict, base_url: str, versi: str, logo: list | 
         return "".join(out) + ("</ol>" if xs else "")
 
     def baris_pub(p):
-        tautan = f"https://doi.org/{p['doi']}" if p.get("doi") else (p.get("url") or "")
+        # DOI disimpan apa adanya (kadang 'https://doi.org/10...' atau 'doi:10...'): dibakukan dulu supaya tautan tidak ganda.
+        d = re.sub(r"^doi:\s*", "", re.sub(r"^https?://(dx\.)?doi\.org/", "", str(p.get("doi") or "").strip(), flags=re.I), flags=re.I)
+        tautan = f"https://doi.org/{d}" if d else (p.get("url") or "")
         judul = f'<a href="{e(tautan)}" rel="noopener">{e(p["judul"])}</a>' if tautan else e(p["judul"])
         tag = f'<span class="tag{" int" if p.get("tingkat") == "internasional" else ""}">{e(TINGKAT.get(p.get("tingkat"), p.get("tingkat") or ""))}</span>' if p.get("tingkat") else ""
         idx = f' · {e(rapi_indeks(p["indeksasi"]))}' if p.get("indeksasi") else ""
-        doi = f' · DOI {e(p["doi"])}' if p.get("doi") else ""
+        # DOI bisa diklik (pemilik 2026-11-24), sama dengan judulnya.
+        doi = f' · DOI <a href="https://doi.org/{e(d)}" rel="noopener">{e(d)}</a>' if d else ""
         terbit = _rinci_terbitan(p)
         return (f'<li><div class="judul">{tag}{judul}</div><div class="meta">{_penulis(p.get("penulis"), slug)}'
                 f'{" · " + terbit if terbit else ""}{idx}{doi}</div></li>')
@@ -2168,6 +2171,38 @@ fetch('kerangka.json', {{cache: 'no-cache'}}).then(r => r.json()).then(isiKerang
 
 # Laboratorium (pemilik 2026-11-16; instal-lengkap.sql).
 FOTO_PER_LAB = 6
+
+# Tenaga kependidikan (instal-lengkap.sql, pemilik 2026-11-22): label peran publik, urutan = urutan tampil.
+PERAN_TENDIK = {"admin_prodi": "Admin program studi", "laboran": "Laboran", "asisten_lab": "Asisten laboratorium",
+                "teknisi": "Teknisi", "administrator_sistem": "Administrator sistem", "lainnya": "Tenaga kependidikan"}
+
+
+def tendik_publik(rows: list[dict], bukti: list[dict], lab: list[dict]) -> list[dict]:
+    """Education staff for profil-prodi.html and laboratorium.html. rows: lkps_tendik; only rows with
+    aktif not false AND boleh_tampil true (the person's consent) go public, magang included (owner
+    2026-11-22: magang on the site, not in LKPS 4.b). Public fields: nama, peran label, lab id and name.
+    Education, certificates, unit, and status stay private. Photo: first lkps_bukti row of jenis 'foto'
+    (Drive id in _foto, copied by salin_foto)."""
+    nama_lab = {str(r.get("id")): (r.get("nama") or "").strip() for r in lab or [] if r.get("tampil") is not False}
+    foto = {}
+    for b in bukti or []:
+        if b.get("tabel") == "lkps_tendik" and b.get("jenis") == "foto" and drive_id(b.get("url")):
+            foto.setdefault(b.get("baris_id"), drive_id(b.get("url")))
+    urutan = list(PERAN_TENDIK)
+    out = []
+    for r in rows or []:
+        nama = (r.get("nama") or "").strip()
+        if not nama or r.get("aktif") is False or r.get("boleh_tampil") is not True:
+            continue
+        lab_id = str(r.get("laboratorium_id") or "")
+        x = {"id": r.get("id"), "nama": nama, "peran": PERAN_TENDIK.get(r.get("jabatan"), PERAN_TENDIK["lainnya"]),
+             "_urut": urutan.index(r["jabatan"]) if r.get("jabatan") in urutan else len(urutan)}
+        if nama_lab.get(lab_id):
+            x["lab_id"], x["lab"] = r["laboratorium_id"], nama_lab[lab_id]
+        x["_foto"] = [foto[r["id"]]] if r.get("id") in foto else []
+        out.append(x)
+    out.sort(key=lambda x: (x.pop("_urut"), x["nama"].casefold()))
+    return out
 JENIS_KARYA = {"penelitian": "Penelitian", "pkm": "Pengabdian"}
 
 
@@ -2239,6 +2274,11 @@ def halaman_laboratorium(D: dict, versi: str) -> str:
             k = x["kepala"]
             nm = f'<a href="dosen/{e(k["slug"])}.html">{e(nama_dosen(D, k))}</a>' if k.get("slug") else e(nama_dosen(D, k))
             info.append(f"<div><dt>Koordinator</dt><dd>{nm}</dd></div>")
+        # Laboran dan asisten laboratorium yang bertugas di lab ini (164; hanya yang setuju tampil).
+        staf = [t for t in D.get("tendik") or [] if t.get("lab_id") is not None and str(t["lab_id"]) == str(x.get("id"))]
+        if staf:
+            info.append("<div><dt>Laboran dan asisten</dt><dd>" + "; ".join(
+                f'{e(t["nama"])} <small>({e(t["peran"].lower())})</small>' for t in staf) + "</dd></div>")
         kk = {k.get("kode"): k for k in (D.get("situs") or {}).get("kelompok_keahlian") or [] if k.get("nama")}
         bid = [kk[b] for b in x.get("bidang") or [] if b in kk]
         if bid:
@@ -2786,6 +2826,15 @@ def halaman_profil(D: dict, versi: str) -> str:
         kartu = "".join(f'<div class="orang">{wajah(o)}<div><small>{e(o["jabatan"])}</small>{nama_orang(o, " class=n")}</div></div>'
                         for o in P["pengelola"])
         tambah("pengelola", "Pengelola program studi", f'<div class="orang-grid">{kartu}</div>')
+
+    # Tenaga kependidikan (164, pemilik 2026-11-22): hanya yang aktif dan setuju tampil; nama, peran, laboratorium, foto.
+    if D.get("tendik"):
+        def kartu_tendik(t):
+            gambar = (f'<img src="{e(t["foto"][0])}{v}" alt="{e(t["nama"])}" loading="lazy">' if t.get("foto")
+                      else f'<span class="inisial" aria-hidden="true">{e(inisial(t["nama"]))}</span>')
+            lab = f' · <a href="laboratorium.html#lab-{e(t["lab_id"])}">{e(t["lab"])}</a>' if t.get("lab") else ""
+            return f'<div class="orang">{gambar}<div><small>{e(t["peran"])}{lab}</small><span class="n">{e(t["nama"])}</span></div></div>'
+        tambah("tendik", "Tenaga kependidikan", f'<div class="orang-grid">{"".join(kartu_tendik(t) for t in D["tendik"])}</div>')
 
     tagline = s.get("tagline") or ""
     loncat = ('<nav class="loncat" aria-label="Bagian profil"><div class="loncat-in">'

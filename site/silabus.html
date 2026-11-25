@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tema.css?v=2026-11-23-5a55a3">
-<link rel="stylesheet" href="kepala.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="tema.css?v=2026-11-25-65047c">
+<link rel="stylesheet" href="kepala.css?v=2026-11-25-65047c">
 <style>
   /* Silabus mata kuliah (instal-lengkap.sql, pemilik 2026-11-20) */
   *{box-sizing:border-box}
@@ -64,7 +64,7 @@
   <div class="sub" id="hSub">Memuat…</div>
 </div></div>
 <main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
-<script src="config.js?v=2026-11-23-5a55a3"></script>
+<script src="config.js?v=2026-11-25-65047c"></script>
 <script>
 // Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
 addEventListener('error', function (e) {
@@ -82,13 +82,13 @@ addEventListener('error', function (e) {
 // Silabus mata kuliah (instal-lengkap.sql, pemilik 2026-11-20): koordinator MK/pengampu menyusun (dua bahasa, bentuk
 // Lampiran Kurikulum SIAKUP), Kaprodi aktif mengesahkan; lampiran Word dokumen kurikulum dari versi disahkan (silabus.js).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
-import { gerbang, identitas } from './menu.js?v=2026-11-23-5a55a3';
-import { punya } from './koordinator.js?v=2026-11-23-5a55a3';
-import { bawaanHanyaSaya, ingatHanyaSaya, pesanKosongSaya, mkMilikSaya } from './mk-saya.js?v=2026-11-23-5a55a3';
-import { susunanMK } from './rps.js?v=2026-11-23-5a55a3';
-import { buatDocx } from './docx-dasar.js?v=2026-11-23-5a55a3';
+import { gerbang, identitas } from './menu.js?v=2026-11-25-65047c';
+import { punya } from './koordinator.js?v=2026-11-25-65047c';
+import { bawaanHanyaSaya, ingatHanyaSaya, pesanKosongSaya, mkMilikSaya } from './mk-saya.js?v=2026-11-25-65047c';
+import { susunanMK } from './rps.js?v=2026-11-25-65047c';
+import { buatDocx } from './docx-dasar.js?v=2026-11-25-65047c';
 import { KOLOM_SILABUS, BATAS, STATUS_SILABUS, rapikanSilabus, kekuranganSilabus, statusSilabus, cplTerkait, rencanaImpor,
-  lampiranSilabus, penyelenggara, dariUniversitas } from './silabus.js?v=2026-11-23-5a55a3';
+  lampiranSilabus, penyelenggara, dariUniversitas } from './silabus.js?v=2026-11-25-65047c';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sb = createClient(window.SB_URL, window.SB_KEY);
@@ -146,7 +146,7 @@ function gambarDaftar(){
     return `<tr class="grup"><th colspan="5">${esc(g.judul)} <span class="ket">· ${isi.length} MK</span></th></tr>` + isi.map(m => {
       const k = kunci(KUR, m.kode), s = SIL.get(k), st = statusSilabus(s);
       const aksi = KAPRODI() && st === 'diajukan' ? 'Periksa' : BOLEH.has(k) ? 'Isi' : 'Lihat';
-      return `<tr><td class="kode">${esc(m.kode)}</td><td>${esc(m.nama)}${dariUniversitas(m) ? ' <span class="chip">Universitas</span>' : ''}</td><td>${esc(m.sks ?? '')}</td>
+      return `<tr><td class="kode">${esc(m.kode)}</td><td>${esc(m.nama)}${dariUniversitas(m) ? ' <span class="chip">Universitas</span>' : m.unit_penyelenggara === 'fakultas' ? ' <span class="chip">Fakultas</span>' : ''}</td><td>${esc(m.sks ?? '')}</td>
         <td><span class="chip ${st}">${STATUS_SILABUS[st]}</span>${s?.revisi ? ` <span class="ket">disahkan ${s.revisi}×</span>` : ''}${
           s?.data?.catatan_impor ? ' <span class="ket">isi awal belum diperiksa</span>' : ''}${KAPRODI() && st === 'diajukan' ? ' <b>menunggu Anda</b>' : ''}</td>
         <td><a href="?kur=${encodeURIComponent(KUR)}&kode=${encodeURIComponent(m.kode)}">${aksi}</a></td></tr>`;
@@ -239,7 +239,8 @@ function gambarEditor(){
       <div><span>Versi disahkan</span>${s?.sah_pada ? `${s.revisi}× · terakhir ${waktu(s.sah_pada)}` : 'belum'}</div>
     </div>
     <p class="ket">Identitas di atas dari Data prodi › Mata kuliah. Perbaikannya oleh admin di sana, bukan di silabus.</p>
-    ${dariUniversitas(m) ? '<p class="ket"><b>MK universitas:</b> salin isi dari silabus resmi universitas (tujuan, deskripsi, pustaka, dua bahasa).</p>' : ''}
+    ${dariUniversitas(m) ? '<p class="ket"><b>MK universitas:</b> salin isi dari silabus resmi universitas (tujuan, deskripsi, pustaka, dua bahasa).</p>'
+      : m.unit_penyelenggara === 'fakultas' ? '<p class="ket"><b>MK fakultas:</b> salin isi dari silabus resmi fakultas (tujuan, deskripsi, pustaka, dua bahasa).</p>' : ''}
     ${ISIAN.catatan_impor ? `<div class="peringatan"><b>Isi awal hasil impor, periksa dulu.</b> ${esc(ISIAN.catatan_impor)}
       ${boleh ? '<div class="alat"><button class="b" id="hapusCatatan">Sudah saya periksa, hapus catatan ini</button></div>' : ''}</div>` : ''}
     ${st === 'dikembalikan' ? `<div class="peringatan"><b>Dikembalikan Kaprodi:</b> ${esc([...log].reverse().find(l => l.aksi === 'kembalikan')?.catatan || '')}</div>` : ''}

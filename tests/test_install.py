@@ -81,3 +81,44 @@ def test_config_js_feature_line_is_found_and_rewritten(tmp_path):
     assert "window.FITUR_MATI = ['rapat', 'sdgs'];" in cfg.read_text(encoding="utf-8")
     inst.ganti(cfg, inst.POLA_FITUR, "window.FITUR_MATI = [];")     # back to full: also found
     assert cfg.read_text(encoding="utf-8").count("window.FITUR_MATI = [];") == 1
+
+
+# Instrumen akreditasi (owner 2026-11-25): chosen at install, written to config.yaml, then pilih_instrumen.py runs.
+def test_instrument_list_comes_from_instrument_folders():
+    ada = inst.daftar_instrumen()
+    assert {"lam-teknik-s1", "lamdepilar-magister"} <= set(ada)
+    assert ada["lamdepilar-magister"].startswith("LAMDEPILAR, Magister")
+    assert [k for k, _, _ in inst.ISIAN][-1] == "instrumen"
+
+
+def test_instrument_defaults_to_lam_teknik_and_rejects_unknown(tmp_path):
+    dasar = next(p for p in (AKAR / "tools" / "isian.contoh.ini", AKAR / "isian.contoh.ini") if p.exists())
+    teks = dasar.read_text(encoding="utf-8")
+    f = tmp_path / "isian.ini"
+    f.write_text(re.sub(r"instrumen = [^\n]*\n", "", teks), encoding="utf-8")
+    assert inst.dari_ini(f)["instrumen"] == "lam-teknik-s1"
+    f.write_text(teks.replace("instrumen = lam-teknik-s1", "instrumen = lamdepilar-magister"), encoding="utf-8")
+    assert inst.dari_ini(f)["instrumen"] == "lamdepilar-magister"
+    f.write_text(teks.replace("instrumen = lam-teknik-s1", "instrumen = lamemba-s2"), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        inst.dari_ini(f)
+
+
+def test_config_instrument_line_is_rewritten_only(tmp_path):
+    cfg = tmp_path / "config.yaml"
+    asli = (AKAR / "config.yaml").read_text(encoding="utf-8")
+    cfg.write_text(asli, encoding="utf-8")
+    inst.ganti(cfg, inst.POLA_INSTRUMEN, "  instrument: lamdepilar-magister")
+    baru = cfg.read_text(encoding="utf-8")
+    assert re.findall(r"(?m)^  instrument: (\S+)", baru) == ["lamdepilar-magister"]
+    assert baru.replace("instrument: lamdepilar-magister", "instrument: X") == \
+        re.sub(r"(?m)^(  instrument: )\S+", r"\1X", asli)
+
+
+def test_instrument_step_is_skipped_only_when_pages_already_point_there(tmp_path):
+    (tmp_path / "a.js").write_text("import x from './instrumen/lam-teknik-s1/bobot.js';", encoding="utf-8")
+    (tmp_path / "b.html").write_text('<script src="instrumen/lam-teknik-s1/ambang.js"></script>', encoding="utf-8")
+    assert inst.rujukan_instrumen(tmp_path) == {"lam-teknik-s1"}
+    (tmp_path / "c.js").write_text("export * from './instrumen/lamdepilar-magister/bobot.js';", encoding="utf-8")
+    assert inst.rujukan_instrumen(tmp_path) == {"lam-teknik-s1", "lamdepilar-magister"}   # mixed -> step runs
+    assert inst.rujukan_instrumen(AKAR / "site") == {"lam-teknik-s1"}                       # source = Sipil

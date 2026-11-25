@@ -99,7 +99,8 @@ const DAFTAR = {
          { tahun_akademik: '2020/2021', jenis: 'pkm', dana_ps: 1 }],
   tendik: [{ nama: 'Wawan', pendidikan: 'd3', sertifikat: 'K3 Lab', unit_kerja: 'prodi' },
            { nama: 'Ayu', pendidikan: 's1', unit_kerja: 'upps' },
-           { nama: 'Lama', pendidikan: 's2', aktif: false }],
+           { nama: 'Lama', pendidikan: 's2', aktif: false },
+           { nama: 'Agus', pendidikan: 'sma_smk', status_kerja: 'magang' }],   // 164: magang not in 4.b
   mk: [
     { kode: 'SI401', nama: 'Tugas Akhir Desain', semester: 7, sks: 4, capstone: true,
       capstone_pendukung: ['SI301', 'MA101'], capstone_cakupan: 'Desain bendung', pengampu: ['001'] },
@@ -258,4 +259,11 @@ test('daftarProdi: urut Data prodi; prodi kosong tetap tampil tanpa menebak peri
   assert.equal(p.mahasiswa, 120);
   const ada = daftarProdi({ prodiUpps: [{ nama_prodi: 'B', urutan: 2, diakreditasi: true, mahasiswa_ts: 9 }, { nama_prodi: 'A', urutan: 1 }] }, 'B', 2026);
   assert.deepEqual(ada.map(x => [x.nama_prodi, x.mahasiswa ?? null]), [['A', null], ['B', 9]]);
+});
+
+test('4a kolom M/N: hanya sertifikat yang masih berlaku; tanpa tanggal = berlaku terus (pemilik 2026-11-24)', () => {
+  const d = { ...DAFTAR.dosen[0], sertifikat: [{ jenis: 'kompetensi', bidang: 'Ahli SDA', lembaga: 'LPJK', berlaku_sampai: '2026-11-23' },
+    { jenis: 'profesi', bidang: 'Insinyur', lembaga: 'PII' }, { jenis: 'kompetensi', bidang: 'K3', lembaga: 'BNSP', berlaku_sampai: '2026-11-24' }] };
+  const M = petaDaftar({ ts: TS, kini: new Date(2026, 10, 24), daftar: { ...DAFTAR, dosen: [d] }, D: { akreditasi: { kohort: KOHORT } } });
+  assert.deepEqual([M['4a'].M14, M['4a'].N14], ['Insinyur; K3', 'PII; BNSP']);
 });

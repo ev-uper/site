@@ -60,5 +60,5 @@ test('Apps Script buang_milik: owner trashes own profile evidence only; admin ma
   assert.throws(() => ctx.buangMilik_(cfg, A, url('FL')), /Bukan berkas bukti profil/);
   assert.deepEqual(JSON.parse(JSON.stringify(ctx.buangMilik_(cfg, { nama: 'Admin', peran: 'admin' }, url('FB')))), { ok: true, dibuang: true });
   assert.match(src, /kind === 'buang_milik'\) return json_\(buangMilik_\(cfg, lecturer, req\.url\)\)/);
-  assert.match(src, /versi: '2026-11-23-pangkas-cadangan'/);   // versi terakhir; buang_milik ikut sejak 2026-11-13
+  assert.match(src, /versi: '2026-11-25-lampiran-bimbingan'/);   // versi terakhir; buang_milik ikut sejak 2026-11-13
 });

@@ -15,12 +15,12 @@
    angka yang sama dengan halaman skor. Lembar lain dibiarkan untuk diisi
    prodi; kolom yang tidak disimpan situs (mis. pita waktu tunggu) kosong.
    ===================================================================== */
-import { versiUntukTS, daftarProdi, STATUS_PS, tglTeks } from './pustaka-dokumen.js?v=2026-11-23-5a55a3';
-import { teksPendidikan, nidnNuptk } from './profil-dosen.js?v=2026-11-23-5a55a3';
-import { barisKerjaSama } from './kerjasama-karya.js?v=2026-11-23-5a55a3';
-import { kunciIntegrasi } from './rps-integrasi.js?v=2026-11-23-5a55a3';
-import { karya4i } from './sitasi.js?v=2026-11-23-5a55a3';
-import { ampuPerTA, dosenTS } from './dosen-hitung.js?v=2026-11-23-5a55a3';
+import { versiUntukTS, daftarProdi, STATUS_PS, tglTeks } from './pustaka-dokumen.js?v=2026-11-25-65047c';
+import { teksPendidikan, nidnNuptk, masaBerlaku } from './profil-dosen.js?v=2026-11-25-65047c';
+import { barisKerjaSama } from './kerjasama-karya.js?v=2026-11-25-65047c';
+import { kunciIntegrasi } from './rps-integrasi.js?v=2026-11-25-65047c';
+import { karya4i } from './sitasi.js?v=2026-11-25-65047c';
+import { ampuPerTA, dosenTS } from './dosen-hitung.js?v=2026-11-25-65047c';
 
 const TEMPLATE = 'lkps-template.xlsx';
 export const JSZIP = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
@@ -199,7 +199,8 @@ export function petaDaftar(C){
     const rw = d.riwayat_pendidikan || [];
     const pend = (kelompok, ada, ket) => teksPendidikan(rw, kelompok) ||
       (ada ? `[isi: prodi ${ket} dan bidang ilmu]` : '');
-    const srt = (d.sertifikat || []);
+    // Hanya sertifikat yang masih berlaku pada hari LKPS dibuat (pemilik 2026-11-24); tanpa tanggal = berlaku terus.
+    const srt = (d.sertifikat || []).filter(s => !masaBerlaku(s, C.kini || new Date())?.lewat);
     set('4a', `B${r}`, d.nama); set('4a', `C${r}`, nidnNuptk(d));   // C11 'NIDN/NIDK/ NUPTK' (patch 128)
     set('4a', `D${r}`, KATEGORI_LKPS[d.kategori || 'tetap']);
     set('4a', `E${r}`, pend('sarjana', !rw.length, 'S1'));
@@ -463,7 +464,7 @@ export function petaDaftar(C){
 
   const KOLOM_PEND = { s3: 'C', s2: 'D', s1: 'E', d4: 'F', d3: 'G', d2: 'H', d1: 'I', sma_smk: 'J' };
   const UNIT_TENDIK = { upps: 'UPPS', prodi: 'Program Studi', institusi: 'Institusi' };
-  (X.tendik || []).filter(x => x.aktif !== false)
+  (X.tendik || []).filter(x => x.aktif !== false && x.status_kerja !== 'magang')   // magang: situs saja (164)
     .sort((a, b) => String(a.nama).localeCompare(String(b.nama))).slice(0, 20)   // templat: baris 11-30
     .forEach((x, i) => {
       const r = 11 + i;

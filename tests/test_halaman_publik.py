@@ -281,6 +281,38 @@ def test_laboratorium_page_links_lecturer_and_escapes_text():
     assert "Lab Struktur" in kosong
 
 
+def test_tendik_publik_only_active_consenting_rows_and_no_private_fields():
+    """164 (owner 2026-11-22): aktif AND boleh_tampil; magang shown on the site; education, certificates,
+    unit, and status never public; photo = first 'foto' evidence; ordered by role (PERAN_TENDIK), then name."""
+    rows = [{"id": 1, "nama": "Wawan", "jabatan": "laboran", "status_kerja": "tetap", "laboratorium_id": 2, "boleh_tampil": True,
+             "pendidikan": "d3", "sertifikat": "K3", "unit_kerja": "prodi", "aktif": True},
+            {"id": 2, "nama": "Sari", "jabatan": "admin_prodi", "boleh_tampil": True},
+            {"id": 3, "nama": "Dodi", "jabatan": "asisten_lab", "status_kerja": "magang", "laboratorium_id": 9, "boleh_tampil": True},
+            {"id": 4, "nama": "Tanpa Izin", "jabatan": "laboran", "boleh_tampil": False},
+            {"id": 5, "nama": "Keluar", "jabatan": "laboran", "boleh_tampil": True, "aktif": False}]
+    bukti = [{"tabel": "lkps_tendik", "baris_id": 1, "jenis": "sertifikat", "url": f"https://drive.google.com/file/d/{FID1}/view"},
+             {"tabel": "lkps_tendik", "baris_id": 1, "jenis": "foto", "url": f"https://drive.google.com/file/d/{FID2}/view"},
+             {"tabel": "lkps_prestasi_mahasiswa", "baris_id": 2, "jenis": "foto", "url": f"https://drive.google.com/file/d/{FID3}/view"}]
+    lab = [{"id": 2, "nama": "Lab Tanah"}, {"id": 9, "nama": "Lab Tersembunyi", "tampil": False}]
+    xs = hp.tendik_publik(rows, bukti, lab)
+    assert [x["nama"] for x in xs] == ["Sari", "Wawan", "Dodi"]
+    assert xs[1] == {"id": 1, "nama": "Wawan", "peran": "Laboran", "lab_id": 2, "lab": "Lab Tanah", "_foto": [FID2]}
+    assert xs[0]["_foto"] == [] and "lab" not in xs[2]          # hidden lab is not named
+    assert not any(k in x for x in xs for k in ("pendidikan", "sertifikat", "unit_kerja", "status_kerja"))
+
+
+def test_tendik_cards_on_profile_and_lab_pages():
+    t = [{"id": 1, "nama": "Wawan <W>", "peran": "Laboran", "lab_id": 2, "lab": "Lab Tanah", "foto": ["tendik/a.jpg"]},
+         {"id": 2, "nama": "Sari", "peran": "Admin program studi"}]
+    h = hp.halaman_profil(dict(D, tendik=t, profil={}, akreditasi_prodi={}), "v1")
+    assert 'id="tendik"' in h and "Wawan &lt;W&gt;" in h and "tendik/a.jpg?v=v1" in h
+    assert 'href="laboratorium.html#lab-2"' in h and "Admin program studi" in h
+    assert 'id="tendik"' not in hp.halaman_profil(dict(D, profil={}, akreditasi_prodi={}), "v1")
+    lab = {"id": 2, "nama": "Lab Tanah", "ringkasan": "", "mk": [], "alat": [], "penelitian": []}
+    h = hp.halaman_laboratorium(dict(D, laboratorium=[lab], tendik=t), "v1")
+    assert "<dt>Laboran dan asisten</dt>" in h and "Wawan &lt;W&gt; <small>(laboran)</small>" in h and "Sari" not in h
+
+
 def test_kerjasama_publik_hides_marked_rows_and_orders_in_force_first():
     rows = [{"id": 1, "mitra": "Univ Lama", "jenis": "penelitian", "tingkat": "nasional", "tahun_mulai": 2020, "tahun_selesai": 2022,
              "tautan_bukti": "https://drive.google.com/x"},

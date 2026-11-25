@@ -10,7 +10,7 @@ dicari, modul gagal diam-diam dan halaman kosong (kejadian 03j,
 
 dan `const VERSI = 'V'` (label versi di skor.html) ikut V.
 
-V = <tanggal>-<sidik isi>, sidik dihitung dari semua .html/.js di site/
+V = <tanggal>-<sidik isi>, sidik dihitung dari semua .html/.js di site/ (termasuk subfolder)
 dengan cap versinya dibuang. Selama isi tidak berubah, V tetap: menjalankan
 skrip ini berulang kali tidak mengubah berkas. Isi berubah -> V baru, jadi
 browser mengambil semua modul baru sekaligus.
@@ -50,8 +50,11 @@ addEventListener('error', function (e) {
 </script>
 """
 
-# from './x.js'  /  import('./x.js')  (kutip tunggal, seperti seluruh site/)
-IMPORT = re.compile(r"""(from\s+|import\()'\./([A-Za-z0-9_\-]+\.js)(?:\?v=[^']*)?'""")
+# from './x.js'  /  import('./x.js')  (kutip tunggal, seperti seluruh site/).
+# Sejak 2026-11-24 juga subfolder dan naik folder: './instrumen/<id>/x.js',
+# '../../x.js' (modul instrumen di site/instrumen/<id>/, pemilik 2026-11-24).
+IMPORT = re.compile(
+    r"""(from\s+|import\()'((?:\./|(?:\.\./)+)(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+\.js)(?:\?v=[^']*)?'""")
 # <script src="x.js">  (berkas lokal saja: tanpa garis miring atau skema)
 SCRIPT_SRC = re.compile(r"""(<script\b[^>]*\bsrc=")([A-Za-z0-9_\-]+\.js)(?:\?v=[^"]*)?(")""")
 # <link rel="stylesheet" href="x.css">  (kepala.css, 2026-11-04)
@@ -62,7 +65,7 @@ MODULE_TAG = '<script type="module">'
 
 def stamp(text: str, version: str) -> str:
     """Set every local import and VERSI in one file to `version`."""
-    text = IMPORT.sub(lambda m: f"{m.group(1)}'./{m.group(2)}?v={version}'", text)
+    text = IMPORT.sub(lambda m: f"{m.group(1)}'{m.group(2)}?v={version}'", text)
     for pola in (SCRIPT_SRC, LINK_HREF):
         text = pola.sub(lambda m: f"{m.group(1)}{m.group(2)}?v={version}{m.group(3)}", text)
     return VERSI.sub(f"const VERSI = '{version}'", text)
@@ -98,9 +101,13 @@ def current_version(files: dict[str, str]) -> str | None:
 
 
 def plan(site: Path, today: dt.date) -> tuple[str, dict[str, str]]:
-    """Return the version and the files whose content would change."""
-    old = {p.name: p.read_text(encoding="utf-8")
-           for p in sorted(site.iterdir()) if p.suffix in (".html", ".js", ".css")}
+    """Return the version and the files whose content would change.
+
+    Keys are paths relative to site/ ('a.js', 'instrumen/lam-teknik-s1/b.js');
+    top-level keys equal the bare name, so adding subfolders does not shift
+    the fingerprint of an unchanged flat site."""
+    old = {p.relative_to(site).as_posix(): p.read_text(encoding="utf-8")
+           for p in sorted(site.rglob("*")) if p.is_file() and p.suffix in (".html", ".js", ".css")}
     with_banner = {n: add_banner(n, t) for n, t in old.items()}
     fp = fingerprint(with_banner)
     cur = current_version(old)

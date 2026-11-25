@@ -32,7 +32,22 @@ AKAR = Path(__file__).resolve().parent
 CATATAN = AKAR / "pasang-tercatat.json"
 WARNA_AWAL = {"warna_utama": "#0C2A4D", "warna_aksen": "#C8102E"}
 # Nilai bawaan saat pertanyaan dijawab Enter atau kunci tidak ada di isian.ini.
-BAWAAN = {**WARNA_AWAL, "nama_repo": "cv-site", "paket": "lengkap"}
+BAWAAN = {**WARNA_AWAL, "nama_repo": "cv-site", "paket": "lengkap", "instrumen": "lam-teknik-s1"}
+
+
+def daftar_instrumen() -> dict:
+    """Instrumen akreditasi yang tersedia: {id folder: 'lembaga, jenjang'} dari site/instrumen/<id>/instrumen.json
+    (pemilik 2026-11-25: dipilih saat pemasangan, lalu tools/pilih_instrumen.py mengarahkan rujukan site/)."""
+    hasil = {}
+    # Paket templat: install.py di akar repo; cv-data: di tools/ (folder site/ satu tingkat di atas).
+    folder = next((p for p in (AKAR / "site" / "instrumen", AKAR.parent / "site" / "instrumen") if p.is_dir()), None)
+    for f in sorted(folder.glob("*/instrumen.json")) if folder else []:
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        hasil[f.parent.name] = f"{d.get('lembaga', '')}, {d.get('jenjang', '')}".strip(", ")
+    return hasil
 # Paket situs (pemilik 2026-11-12): modul yang dimatikan, ditulis ke site/config.js
 # (window.FITUR_MATI). Samakan dengan PAKET di site/fitur.js (diuji tests/test_install.py).
 PAKET = {
@@ -65,7 +80,16 @@ def _logo(v):
     p = Path(v).expanduser()
     return "" if p.is_file() and p.suffix.lower() == ".png" else "berkas .png yang ada"
 def _warna(v): return "" if re.fullmatch(r"#[0-9A-Fa-f]{6}", v) else "bentuknya #RRGGBB"
+def rujukan_instrumen(site: Path) -> set:
+    """Id instrumen yang dirujuk halaman dan modul tingkat atas site/ (pola yang ditulis tools/pilih_instrumen.py)."""
+    ids = set()
+    for p in list(site.glob("*.js")) + list(site.glob("*.html")):
+        ids |= set(re.findall(r"instrumen/([a-z0-9-]+)/", p.read_text(encoding="utf-8", errors="replace")))
+    return ids
 def _paket(v): return "" if v in PAKET else "pilih: " + " atau ".join(PAKET)
+def _instrumen(v):
+    ada = daftar_instrumen()
+    return "" if v in ada else "pilih salah satu: " + ", ".join(ada)
 
 ISIAN = [
     ("nama_prodi", "Nama program studi (tanpa 'Program Studi', mis. Teknik Lingkungan)", _tidak_kosong),
@@ -82,6 +106,7 @@ ISIAN = [
     ("warna_utama", "Warna utama #RRGGBB", _warna),
     ("warna_aksen", "Warna aksen #RRGGBB", _warna),
     ("paket", "Paket situs: lengkap atau akreditasi", _paket),
+    ("instrumen", "Instrumen akreditasi (id di daftar atas)", _instrumen),
 ]
 # Tempat mencari nilainya; dicetak di atas pertanyaan (docs/panduan-pemasangan.md).
 PETUNJUK = {
@@ -95,7 +120,10 @@ PETUNJUK = {
     "paket": "lengkap = semua modul dan situs publik; akreditasi = hanya ruang kerja akreditasi (skor, LKPS, LED,"
              " bukti, Data prodi, dosen, kurikulum/CPL/RPS), tanpa situs publik, layanan mahasiswa, jadwal, rapat,"
              " hibah, kalender, pengingat, kepakaran, SDGs (bisa dinyalakan lagi dengan memasang ulang)",
+    "instrumen": "instrumen LAM prodi ini: " + "; ".join(f"{k} = {v}" for k, v in daftar_instrumen().items()),
 }
+# accreditation.instrument di config.yaml (dibaca tools/pilih_instrumen.py).
+POLA_INSTRUMEN = r"(?m)^  instrument: *[^\s#]+"
 
 
 # site_check.url di config.yaml, apa pun nama repo sebelumnya.
@@ -193,8 +221,23 @@ def pasang(isi: dict, lama: dict) -> None:
     for kunci in ("warna_utama", "warna_aksen"):
         dari = lama.get(kunci, WARNA_AWAL[kunci])
         if dari.lower() != isi[kunci].lower():
-            for p in list(site.glob("*.html")) + list(site.glob("*.css")) + list(site.glob("*.js")):
+            # rglob: modul instrumen di site/instrumen/<id>/ ikut (2026-11-24)
+            for p in list(site.rglob("*.html")) + list(site.rglob("*.css")) + list(site.rglob("*.js")):
                 ganti(p, "(?i)" + re.escape(dari), isi[kunci].upper(), wajib=False)
+    # 6. instrumen akreditasi: config.yaml, lalu rujukan site/ diarahkan ke site/instrumen/<id>/ (butuh Node).
+    #    Bila semua rujukan halaman sudah ke instrumen pilihan, langkah ini dilewati (tanpa Node pun jalan).
+    m = re.search(POLA_INSTRUMEN, (AKAR / "config.yaml").read_text(encoding="utf-8"))
+    sekarang = m.group(0).split(":", 1)[1].strip() if m else ""
+    ganti(AKAR / "config.yaml", POLA_INSTRUMEN, f"  instrument: {isi['instrumen']}")
+    pilih = next(p for p in (AKAR / "tools" / "pilih_instrumen.py", AKAR / "pilih_instrumen.py") if p.exists())
+    r = (subprocess.run([sys.executable, str(pilih)], cwd=AKAR, capture_output=True, text=True)
+         if rujukan_instrumen(site) != {isi["instrumen"]} else None)
+    if r and r.returncode:
+        # config.yaml kembali ke instrumen lama: kalau tidak, jalan ulang menganggap instrumen tidak berubah dan
+        # melewati langkah ini, padahal halaman masih merujuk instrumen lama.
+        ganti(AKAR / "config.yaml", POLA_INSTRUMEN, f"  instrument: {sekarang}")
+        sys.exit(f"Instrumen {isi['instrumen']} belum terpasang:\n{r.stdout}{r.stderr}\n"
+                 "Perbaiki (mis. pasang Node.js), lalu jalankan ulang install.py.")
     CATATAN.write_text(json.dumps(isi, ensure_ascii=False, indent=2), encoding="utf-8")
     # 6. new version stamps, so browsers drop the cached old colours/config
     if (AKAR / "stamp_versions.py").exists():
@@ -211,6 +254,7 @@ def main() -> None:
     pasang(isi, lama)
     mati = PAKET[isi["paket"]]
     print(f"\nPaket: {isi['paket']}" + (f" (dimatikan: {', '.join(mati)})" if mati else ""))
+    print(f"Instrumen akreditasi: {isi['instrumen']} ({daftar_instrumen()[isi['instrumen']]})")
     print("\nSelesai. Diisi: site/config.js, config.yaml, site/index.html, site/kinerja.html"
           + (", site/logo.png" if isi["logo"] else ""))
     situs = alamat_situs(isi["github_org"], isi["nama_repo"])

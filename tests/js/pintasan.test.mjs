@@ -7,13 +7,20 @@ const { MODUL, PINTASAN, pintasanUntuk, halamanBoleh } = await import('../../sit
 const dosen = { peran: 'dosen', aktif: true, koordinator: [] };
 const daftar = s => pintasanUntuk(s).map(g => [g.label, g.halaman.map(h => h.href)]);
 
-test('kelompok menu tahap 3: Pembelajaran dipecah, Pengelolaan terpisah', () => {
+// Susunan menu menurut alur kerja (pemilik 2026-11-23); sebelumnya tahap 3 (2026-11-20).
+test('kelompok menu menurut alur kerja: Pengajaran urut alur, halaman di kelompok yang logis', () => {
   const judul = MODUL.map(m => m.judul);
-  for (const j of ['Data saya', 'Mata kuliah saya', 'Kurikulum dan CPL prodi', 'Kemahasiswaan', 'Kegiatan', 'Pengelolaan'])
+  for (const j of ['Data saya', 'Pengajaran', 'Kurikulum dan CPL prodi', 'Kemahasiswaan', 'Kegiatan', 'Pengelolaan'])
     assert.ok(judul.includes(j), j);
   for (const j of ['Pembelajaran dan CPL', 'Admin prodi', 'Kegiatan dan laboratorium']) assert.ok(!judul.includes(j), j);
   const di = href => MODUL.filter(m => m.halaman.some(h => h.href === href)).map(m => m.judul);
-  assert.deepEqual(di('rps.html'), ['Mata kuliah saya']);
+  assert.deepEqual(di('rps.html'), ['Pengajaran']);
+  assert.deepEqual(di('kelas.html'), ['Pengajaran']);
+  assert.deepEqual(di('jadwal-berhalangan.html'), ['Data saya']);
+  assert.deepEqual(di('grafik.html'), ['Mutu dan akreditasi']);
+  assert.deepEqual(di('kelengkapan-situs.html'), ['Pengelolaan']);
+  assert.deepEqual(MODUL.find(m => m.judul === 'Pengajaran').halaman.map(h => h.href).slice(0, 5),
+    ['mk-saya.html', 'koordinator-mk.html', 'silabus.html', 'cpmk.html', 'rps.html']);
   assert.deepEqual(di('rps-kurikulum.html'), ['Kurikulum dan CPL prodi']);
   assert.deepEqual(di('target.html'), ['Data saya']);
   assert.deepEqual(di('kelola-laboratorium.html'), ['Pengelolaan']);
@@ -28,7 +35,7 @@ test('semua pintasan menunjuk halaman di MODUL', () => {
 });
 
 test('pintasan dosen biasa, koordinator KP, GKM, admin, asesor; tanpa pengulangan', () => {
-  assert.deepEqual(daftar(dosen), [['Dosen', ['profil.html', 'karya.html', 'rps.html', 'nilai-cpl.html', 'pengajuan-mahasiswa.html', 'kalender.html', 'jadwal-berhalangan.html']]]);
+  assert.deepEqual(daftar(dosen), [['Dosen', ['profil.html', 'karya.html', 'mk-saya.html', 'rps.html', 'nilai-cpl.html', 'pengajuan-mahasiswa.html', 'bimbingan-ta.html', 'penilaian-ta.html', 'kalender.html', 'jadwal-berhalangan.html']]]);
   const kp = daftar({ ...dosen, koordinator: ['koordinator_kp'] });
   assert.deepEqual(kp[0], ['Koordinator KP/Magang', ['pengajuan-mahasiswa.html', 'rekap-kp.html', 'kelola-layanan-mahasiswa.html']]);
   assert.ok(!kp[1][1].includes('pengajuan-mahasiswa.html'));   // sudah di kelompok jabatan

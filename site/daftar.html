@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tema.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="tema.css?v=2026-11-25-65047c">
 <style>
   /* Daftar dosen, publikasi, penelitian, pengabdian (pemilik 2026-11-16): kerangka publik bersama, kartu
      dosen, lencana mutu publikasi (warna sama dengan kinerja.html), dikelompokkan per tahun. */
@@ -83,7 +83,7 @@
   </div></div>
   <div class="isi" id="isi"></div>
 </main>
-<script src="config.js?v=2026-11-23-5a55a3"></script>
+<script src="config.js?v=2026-11-25-65047c"></script>
 <script>
 // Galat saat memuat skrip (mis. modul lama dari cache bercampur dengan
 // halaman baru) ditampilkan sebagai pesan, bukan halaman kosong.
@@ -99,7 +99,8 @@ addEventListener('error', function (e) {
 });
 </script>
 <script type="module">
-import { pasangKerangka, isiKerangka } from './kerangka.js?v=2026-11-23-5a55a3';
+import { pasangKerangka, isiKerangka } from './kerangka.js?v=2026-11-25-65047c';
+import { urlPublikasi, aTautan, htmlDoi } from './tautan-publikasi.js?v=2026-11-25-65047c';   // judul dan DOI bisa diklik (pemilik 2026-11-24)
 
 const SINTA = window.PROFIL_SINTA || 'https://sinta.kemdiktisaintek.go.id/authors/profile/';
 const SCOPUS = window.PROFIL_SCOPUS || 'https://www.scopus.com/pages/authors/';
@@ -219,9 +220,9 @@ function publikasi(){
       && (!m || (m === 'internasional' ? p.tingkat === 'internasional' : String(p.indeksasi || '').startsWith(m)))
       && (!q || [p.judul, p.terbitan, ...(p.penulis || []).map(a => a.nama)].join(' ').toLowerCase().includes(q)));
     $('jml').textContent = `${d.length} publikasi`;
-    $('lst').innerHTML = d.length ? perTahun(d, p => `<div class="e"><div class="e-b"><div class="e-j">${esc(p.judul)}</div>
-        <div class="e-m">${[rapi(p.jenis), p.terbitan, [p.volume && 'Vol. ' + p.volume, p.nomor && 'No. ' + p.nomor, p.halaman && 'hlm. ' + p.halaman].filter(Boolean).join(' '),
-          p.doi && 'DOI ' + String(p.doi).replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')].filter(Boolean).map(esc).join(' · ')}</div>
+    $('lst').innerHTML = d.length ? perTahun(d, p => `<div class="e"><div class="e-b"><div class="e-j">${aTautan(urlPublikasi(p), p.judul)}</div>
+        <div class="e-m">${[...[rapi(p.jenis), p.terbitan, [p.volume && 'Vol. ' + p.volume, p.nomor && 'No. ' + p.nomor, p.halaman && 'hlm. ' + p.halaman].filter(Boolean).join(' ')]
+          .filter(Boolean).map(esc), htmlDoi(p)].filter(Boolean).join(' · ')}</div>
         ${(p.penulis || []).length ? `<div class="e-p">${penulis(p.penulis)}</div>` : ''}</div>${lencanaMutu(p)}</div>`)
       : '<p class="kosong">Tidak ada publikasi yang cocok dengan penyaring ini.</p>';
   };

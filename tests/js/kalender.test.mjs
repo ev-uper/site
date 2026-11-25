@@ -51,3 +51,25 @@ test('ics: all-day end is exclusive, WIB times become UTC, text escaped, long li
   for (const baris of panjang.split('\r\n')) assert.ok(new TextEncoder().encode(baris).length <= 75, baris);
   assert.match(panjang, /\r\n é/);
 });
+
+test('162 Kalender saya: rapat yang mencentang saya, kegiatan untuk semua atau yang menugasi saya, berhalangan (pemilik 2026-11-24)', async () => {
+  const { saringSaya, acaraBerhalangan, JENIS_KEGIATAN } = await import('../../site/kalender.js');
+  const d = {
+    rapat: [{ id: 1, judul: 'Rapat A', tanggal: '2026-12-01' }, { id: 2, judul: 'Rapat B', tanggal: '2026-12-02' }],
+    kegiatan: [{ id: 10, judul: 'Wisuda', jenis: 'wisuda', mulai: '2026-12-05' }, { id: 11, judul: 'Mengawas UAS', jenis: 'mengawas', mulai: '2026-12-08' },
+      { id: 12, judul: 'Sidang', jenis: 'sidang', mulai: '2026-12-09' }],
+    pesertaRapat: [{ rapat_id: 2 }],
+    kegiatanDosen: [{ kegiatan_id: 11, dosen_id: 'a' }, { kegiatan_id: 12, dosen_id: 'b' }],
+  };
+  const s = saringSaya(d, DOSEN);
+  assert.deepEqual(s.rapat.map(r => r.id), [2]);
+  assert.deepEqual(s.kegiatan.map(k => k.id), [10, 11]);
+  assert.equal(JENIS_KEGIATAN.mengawas, 'Mengawas ujian');
+  const b = acaraBerhalangan([{ id: 1, tanggal: '2026-12-03', slot_id: 4, alasan: 'Rapat fakultas' }],
+    [{ id: 2, mulai: '2026-12-10', selesai: '2026-12-12', hari: [1], alasan: 'Dinas luar' }]);
+  assert.deepEqual(b.map(x => [x.mulai, x.selesai || x.mulai, x.ket]),
+    [['2026-12-03', '2026-12-03', 'Rapat fakultas · sesi tertentu'], ['2026-12-10', '2026-12-12', 'Dinas luar · hari tertentu saja']]);
+  const acara = kumpulkanAcara({ kegiatan: [{ ...d.kegiatan[1], ditugaskan: ['Ani', 'Budi'] }], berhalangan: b }, DOSEN);
+  assert.match(acara.find(a => a.sumber === 'kegiatan').ket, /Ditugaskan: Ani, Budi/);
+  assert.equal(acara.filter(a => a.sumber === 'berhalangan').length, 2);
+});

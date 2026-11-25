@@ -71,3 +71,14 @@ test('baris yang sudah bertautan menampilkan "Ganti berkas", baris kosong "Ungga
   assert.match(editorDaftar('ed_r', 'riwayat', [{ jenjang: 'magister' }]), />Unggah<input type="file" data-unggah hidden>/);
   assert.doesNotMatch(editorDaftar('ed_r', 'riwayat', [{ jenjang: 'magister' }]), /multiple/);
 });
+
+test('masa berlaku sertifikat (pemilik 2026-11-24)', async () => {
+  const { masaBerlaku, tanggalPanjang, tampil } = await import('../../site/profil-dosen.js');
+  const kini = new Date(2026, 10, 24);
+  assert.equal(masaBerlaku({}, kini), null);
+  assert.equal(masaBerlaku({ berlaku_sampai: 'kapan-kapan' }, kini), null);
+  assert.deepEqual(masaBerlaku({ berlaku_sampai: '2026-11-24' }, kini), { sampai: '2026-11-24', hari: 0, lewat: false });
+  assert.deepEqual(masaBerlaku({ berlaku_sampai: '2026-11-23' }, kini), { sampai: '2026-11-23', hari: -1, lewat: true });
+  assert.equal(tanggalPanjang('2027-03-05'), '5 Maret 2027');
+  assert.match(tampil('sertifikat', [{ jenis: 'profesi', bidang: 'Insinyur', berlaku_sampai: '2027-03-05' }]), /berlaku s\.d\. 5 Maret 2027/);
+});

@@ -78,3 +78,22 @@ test('tabelPendukung: DTPS profile for butir 26-28 only', () => {
   assert.deepEqual(p.baris.at(-1), ['Belum berjabatan akademik', '2', '20%']);
   assert.equal(tabelPendukung('33', D, TS), null);
 });
+
+// Narasi merujuk Gambar n dengan angka yang sama dengan grafiknya (pemilik 2026-11-23).
+test('kalimatGrafik: time series sentence carries the chart numbers; other charts point to the data table', async () => {
+  const { kalimatGrafik, BUTIR_GRAFIK } = await import('../../site/led-data.js');
+  const tumpuk = { judul: 'Publikasi ilmiah DTPS', satuan: 'judul', mode: 'tumpuk', kategori: ['2024/2025', '2025/2026', '2026/2027'],
+    seri: [{ nama: 'Jurnal nasional', nilai: [2, 3, 5] }, { nama: 'Jurnal internasional', nilai: [1, 0, 4] }, { nama: 'Prosiding', nilai: [0, 0, 0] }] };
+  assert.equal(kalimatGrafik(tumpuk, 3), 'Gambar 3 menunjukkan publikasi ilmiah DTPS pada 2024/2025 s.d. 2026/2027 (judul): '
+    + 'jurnal nasional 2, 3, 5; jurnal internasional 1, 0, 4; prosiding 0, 0, 0; jumlahnya 3, 3, 9.');
+  const ipk = { judul: 'Rerata IPK lulusan per TS', satuan: 'IPK', mode: 'kelompok', desimal: 2, kategori: ['2025/2026', '2026/2027'],
+    seri: [{ nama: 'Rerata IPK', nilai: [3.215, 3.4] }] };
+  assert.equal(kalimatGrafik(ipk, 1), 'Gambar 1 menunjukkan rerata IPK lulusan per TS pada 2025/2026 s.d. 2026/2027 (IPK): rerata IPK 3,21, 3,40.');
+  const kepuasan = { judul: 'Kepuasan pengguna lulusan, TS 2026/2027', satuan: '%', mode: 'tumpuk', kategori: ['Etika', 'Komunikasi'],
+    seri: [{ nama: 'Sangat baik', nilai: [40, 30] }] };
+  assert.equal(kalimatGrafik(kepuasan, 7), 'Gambar 7 menyajikan kepuasan pengguna lulusan, TS 2026/2027; angka lengkapnya ada pada Data Gambar 7.');
+  const pkm = { judul: 'PkM DTPS yang melibatkan mahasiswa', satuan: 'judul', mode: 'kelompok', kategori: ['2025/2026', '2026/2027'],
+    seri: [{ nama: 'Seluruh judul', nilai: [3, 2] }, { nama: 'Melibatkan mahasiswa', nilai: [0, 0] }] };
+  assert.equal(kalimatGrafik(pkm, 2), 'Gambar 2 menunjukkan PkM DTPS yang melibatkan mahasiswa pada 2025/2026 s.d. 2026/2027 (judul): seluruh judul 3, 2; melibatkan mahasiswa 0, 0.');
+  assert.ok(BUTIR_GRAFIK.includes('33') && BUTIR_GRAFIK.includes('52'));
+});

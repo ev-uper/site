@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tema.css?v=2026-11-23-5a55a3">
-<link rel="stylesheet" href="kepala.css?v=2026-11-23-5a55a3">
+<link rel="stylesheet" href="tema.css?v=2026-11-25-65047c">
+<link rel="stylesheet" href="kepala.css?v=2026-11-25-65047c">
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
@@ -78,7 +78,7 @@
   <div class="sub" id="hSub">Memuat…</div>
 </div></div>
 <main class="wrap" id="isi"><p class="kosong">Memuat…</p></main>
-<script src="config.js?v=2026-11-23-5a55a3"></script>
+<script src="config.js?v=2026-11-25-65047c"></script>
 <script>
 // Galat saat memuat skrip ditampilkan sebagai pesan, bukan halaman kosong.
 addEventListener('error', function (e) {
@@ -98,17 +98,18 @@ addEventListener('error', function (e) {
 // Berkas privat dibuka lewat Apps Script (mhs_buka_prodi); surat pengantar KP diunggah admin (mhs_unggah_prodi);
 // mahasiswa dikabari email saat dikembalikan, ditolak, atau disetujui (mhs_kabari).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
-import { gerbang } from './menu.js?v=2026-11-23-5a55a3';
-import { bolehPengajuan, punya, labelJabatan } from './koordinator.js?v=2026-11-23-5a55a3';
+import { gerbang } from './menu.js?v=2026-11-25-65047c';
+import { bolehPengajuan, punya, labelJabatan } from './koordinator.js?v=2026-11-25-65047c';
 import { JENIS, LABEL_BERKAS, LABEL_STATUS, TINGKAT, BIDANG, teksAnggota, judulPengajuan, keB64, bukaIsi, appsScript, labelStatus, JENIS_SURAT, TAHAP_TA, JENIS_PUB, TINGKAT_PUB, INDEKSASI, JENIS_LUARAN, waktuPengajuan, rekapPengajuan, lembarPengajuan, labelProgram, penetapanTA, pilihanPembimbingTA, kkCocok,
-         BERKAS_YUDISIUM_BAWAAN, kelengkapanYudisium, labelBerkas, JENIS_KEGIATAN } from './pengajuan-mhs.js?v=2026-11-23-5a55a3';
-import { opsiPeriode, cocokPeriode, labelPeriode, taTeks, tsKarya } from './sdgs-unduh.js?v=2026-11-23-5a55a3';
-import { SHEETJS } from './nilai-cpl.js?v=2026-11-23-5a55a3';
-import { barisKuota, teksPilihanPembimbing } from './rekap-kp.js?v=2026-11-23-5a55a3';
-import { siapkan } from './pembimbing.js?v=2026-11-23-5a55a3';
-import { usulPenguji, bebanUji, tsDari } from './usulan-penguji.js?v=2026-11-23-5a55a3';
-import { usulanWaktu } from './cari-waktu.js?v=2026-11-23-5a55a3';
-import { bacaJam, formatJam, sibukSidang, gabungSibuk, periksaWaktu } from './jadwal-sidang.js?v=2026-11-23-5a55a3';
+         BERKAS_YUDISIUM_BAWAAN, kelengkapanYudisium, labelBerkas, JENIS_KEGIATAN, bolehBatalProdi, BERKAS_TA_BAWAAN, berkasTahapTA, TAHAP_TA_BERKAS,
+         semesterTA, kunciSemester, teksSemester } from './pengajuan-mhs.js?v=2026-11-25-65047c';
+import { opsiPeriode, cocokPeriode, labelPeriode, taTeks, tsKarya } from './sdgs-unduh.js?v=2026-11-25-65047c';
+import { SHEETJS } from './nilai-cpl.js?v=2026-11-25-65047c';
+import { barisKuota, teksPilihanPembimbing } from './rekap-kp.js?v=2026-11-25-65047c';
+import { siapkan } from './pembimbing.js?v=2026-11-25-65047c';
+import { usulPenguji, bebanUji, tsDari } from './usulan-penguji.js?v=2026-11-25-65047c';
+import { usulanWaktu } from './cari-waktu.js?v=2026-11-25-65047c';
+import { bacaJam, formatJam, sibukSidang, gabungSibuk, periksaWaktu } from './jadwal-sidang.js?v=2026-11-25-65047c';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = id => document.getElementById(id);
@@ -117,6 +118,7 @@ const tgl = s => s ? new Date(s).toLocaleString('id-ID', { day: 'numeric', month
 const KABARI = new Set(['dikembalikan', 'ditolak', 'disetujui']);   // status yang dikabarkan ke email mahasiswa
 let SAYA = null, ADMIN = false, UNDUH = false, DATA = [], TAB = 'tunggu', BUKA = new Set();
 let YUD = BERKAS_YUDISIUM_BAWAAN;
+let TAB = BERKAS_TA_BAWAAN;   // 174: berkas seminar/sidang TA per tahap
 // Seminar/sidang TA (94): daftar dosen (NIDN, nama) untuk penguji; jadwal per pengajuan.
 let DOSEN = [], JADWAL = new Map(), SEMUA_JADWAL = [], MODEL = null;   // MODEL: mesin Cari pembimbing (usulan penguji)
 // Pembimbing KP ditetapkan koordinator KP/admin (107): beban dan kuota per TS (kp_beban), Map ts -> baris.
@@ -124,16 +126,29 @@ let BEBAN = new Map();
 const tsKP = p => tsDari(String(p.data_selesai?.tanggal_mulai || p.data?.tanggal_mulai || p.data?.rencana_mulai || p.dibuat || ''));
 const bolehTetapkan = p => p.jenis === 'kp' && boleh(p) && !['draf', 'ditolak'].includes(p.status)
   && !(p.tahap === 'selesai' && p.status === 'disetujui');
-// Pembimbing TA ditetapkan koordinator TA/admin (110): KK topik TA, pasangan KK berdekatan, beban/kuota TA per TS.
+// Pembimbing TA ditetapkan koordinator TA/admin (110): KK topik TA, pasangan KK berdekatan, beban/kuota TA per semester (180).
 let BEBAN_TA = new Map(), DEKAT = [], KK = [];
-const tsTA = p => tsDari(String(p.dibuat || ''));
+const smtTA = p => semesterTA(String(p.dibuat || ''));
 const bolehTetapkanTA = p => penetapanTA(p) && boleh(p) && ['pembimbing', 'admin'].includes(p.status);
+// 180: ganti pembimbing (bimbingan dibatalkan) pada penetapan yang sudah disahkan; pilihan memakai beban semester berjalan.
+const bolehGantiTA = p => penetapanTA(p) && boleh(p) && p.status === 'disetujui';
 const namaKK = k => KK.find(x => x.kode === k)?.nama || k || '';
 
 // Koordinator bidangnya menggantikan admin (97); surat tetap admin.
 const boleh = p => bolehPengajuan(SAYA, p.jenis);
 const menungguSaya = p => (p.status === 'pembimbing' && (p.pembimbing_id === SAYA.id || boleh(p))) || (p.status === 'admin' && boleh(p));
 const sesi = async () => (await sb.auth.getSession()).data.session?.access_token;
+
+// Batalkan atas permintaan mahasiswa (161, pemilik 2026-11-24): admin/koordinator bidangnya; alasan wajib, dicatat di riwayat.
+async function batalProdi(id, tombol){
+  const p = DATA.find(x => x.id === id);
+  const alasan = (prompt(`Batalkan pengajuan ${p?.nama || ''} (${p?.nim || ''})?\nTulis alasan (wajib), mis. "permintaan mahasiswa: salah jalur KP".`) || '').trim();
+  if (!alasan) return;
+  tombol.disabled = true;
+  const { error } = await sb.rpc('pengajuan_batalkan', { p_id: id, p_alasan: alasan });
+  if (error) { tombol.disabled = false; return alert(/pengajuan_batalkan/.test(error.message) ? 'Patch 161 belum dijalankan.' : error.message); }
+  await muat(); gambar(); gambarRekap();
+}
 
 async function muat(){
   // tahap/data_selesai: instal-lengkap.sql; sebelum patch itu dibaca tanpa kolom tersebut.
@@ -149,6 +164,8 @@ async function muat(){
   // Daftar berkas yudisium (122); sebelum patch 122: daftar bawaan.
   const yd = await sb.rpc('yudisium_berkas_daftar');
   YUD = !yd.error && Array.isArray(yd.data) && yd.data.length ? yd.data : BERKAS_YUDISIUM_BAWAAN;
+  const tb = await sb.rpc('ta_berkas_daftar');
+  TAB = !tb.error && Array.isArray(tb.data) && tb.data.length ? tb.data : BERKAS_TA_BAWAAN;
   const [dq, jq] = await Promise.all([sb.from('dosen').select('id,nidn,nama,aktif,peran,dtps').order('nama'),
     sb.from('jadwal_ta').select('pengajuan_id,tahap,tanggal,jam,ruang,tautan_daring,status,pembimbing,penguji,penguji_luar')]);
   // Calon penguji = aturan daftar dosen Data prodi: DTPS atau berperan dosen/pimpinan; staf admin non-dosen tidak.
@@ -162,11 +179,12 @@ async function muat(){
     if (!eb) BEBAN.set(ts, barisKuota(b));
   }
   BEBAN_TA = new Map();
-  const tsTa = new Set(DATA.filter(bolehTetapkanTA).map(tsTA).filter(Boolean));
-  if (tsTa.size) {
+  const smtTa = new Map(DATA.filter(bolehTetapkanTA).map(smtTA).filter(Boolean).map(s => [kunciSemester(s), s]));
+  if (DATA.some(bolehGantiTA)) { const s = semesterTA(new Date().toISOString()); smtTa.set(kunciSemester(s), s); }
+  if (smtTa.size) {
     const dk = await sb.from('ta_kk_dekat').select('kk_a,kk_b');
     DEKAT = dk.error ? [] : dk.data || [];
-    for (const ts of tsTa) { const { data: b, error: eb } = await sb.rpc('ta_beban', { p_ts: ts }); if (!eb) BEBAN_TA.set(ts, b || []); }
+    for (const [k, s] of smtTa) { const { data: b, error: eb } = await sb.rpc('ta_beban', { p_ts: s.ts, p_sm: s.sm }); if (!eb) BEBAN_TA.set(k, b || []); }
   }
   if (!MODEL) MODEL = await fetch('data.json', {cache: 'no-cache'}).then(r => r.ok ? r.json() : null)
     .then(d => { if (d) KK = d.situs?.kelompok_keahlian || []; return d ? siapkan(d) : null; }).catch(() => null);
@@ -195,9 +213,13 @@ function ringkas(p){
        ['Tempat', d.tempat], ['Ringkasan', d.ringkasan], ['Tautan', d.tautan]]
     : penetapanTA(p)
     ? [['Tahap', 'Pengajuan pembimbing TA'], ['Kelompok keahlian', namaKK(d.kk_ta)], ['Judul awal', d.judul],
-       ['Pembimbing 2', nmDosen(d.pembimbing_2)], ['Alasan di luar kelompok keahlian', d.alasan_luar_kk]]
+       ['Pembimbing 2', nmDosen(d.pembimbing_2)], ['Alasan di luar kelompok keahlian', d.alasan_luar_kk],
+       (k => ['Berkas wajib', `${k.ada} dari ${k.wajib}${k.kurang.length ? ' · belum: ' + k.kurang.join(', ') : ' (lengkap)'}`])(
+         kelengkapanYudisium(berkasTahapTA(TAB, 'penetapan_pembimbing'), p.pengajuan_berkas || []))]   // 176
     : p.jenis === 'ta'
     ? [['Tahap', (TAHAP_TA.find(t => t[0] === d.tahap_ta) || [, ''])[1]], ['Judul', d.judul], ['Pembimbing 2', nmDosen(d.pembimbing_2)],
+       ...(TAHAP_TA_BERKAS.includes(d.tahap_ta) ? [(k => ['Berkas wajib', `${k.ada} dari ${k.wajib}${k.kurang.length ? ' · belum: ' + k.kurang.join(', ') : ' (lengkap)'}`])(
+         kelengkapanYudisium(berkasTahapTA(TAB, d.tahap_ta), p.pengajuan_berkas || []))] : []),   // 174
        ['Nama di jadwal publik', d.tampil_nama ? 'disetujui mahasiswa' : 'tidak'],
        ...(j ? [['Jadwal', [j.tanggal, j.jam, j.ruang, j.tautan_daring ? 'daring' : ''].filter(Boolean).join(' · ') + (j.status !== 'terjadwal' ? ` (${j.status})` : '')],
                 ['Penguji', [...(j.penguji || []).map(nmNidn), j.penguji_luar].filter(Boolean).join(', ')]] : [])]
@@ -244,9 +266,13 @@ function kartu(p){
       <span class="meta">${esc(tgl(p.diperbarui))}</span></summary>
     <div class="badan">
       <div><h3>Isian</h3><dl>${ringkas(p).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        ${boleh(p) ? `<p style="margin:8px 0 0"><a class="b" href="pengajuan.html?pratinjau=${p.id}" target="_blank" rel="noopener"
+          title="Halaman pengajuan ini persis seperti dilihat mahasiswa (hanya-baca), dan apakah tombol Kirim akan berhasil">Lihat seperti mahasiswa</a>
+          ${bolehBatalProdi(p) ? `<button type="button" class="b" data-batal-prodi="${p.id}"
+            title="Atas permintaan mahasiswa (mis. salah jalur). Alasan wajib; berkas tetap di folder Drive prodi.">Batalkan pengajuan</button>` : ''}</p>` : ''}
         ${p.prestasi_id ? '<p class="ket">Sudah tercatat di Prestasi mahasiswa (Data prodi).</p>' : ''}
         ${p.jenis === 'kabar' && p.status === 'disetujui' ? '<p class="ket">Sudah terbit di <a href="kabar-kegiatan.html">Kabar kegiatan</a> (tampil di situs publik setelah situs dibangun ulang).</p>' : ''}</div>
-      <div><h3>Berkas</h3>${p.jenis === 'kabar' ? htmlFotoKabar(berkas) : ''}<ul class="polos">${berkas.map(b => `<li><div class="isi">${esc(labelBerkas(b.jenis, YUD))}
+      <div><h3>Berkas</h3>${p.jenis === 'kabar' ? htmlFotoKabar(berkas) : ''}<ul class="polos">${berkas.map(b => `<li><div class="isi">${esc(labelBerkas(b.jenis, [...YUD, ...TAB]))}
           <span class="ket"> · ${esc(b.nama)}${b.oleh !== 'mahasiswa' ? ' · dari prodi' : ''}${b.tautan ? ' · tautan Google Drive mahasiswa' : ''}</span></div>
           ${b.tautan ? `<a class="b" href="${esc(b.url)}" target="_blank" rel="noopener">Buka tautan</a>`
             : `<button class="b" data-buka="${b.id}">Buka</button>`}</li>`).join('') || '<li class="kosong">Belum ada berkas.</li>'}</ul>
@@ -256,6 +282,7 @@ function kartu(p){
             ? 'Unggah surat bertanda tangan' : 'Unggah surat pengantar'}</button></div>` : ''}
         ${bolehTetapkan(p) ? htmlTetapkan(p) : ''}
         ${bolehTetapkanTA(p) ? htmlTetapkanTA(p) : ''}
+        ${bolehGantiTA(p) ? htmlGantiTA(p) : ''}
         ${bolehNilai(p) ? `<div class="baris" style="margin-top:8px"><input type="file" id="nl_${p.id}" accept=".pdf,.docx,.jpg,.jpeg,.png"
           aria-label="Berkas nilai pembimbing lapangan"><button class="b" data-pengantar="${p.id}" data-jenis="nilai_lapangan" data-input="nl_${p.id}">
           Unggah nilai pembimbing lapangan</button></div>
@@ -320,7 +347,7 @@ function htmlTetapkan(p){
 
 // Penetapan pembimbing TA (110, pemilik 2026-11-18): pembimbing 1 KK sama/berdekatan; di luar itu wajib alasan.
 function htmlTetapkanTA(p){
-  const ts = tsTA(p), rows = BEBAN_TA.get(ts);
+  const smt = smtTA(p), rows = BEBAN_TA.get(kunciSemester(smt));
   if (!rows) return '<p class="ket">Beban/kuota TA belum terbaca (jalankan supabase/instal-lengkap.sql).</p>';
   const xs = pilihanPembimbingTA(rows, p.data?.kk_ta, DEKAT), kini = xs.find(r => r.dosen_id === p.pembimbing_id);
   const opsiDua = rows.map(r => `<option value="${r.dosen_id}"${r.dosen_id === p.data?.pembimbing_2 ? ' selected' : ''}>${esc(r.nama)}</option>`).join('');
@@ -332,7 +359,8 @@ function htmlTetapkanTA(p){
     <div class="baris"><label style="flex:1">Alasan bila di luar kelompok keahlian <input id="pta_${p.id}" maxlength="600" style="width:100%"
       value="${esc(p.data?.alasan_luar_kk || '')}"></label>
       <button class="b" data-tetapkan-ta="${p.id}">Tetapkan pembimbing</button></div>
-    <p class="ket">Angka = beban/kuota pembimbing 1 TA pada TS ${ts - 1}/${ts}. Kuota diatur di <a href="rekap-ta.html#kuota">Rekap TA</a>.
+    <p class="ket">Angka = beban/kuota pembimbing 1 TA pada semester ${teksSemester(smt)} (mahasiswa lama yang masih dibimbing tidak dihitung).
+      Kuota diatur di <a href="rekap-ta.html#kuota">Rekap TA</a>.
       Penetapan tercatat di jalur proses.</p>`;
 }
 
@@ -340,9 +368,9 @@ async function tetapkanTA(id, b){
   const p = DATA.find(x => x.id === id), satu = $('pt1_' + id).value, dua = $('pt2_' + id).value || null, alasan = $('pta_' + id).value.trim();
   if (!satu) return pesan(id, 'buruk', 'Pilih pembimbing 1.');
   if (dua && dua === satu) return pesan(id, 'buruk', 'Pembimbing 2 harus berbeda dari pembimbing 1.');
-  const r = (BEBAN_TA.get(tsTA(p)) || []).find(x => x.dosen_id === satu);
+  const r = (BEBAN_TA.get(kunciSemester(smtTA(p))) || []).find(x => x.dosen_id === satu);
   if (r && !kkCocok(p.data?.kk_ta, r.kk, DEKAT) && alasan.length < 5) return pesan(id, 'buruk', 'Pembimbing 1 di luar kelompok keahlian TA: tulis alasannya.');
-  if (r && r.kuota != null && r.beban >= r.kuota && !confirm(`Kuota TA ${r.nama} pada TS ini sudah penuh (${r.beban}/${r.kuota}). Tetap tetapkan?`)) return;
+  if (r && r.kuota != null && r.beban >= r.kuota && !confirm(`Kuota TA ${r.nama} pada semester ini sudah penuh (${r.beban}/${r.kuota}). Tetap tetapkan?`)) return;
   b.disabled = true;
   try {
     const { error } = await sb.rpc('ta_tetapkan_pembimbing', { p_id: id, p_dosen: satu, p_dosen2: dua, p_alasan: alasan || null });
@@ -350,6 +378,42 @@ async function tetapkanTA(id, b){
     BUKA.add(id);
     await muat(); gambar(); gambarRekap();
     pesan(id, 'ok', `Pembimbing TA ditetapkan: ${r?.nama || ''}. Tekan Sahkan bila sudah sesuai.`);
+  } catch (e) { pesan(id, 'buruk', e.message); b.disabled = false; }
+}
+
+// Ganti pembimbing TA (180, pemilik 2026-11-25): mahasiswa tidak melanjutkan bimbingan; koordinator TA/admin mengganti
+// pembimbing dan judul tanpa pengajuan ulang. Kuota dosen pengganti tidak berkurang.
+function htmlGantiTA(p){
+  const rows = BEBAN_TA.get(kunciSemester(semesterTA(new Date().toISOString())));
+  if (!rows) return '';
+  const xs = pilihanPembimbingTA(rows, p.data?.kk_ta, DEKAT).filter(r => r.dosen_id !== p.pembimbing_id);
+  return `<details class="ganti-ta" style="margin-top:10px"><summary><b>Ganti pembimbing (bimbingan dibatalkan)</b></summary>
+    <p class="ket">Untuk mahasiswa yang tidak melanjutkan bimbingan dengan pembimbing sekarang (${esc(p.dosen?.nama || '—')}). Mahasiswa tidak
+      mengajukan ulang: seminar/sidang dan catatan bimbingan berikutnya memakai pembimbing baru, dan pengajuan TA yang masih berjalan ikut
+      dipindah. Kuota dosen pengganti tidak berkurang. Catatan bimbingan lama tetap tersimpan; semuanya tercatat di jalur proses.</p>
+    <div class="baris"><label>Pembimbing 1 baru <select id="pg1_${p.id}"><option value="">(pilih)</option>${xs.map(r =>
+      `<option value="${r.dosen_id}">${esc(r.teks)}</option>`).join('')}</select></label>
+      <label>Pembimbing 2 <select id="pg2_${p.id}"><option value="">(tidak ada)</option>${rows.map(r => `<option value="${r.dosen_id}"${
+        r.dosen_id === p.data?.pembimbing_2 ? ' selected' : ''}>${esc(r.nama)}</option>`).join('')}</select></label></div>
+    <div class="baris"><label style="flex:1">Judul TA <input id="pgj_${p.id}" maxlength="300" style="width:100%" value="${esc(p.data?.judul || '')}"></label></div>
+    <div class="baris"><label style="flex:1">Alasan (wajib) <input id="pga_${p.id}" maxlength="600" style="width:100%"
+      placeholder="mis. mahasiswa tidak melanjutkan bimbingan sejak ..."></label>
+      <button class="b" data-ganti-ta="${p.id}">Ganti pembimbing</button></div></details>`;
+}
+
+async function gantiTA(id, b){
+  const satu = $('pg1_' + id).value, dua = $('pg2_' + id).value || null, judul = $('pgj_' + id).value.trim(), alasan = $('pga_' + id).value.trim();
+  if (!satu) return pesan(id, 'buruk', 'Pilih pembimbing 1 baru.');
+  if (dua && dua === satu) return pesan(id, 'buruk', 'Pembimbing 2 harus berbeda dari pembimbing 1.');
+  if (alasan.length < 5) return pesan(id, 'buruk', 'Tulis alasan penggantian (bimbingan dibatalkan).');
+  if (!confirm('Batalkan bimbingan dan ganti pembimbing? Mahasiswa tidak perlu mengajukan ulang; kuota dosen pengganti tidak berkurang.')) return;
+  b.disabled = true;
+  try {
+    const { error } = await sb.rpc('ta_ganti_pembimbing', { p_id: id, p_dosen: satu, p_dosen2: dua, p_judul: judul || null, p_alasan: alasan });
+    if (error) throw new Error(error.message);
+    BUKA.add(id);
+    await muat(); gambar(); gambarRekap();
+    pesan(id, 'ok', 'Pembimbing TA diganti. Seminar/sidang dan catatan bimbingan berikutnya memakai pembimbing baru.');
   } catch (e) { pesan(id, 'buruk', e.message); b.disabled = false; }
 }
 
@@ -494,11 +558,13 @@ function gambar(){
   document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => { TAB = b.dataset.tab; gambar(); }; });
   document.querySelectorAll('details.kartu').forEach(d => { d.ontoggle = () => { d.open ? BUKA.add(+d.dataset.id) : BUKA.delete(+d.dataset.id); }; });
   document.querySelectorAll('[data-buka]').forEach(b => { b.onclick = () => buka(b); });
+  document.querySelectorAll('[data-batal-prodi]').forEach(b => { b.onclick = () => batalProdi(+b.dataset.batalProdi, b); });
   document.querySelectorAll('[data-aksi]').forEach(b => { b.onclick = () => putuskan(+b.dataset.p, b.dataset.aksi, b); });
   document.querySelectorAll('[data-jadwalkan]').forEach(b => { b.onclick = () => jadwalkan(+b.dataset.jadwalkan, b); });
   document.querySelectorAll('[data-cekjadwal]').forEach(b => { b.onclick = () => periksaJadwalDosen(+b.dataset.cekjadwal, b); });
   document.querySelectorAll('[data-tetapkan]').forEach(b => { b.onclick = () => tetapkan(+b.dataset.tetapkan, b); });
   document.querySelectorAll('[data-tetapkan-ta]').forEach(b => { b.onclick = () => tetapkanTA(+b.dataset.tetapkanTa, b); });
+  document.querySelectorAll('[data-ganti-ta]').forEach(b => { b.onclick = () => gantiTA(+b.dataset.gantiTa, b); });
   document.querySelectorAll('[data-usul]').forEach(b => { b.onclick = () => {
     const pilih = new Set(b.dataset.nidn.split(','));
     document.querySelectorAll(`[data-uji="${b.dataset.usul}"]`).forEach(c => { if (pilih.has(c.value)) c.checked = true; });
@@ -562,7 +628,7 @@ let PERIODE = '';
 const dgWaktu = p => ({ ...p, ...waktuPengajuan(p) });
 const tsTeks = p => { const t = tsKarya(waktuPengajuan(p)); return t ? taTeks(t) : ''; };
 function gambarRekap(){
-  const xs = DATA.map(dgWaktu).filter(p => p.status !== 'draf' && cocokPeriode(p, PERIODE));
+  const xs = DATA.map(dgWaktu).filter(p => !['draf', 'dibatalkan'].includes(p.status) && cocokPeriode(p, PERIODE));   // 161
   const r = rekapPengajuan(xs), opsi = opsiPeriode(DATA.map(dgWaktu)).filter(g => g.opsi.length);
   $('rekapIsi').innerHTML = `
     <div class="saring" style="margin-top:8px"><label>Periode <select id="rPeriode"><option value="">Semua</option>${opsi.map(g =>
@@ -621,6 +687,9 @@ async function mulai(){
       ${ADMIN ? 'Admin melihat semua pengajuan dan boleh memutuskan tahap pembimbing bila pembimbing berhalangan.'
         : jab.length ? `Anda ${jab.map(labelJabatan).join(', ')}: memegang tahap admin pengajuan bidang Anda dan boleh menggantikan pembimbing yang berhalangan.` : 'Anda melihat pengajuan yang memilih Anda sebagai pembimbing.'}
       ${ADMIN ? 'Draf yang belum dikirim mahasiswa tampil di "Semua".' : 'Draf yang belum dikirim mahasiswa tidak tampil.'}</p>
+    <p class="ket">Sosialisasi: <a class="b" href="pengajuan.html?latihan=1" target="_blank" rel="noopener">Buka mode latihan</a>
+      alur mahasiswa lengkap dengan data fiktif (email tiruan berisi tautan pribadi, unggah, kirim, pesan merah); tidak tersimpan di
+      prodi dan tidak mengirim email. Mahasiswa bisa mencobanya di HP lewat alamat <code>pengajuan.html?latihan=1</code> situs ini.</p>
     <details class="kotak-rekap" id="rekap"><summary>Rekap dan unduhan per periode</summary><div id="rekapIsi"></div></details>
     <div class="tab" id="tab" role="group" aria-label="Kelompok"></div>
     <div class="saring">

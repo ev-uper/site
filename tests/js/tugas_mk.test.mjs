@@ -27,6 +27,19 @@ test('koordinator MK: CPMK/RPS belum lengkap; MK nonaktif dan lengkap tidak diin
   assert.equal(t[0].href, 'cpmk.html?kode=S2');
 });
 
+test('MK universitas: PIC hanya diingatkan RPS; sisa pengampu lama dan portofolio tingkat MK tidak', () => {
+  const mku = [{ kurikulum: 'K26', kode: 'U1', nama: 'Pancasila', unit_penyelenggara: 'universitas', pengampu: ['01', '02'], koordinator_nidn: '01', rps_url: null },
+               { kurikulum: 'K26', kode: 'U2', nama: 'Kalkulus 1', unit_penyelenggara: 'universitas', pengampu: ['01'], koordinator_nidn: '01', rps_url: 'https://r' }];
+  const t = tugasMK({ saya: { nidn: '01', email: 'saya@u.id' }, mk: mku, struktur: [], refCpl, peta, kelas: [], berkas: [] });
+  assert.equal(t.length, 1);
+  assert.equal(t[0].rinci, 'U1 Pancasila: RPS universitas belum disalin dan disahkan.');
+  assert.deepEqual(tugasMK({ saya: { nidn: '02', email: 'x@u.id' }, mk: mku, struktur: [], refCpl, peta, kelas: [], berkas: [] }), []);
+  // Pengampu kelas MK universitas: hanya bagian kelasnya, tanpa tingkat MK.
+  const kls = [{ tahun_akademik: '2026/2027', semester: 'Ganjil', kode_mk: 'U2', kelas: 'A', dosen_email: 'x@u.id' }];
+  const p = tugasMK({ saya: { nidn: '02', email: 'x@u.id' }, mk: mku, struktur: [], refCpl, peta, kelas: kls, berkas: [] }).find(x => x.jenis === 'portofolio');
+  assert.ok(p && !/tingkat MK/.test(p.rinci) && /kelas A/.test(p.rinci), p && p.rinci);
+});
+
 test('portofolio semester terbaru: tingkat MK untuk koordinator, kelas sendiri untuk pengampu, MK tanpa koordinator', () => {
   const berkas = [B('S1', null, 'materi'), B('S1', null, 'soal', 'UTS'), B('S1', 'B', 'presensi'), B('S3', null, 'materi')];
   const t = tugasMK({ saya: { nidn: '01', email: 'saya@u.id' }, mk, struktur, refCpl, peta, kelas, berkas }).find(x => x.jenis === 'portofolio');

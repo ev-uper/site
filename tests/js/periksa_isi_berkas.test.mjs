@@ -68,5 +68,5 @@ test('mahasiswa hanya PDF dan gambar (pemilik 2026-11-20): Apps Script dan halam
   assert.match(gs, /function mhsUnggah_[\s\S]*?MHS_EXT\.indexOf\(ext\) < 0[\s\S]*?mhsSimpan_/);
   const h = readFileSync(new URL('../../site/pengajuan.html', import.meta.url), 'utf8');
   assert.ok(!/accept="[^"]*docx/.test(h), 'halaman pengajuan tidak menawarkan DOCX');
-  assert.equal((h.match(/accept="\.pdf,\.jpg,\.jpeg,\.png"/g) || []).length, 2);
+  assert.equal((h.match(/accept="\.pdf,\.jpg,\.jpeg,\.png"/g) || []).length, 3);   // 179: + lampiran catatan bimbingan
 });
